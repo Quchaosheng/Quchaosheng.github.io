@@ -1,0 +1,84 @@
+# Quchaosheng's Notes
+
+这是 `https://quchaosheng.github.io/` 的 Hexo 源码。
+
+- `source` 分支保存 Hexo 源码、Markdown 和发布脚本。
+- `master` 分支保存 Hexo 生成的网站，由脚本自动更新。
+
+## 一键发布
+
+把 Markdown 文件交给脚本即可：
+
+```bash
+cd /home/sheng/work/quchaosheng-blog
+./publish.sh /完整路径/文章.md
+```
+
+需要固定简短的网址时，增加第二个参数：
+
+```bash
+./publish.sh /完整路径/中文文章.md linux-kernel-notes
+```
+
+脚本会自动执行以下操作：
+
+1. 将文章复制到 `source/_posts/`。
+2. 为没有头信息的 Markdown 自动增加标题、日期和分类。
+3. 检查并生成静态网站。
+4. 将源码备份到 GitHub 的 `source` 分支。
+5. 将生成的网站发布到 `master` 分支。
+
+## Markdown 头信息
+
+建议在文章开头添加：
+
+```yaml
+---
+title: Linux 驱动学习笔记
+date: 2026-07-14 10:00:00
+categories:
+  - Linux
+tags:
+  - Kernel
+  - Driver
+---
+```
+
+没有这段内容也可以，发布脚本会自动补充基本信息。
+
+## 图片
+
+Markdown 和图片目录使用相同名称：
+
+```text
+linux-driver.md
+linux-driver/
+  architecture.png
+```
+
+Markdown 中直接写：
+
+```markdown
+![架构图](architecture.png)
+```
+
+执行 `./publish.sh linux-driver.md` 时，图片目录会一起复制和发布。
+
+## 本地预览
+
+```bash
+npm install
+npx hexo clean
+npx hexo server
+```
+
+浏览器访问 `http://localhost:4000/`。
+
+## 换电脑恢复
+
+```bash
+git clone -b source git@github.com:Quchaosheng/Quchaosheng.github.io.git quchaosheng-blog
+cd quchaosheng-blog
+npm install
+```
+

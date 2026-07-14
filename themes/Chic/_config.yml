@@ -1,0 +1,57 @@
+# Header
+navname: Quchaosheng's Notes
+
+# Navigation
+nav:
+  文章: /archives
+  分类: /category
+  标签: /tag
+  关于: /about
+
+# Profile
+favicon: /bitbug_favicon.ico
+nickname: Quchaosheng
+description: Linux Kernel · ROS 2 · Embedded Systems
+avatar: /image/1.jpeg
+
+# Social links
+links:
+  Blog: /archives
+  Github: https://github.com/Quchaosheng
+
+links_text_enable: false
+links_icon_enable: true
+
+# Post page
+post_meta_enable: true
+post_author_enable: true
+post_date_enable: true
+post_category_enable: true
+post_copyright_enable: true
+post_copyright_author_enable: true
+post_copyright_permalink_enable: true
+post_copyright_license_enable: true
+post_copyright_license_text: 文章采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议
+post_copyright_slogan_enable: false
+post_toc_enable: true
+
+# Page
+page_title_enable: true
+
+# Date and time
+date_format: YYYY-MM-DD
+time_format: HH:mm:ss
+
+# Assets
+stylesheets:
+  - /css/style.css
+
+scripts:
+  - /js/script.js
+  - /js/tocbot.min.js
+
+# Math formula support. Add `mathjax: true` to a post's front matter.
+mathjax:
+  enable: true
+  import: demand
+
