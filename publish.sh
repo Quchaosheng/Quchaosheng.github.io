@@ -99,11 +99,10 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     git commit -m "Add post: $TITLE"
   fi
   printf '正在备份 Hexo 源码到 source 分支……\n'
-  git push origin source
+  git push --set-upstream origin source
 fi
 
 printf '正在发布到 GitHub Pages……\n'
 npx hexo deploy
 
 printf '\n发布完成：https://quchaosheng.github.io/\n'
-
