@@ -1,1 +1,8 @@
-<%- partial('_page/archive', {pagination: config.archive, index: true}) %>
+<div class="container archive-page">
+    <header class="archive-intro">
+        <div class="section-kicker">NOTE INDEX</div>
+        <h1>文章归档</h1>
+        <p>按时间整理的技术笔记与实践记录。</p>
+    </header>
+    <%- partial('_page/archive', {pagination: config.archive, index: true}) %>
+</div>
