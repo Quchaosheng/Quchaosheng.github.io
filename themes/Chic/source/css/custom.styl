@@ -2,3 +2,103 @@
 // Custom style
 // ==============================
 //  Also You can override the variables in variable.styl to customize the style
+
+.profile-container
+  width 100%
+  max-width 1040px
+  box-sizing border-box
+  padding 5.5rem 2rem 4rem
+
+.profile-hero
+  width 100%
+  display grid
+  grid-template-columns minmax(240px, .8fr) minmax(360px, 1.2fr)
+  gap 5rem
+  align-items center
+
+.intro
+  text-align left
+  .avatar
+    padding 0 0 1.5rem
+    img
+      width 104px
+      border 5px solid rgba(255,255,255,.75)
+      box-shadow 0 10px 30px rgba(42,55,49,.12)
+  .nickname
+    font-size 2.35em
+    letter-spacing .01em
+    line-height 1.25
+  .description
+    max-width 25em
+    margin-top .8rem
+    color $light-font-secondary-color
+    line-height 1.8
+  .links
+    margin-top 1.35rem
+    .iconfont
+      font-size 1.35em
+      margin-right .45rem
+
+.profile-archive-link
+  display inline-block
+  margin-top 1.7rem
+  padding-bottom .25rem
+  border-bottom 1px solid currentColor
+  font-size .95em
+
+.recent-notes
+  padding 1.8rem 2rem 1.5rem
+  border-left 3px solid #78a58d
+  background rgba(255,255,255,.58)
+  box-shadow 0 14px 40px rgba(42,55,49,.06)
+  h2
+    margin .15rem 0 1rem
+    font-size 1.55em
+    font-weight normal
+
+.section-kicker
+  color #5c8d71
+  font-size .72em
+  letter-spacing .16em
+  font-weight bold
+
+.recent-note
+  border-top 1px solid $light-border-color
+  a
+    display flex
+    justify-content space-between
+    gap 1.5rem
+    padding .8rem 0
+    &:hover .recent-note-title
+      color #5c8d71
+  time
+    flex-shrink 0
+    color $light-font-secondary-color
+    font-size .82em
+
+.dark-theme
+  .recent-notes
+    background rgba(255,255,255,.035)
+  .intro .description, .recent-note time
+    color $dark-font-secondary-color
+  .section-kicker
+    color #91c3a5
+
+@media screen and (max-width: 720px)
+  .profile-container
+    padding 4rem 1.25rem 3rem
+  .profile-hero
+    grid-template-columns 1fr
+    gap 3rem
+  .intro
+    text-align center
+    .description
+      margin-left auto
+      margin-right auto
+  .recent-notes
+    padding 1.4rem 1.25rem 1rem
+  .recent-note a
+    display block
+    time
+      display block
+      margin-top .25rem

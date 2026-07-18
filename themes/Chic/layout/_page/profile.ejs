@@ -1,7 +1,8 @@
 <div class="container profile-container">
+  <div class="profile-hero">
     <div class="intro">
         <div class="avatar">
-            <a href="<%- url_for(theme.nav.Posts) %>"><img src="<%- url_for(theme.avatar) %>"></a>
+            <a href="<%- url_for(theme.nav['文章'] || '/archives') %>"><img src="<%- url_for(theme.avatar) %>" alt="<%- theme.nickname %>"></a>
         </div>
         <div class="nickname"><%- theme.nickname %></div>
         <div class="description"><%- markdown(theme.description) %></div>
@@ -19,5 +20,19 @@
                 <% } %>
             <% } %>
         </div>
+        <a class="profile-archive-link" href="<%- url_for(theme.nav['文章'] || '/archives') %>">浏览全部笔记 <span aria-hidden="true">→</span></a>
     </div>
-</div>
+
+    <section class="recent-notes" aria-labelledby="recent-notes-title">
+        <div class="section-kicker">LATEST NOTES</div>
+        <h2 id="recent-notes-title">最近更新</h2>
+        <% site.posts.sort('date', -1).limit(5).each(function(post){ %>
+            <article class="recent-note">
+                <a href="<%- url_for(post.path) %>">
+                    <span class="recent-note-title"><%= post.title %></span>
+                    <time datetime="<%= post.date.toISOString() %>"><%- date(post.date, theme.date_format) %></time>
+                </a>
+            </article>
+        <% }) %>
+    </section>
+    </div>
