@@ -234,3 +234,90 @@
   .post-wrap.tags .post-title,
   .post-wrap.page .post-title
     font-size 1.8em
+
+.copy-code-button
+  position absolute
+  top .55rem
+  right .65rem
+  z-index 1
+  padding .25rem .6rem
+  border 1px solid rgba(255,255,255,.25)
+  border-radius 3px
+  background rgba(20,25,23,.72)
+  color #edf5ef
+  font-size .78em
+  cursor pointer
+  &:hover
+    background #5c8d71
+
+.search-page
+  padding-top 3rem
+  max-width 780px
+  .post-title
+    margin .2rem 0 1.8rem
+    padding-bottom 1rem
+    border-bottom 1px solid $light-border-color
+    font-size 2.15em
+    font-weight normal
+
+.search-form
+  label
+    display block
+    margin-bottom .5rem
+    color $light-font-secondary-color
+    font-size .88em
+  input
+    width 100%
+    box-sizing border-box
+    padding .8rem 1rem
+    border 1px solid $light-border-color
+    border-radius 3px
+    background transparent
+    color $light-font-color
+    font inherit
+    &:focus
+      border-color #78a58d
+      outline 2px solid rgba(120,165,141,.22)
+
+.search-status
+  min-height 1.5em
+  margin 1.25rem 0 .5rem
+  color $light-font-secondary-color
+  font-size .85em
+
+.search-result
+  padding 1rem 0
+  border-top 1px solid $light-border-color
+  .search-result-title
+    font-size 1.12em
+  .search-result-meta
+    margin-top .25rem
+    color $light-font-secondary-color
+    font-size .8em
+  p
+    margin .4rem 0 0
+    color $light-font-secondary-color
+    font-size .9em
+    line-height 1.7
+
+.dark-theme
+  .search-page .post-title
+    border-color $dark-border-color
+  .search-form
+    label
+      color $dark-font-secondary-color
+    input
+      border-color $dark-border-color
+      color $dark-font-color
+  .search-status,
+  .search-result-meta,
+  .search-result p
+    color $dark-font-secondary-color
+  .search-result
+    border-color rgba(144,145,150,.35)
+
+@media screen and (max-width: 720px)
+  .search-page
+    padding-top 1.75rem
+  .search-page .post-title
+    font-size 1.8em

@@ -6,6 +6,7 @@ nav:
   文章: /archives
   分类: /category
   标签: /tag
+  搜索: /search
   关于: /about
 
 # Profile
@@ -49,6 +50,7 @@ stylesheets:
 scripts:
   - /js/script.js
   - /js/tocbot.min.js
+  - /js/search.js
 
 # Math formula support. Add `mathjax: true` to a post's front matter.
 mathjax:

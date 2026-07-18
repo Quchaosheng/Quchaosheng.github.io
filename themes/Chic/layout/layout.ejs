@@ -12,18 +12,13 @@
             const pagebody = document.getElementsByTagName('body')[0]
 
             function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
 
-                if (status === 'dark') {
-                    window.sessionStorage.theme = 'dark'
-                    pagebody.classList.add('dark-theme');
-
-                } else if (status === 'light') {
-                    window.sessionStorage.theme = 'light'
-                    pagebody.classList.remove('dark-theme');
-                }
-            };
-
-            setTheme(window.sessionStorage.theme)
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
         })();
     </script>
 
