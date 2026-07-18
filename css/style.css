@@ -1599,3 +1599,100 @@ body.dark-theme .highlight .code .meta {
     font-size: 1.8em;
   }
 }
+.copy-code-button {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.65rem;
+  z-index: 1;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 3px;
+  background: rgba(20,25,23,0.72);
+  color: #edf5ef;
+  font-size: 0.78em;
+  cursor: pointer;
+}
+.copy-code-button:hover {
+  background: #5c8d71;
+}
+.search-page {
+  padding-top: 3rem;
+  max-width: 780px;
+}
+.search-page .post-title {
+  margin: 0.2rem 0 1.8rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e8e8e8;
+  font-size: 2.15em;
+  font-weight: normal;
+}
+.search-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #a9a9b3;
+  font-size: 0.88em;
+}
+.search-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.8rem 1rem;
+  border: 1px solid #e8e8e8;
+  border-radius: 3px;
+  background: transparent;
+  color: #161209;
+  font: inherit;
+}
+.search-form input:focus {
+  border-color: #78a58d;
+  outline: 2px solid rgba(120,165,141,0.22);
+}
+.search-status {
+  min-height: 1.5em;
+  margin: 1.25rem 0 0.5rem;
+  color: #a9a9b3;
+  font-size: 0.85em;
+}
+.search-result {
+  padding: 1rem 0;
+  border-top: 1px solid #e8e8e8;
+}
+.search-result .search-result-title {
+  font-size: 1.12em;
+}
+.search-result .search-result-meta {
+  margin-top: 0.25rem;
+  color: #a9a9b3;
+  font-size: 0.8em;
+}
+.search-result p {
+  margin: 0.4rem 0 0;
+  color: #a9a9b3;
+  font-size: 0.9em;
+  line-height: 1.7;
+}
+.dark-theme .search-page .post-title {
+  border-color: #909196;
+}
+.dark-theme .search-form label {
+  color: #87878d;
+}
+.dark-theme .search-form input {
+  border-color: #909196;
+  color: #a9a9b3;
+}
+.dark-theme .search-status,
+.dark-theme .search-result-meta,
+.dark-theme .search-result p {
+  color: #87878d;
+}
+.dark-theme .search-result {
+  border-color: rgba(144,145,150,0.35);
+}
+@media screen and (max-width: 720px) {
+  .search-page {
+    padding-top: 1.75rem;
+  }
+  .search-page .post-title {
+    font-size: 1.8em;
+  }
+}
