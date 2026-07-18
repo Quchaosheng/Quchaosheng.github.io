@@ -82,3 +82,35 @@ cd quchaosheng-blog
 npm install
 ```
 
+## Windows 发布笔记
+
+推荐使用 Git Bash。第一次准备：
+
+```bash
+git clone -b source https://github.com/Quchaosheng/Quchaosheng.github.io.git quchaosheng-blog
+cd quchaosheng-blog
+npm install
+```
+
+以后每篇笔记只需要执行：
+
+```bash
+./publish.sh "D:/notes/linux-driver.md"
+```
+
+需要固定网址名时，增加第二个参数：
+
+```bash
+./publish.sh "D:/notes/linux-driver.md" linux-driver
+```
+
+脚本会自动完成以下操作：
+
+1. 将 Markdown 复制到 `source/_posts/`。
+2. 没有 Hexo 头信息时，自动补充标题、日期和分类。
+3. 同名资源目录一起复制，例如 `linux-driver/image.png`。
+4. 生成网站并推送 `source` 分支。
+5. 发布生成的网站到 `master` 分支。
+
+发布后访问：<https://quchaosheng.github.io/>。
+
