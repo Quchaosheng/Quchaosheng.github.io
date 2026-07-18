@@ -81,6 +81,6 @@ theme: Chic
 # Deployment
 deploy:
   type: git
-  repo: git@github.com:Quchaosheng/Quchaosheng.github.io.git
+  repo: https://github.com/Quchaosheng/Quchaosheng.github.io.git
   branch: master
 
