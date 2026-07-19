@@ -54,6 +54,8 @@ if ($files.Count -eq 0) {
     exit 0
 }
 
+$seenSlugs = @{}
+$publishArgs = @('--batch')
 foreach ($file in $files) {
     $categorySpec = Get-CategorySpec $file.FullName
     if (-not $categorySpec) {
@@ -61,14 +63,24 @@ foreach ($file in $files) {
     }
 
     $slug = [IO.Path]::GetFileNameWithoutExtension($file.Name) -replace '\s+', '-'
-    Write-Host "同步：$($file.Name) [$categorySpec]"
-
-    if ($DryRun) { continue }
-
-    & $bash $publishScript $file.FullName $slug $categorySpec
-    if ($LASTEXITCODE -ne 0) {
-        throw "发布失败：$($file.FullName)"
+    if ($seenSlugs.ContainsKey($slug)) {
+        throw "发现重复的文章网址名 '$slug'：$($seenSlugs[$slug]) 和 $($file.FullName)"
     }
+    $seenSlugs[$slug] = $file.FullName
+
+    Write-Host "同步：$($file.Name) [$categorySpec]"
+    $publishArgs += @($file.FullName, $slug, $categorySpec)
+}
+
+if ($DryRun) {
+    Write-Host "演练完成：共 $($files.Count) 篇笔记。"
+    exit 0
+}
+
+Write-Host "开始批量发布：共 $($files.Count) 篇笔记。"
+& $bash $publishScript @publishArgs
+if ($LASTEXITCODE -ne 0) {
+    throw '批量发布失败。'
 }
 
 Write-Host '全部笔记同步完成。'
