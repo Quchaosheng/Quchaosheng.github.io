@@ -2,7 +2,7 @@
 title: c
 date: 2025-04-13 18:10:30
 categories:
-  - 笔记
+  - 技术
 tags: []
 ---
 

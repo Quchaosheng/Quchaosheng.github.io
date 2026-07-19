@@ -14,7 +14,7 @@ usage() {
   ./publish.sh ~/notes/linux-driver.md
   ./publish.sh ~/notes/中文笔记.md linux-driver-notes
 
-如果 Markdown 没有 Hexo 头信息，脚本会自动补充标题、日期和“笔记”分类。
+如果 Markdown 没有 Hexo 头信息，脚本会自动补充标题、日期和“技术”分类。
 如果 Markdown 旁边有同名资源目录，脚本也会复制其中的图片：
   linux-driver.md
   linux-driver/image.png
@@ -67,7 +67,7 @@ else
     printf '%s\n' '---'
     printf 'title: "%s"\n' "$TITLE_ESCAPED"
     printf 'date: %s\n' "$(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S')"
-    printf '%s\n' 'categories:' '  - 笔记' 'tags: []' '---' ''
+    printf '%s\n' 'categories:' '  - 技术' 'tags: []' '---' ''
     cat -- "$INPUT_PATH"
   } >"$TEMP_FILE"
 fi
