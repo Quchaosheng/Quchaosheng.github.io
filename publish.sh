@@ -13,6 +13,7 @@ usage() {
 示例：
   ./publish.sh ~/notes/linux-driver.md
   ./publish.sh ~/notes/中文笔记.md linux-driver-notes
+  ./publish.sh ~/notes/book.md book-notes '感悟|读书'
 
 如果 Markdown 没有 Hexo 头信息，脚本会自动补充标题、日期和“技术”分类。
 如果 Markdown 旁边有同名资源目录，脚本也会复制其中的图片：
@@ -26,7 +27,7 @@ die() {
   exit 1
 }
 
-if [[ $# -lt 1 || $# -gt 2 ]]; then
+if [[ $# -lt 1 || $# -gt 3 ]]; then
   usage
   exit 1
 fi
@@ -50,6 +51,13 @@ SLUG="${SLUG// /-}"
 [[ -n "$SLUG" ]] || die "文章网址名不能为空"
 [[ "$SLUG" != */* ]] || die "文章网址名不能包含斜杠"
 
+CATEGORY_SPEC="${3:-技术}"
+[[ -n "$CATEGORY_SPEC" ]] || die "分类不能为空"
+IFS='|' read -r -a CATEGORIES <<< "$CATEGORY_SPEC"
+for CATEGORY in "${CATEGORIES[@]}"; do
+  [[ -n "$CATEGORY" ]] || die "分类不能为空"
+done
+
 mkdir -p "$POST_DIR"
 DESTINATION="$POST_DIR/$SLUG.md"
 TITLE="${BASE_NAME//-/ }"
@@ -67,7 +75,11 @@ else
     printf '%s\n' '---'
     printf 'title: "%s"\n' "$TITLE_ESCAPED"
     printf 'date: %s\n' "$(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S')"
-    printf '%s\n' 'categories:' '  - 技术' 'tags: []' '---' ''
+    printf '%s\n' 'categories:'
+    for CATEGORY in "${CATEGORIES[@]}"; do
+      printf '  - %s\n' "$CATEGORY"
+    done
+    printf '%s\n' 'tags: []' '---' ''
     cat -- "$INPUT_PATH"
   } >"$TEMP_FILE"
 fi

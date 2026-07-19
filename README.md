@@ -162,3 +162,16 @@ npm install
 
 发布后访问：<https://quchaosheng.github.io/>。
 
+## 桌面同步
+
+桌面上的 `Quchaosheng-Notes` 文件夹可以作为笔记投递箱：
+
+```text
+Quchaosheng-Notes/
+├─ 技术/
+├─ 感悟/读书/
+└─ 感悟/播客/
+```
+
+把 `.md` 放入对应目录后，双击文件夹里的 `同步到博客.cmd`。脚本会根据目录自动传入分类，并调用现有发布流程；Markdown 旁边的同名图片目录也会一起同步。
+
