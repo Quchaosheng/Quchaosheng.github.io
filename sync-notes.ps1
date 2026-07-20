@@ -34,15 +34,17 @@ if (-not (Test-Path -LiteralPath $Inbox)) {
 
 function Get-CategorySpec([string]$Path) {
     $relative = $Path.Substring($Inbox.Length).TrimStart('\', '/')
-    $parts = $relative -split '[\\/]'
-
-    if ($parts[0] -eq '技术') { return '技术' }
-    if ($parts[0] -eq '感悟' -and $parts.Length -ge 2) {
-        if ($parts[1] -eq '读书') { return '感悟|读书' }
-        if ($parts[1] -eq '播客') { return '感悟|播客' }
+    $directory = [IO.Path]::GetDirectoryName($relative)
+    if ([string]::IsNullOrWhiteSpace($directory)) {
+        return $null
     }
 
-    return $null
+    $parts = @($directory -split '[\\/]') | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    if ($parts.Count -eq 0) {
+        return $null
+    }
+
+    return ($parts -join '|')
 }
 
 $files = @(Get-ChildItem -LiteralPath $Inbox -Recurse -File | Where-Object {
@@ -59,7 +61,7 @@ $publishArgs = @('--batch')
 foreach ($file in $files) {
     $categorySpec = Get-CategorySpec $file.FullName
     if (-not $categorySpec) {
-        throw "文件必须放在 技术、感悟\读书 或 感悟\播客：$($file.FullName)"
+        throw "文件必须放在分类文件夹内，例如 技术\Linux 或 感悟\读书：$($file.FullName)"
     }
 
     $slug = [IO.Path]::GetFileNameWithoutExtension($file.Name) -replace '\s+', '-'

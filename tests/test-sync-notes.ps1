@@ -6,12 +6,14 @@ $root = Join-Path ([IO.Path]::GetTempPath()) "quchaosheng-sync-$([guid]::NewGuid
 
 New-Item -ItemType Directory -Force -Path @(
     (Join-Path $root '技术'),
+    (Join-Path $root '技术\自定义'),
     (Join-Path $root '感悟\读书'),
     (Join-Path $root '感悟\播客')
 ) | Out-Null
 
 try {
     Set-Content -LiteralPath (Join-Path $root '技术\same.md') -Value 'technical' -Encoding UTF8
+    Set-Content -LiteralPath (Join-Path $root '技术\自定义\custom.md') -Value 'custom' -Encoding UTF8
     Set-Content -LiteralPath (Join-Path $root '感悟\读书\same.md') -Value 'book' -Encoding UTF8
 
     $oldErrorActionPreference = $ErrorActionPreference
@@ -35,10 +37,11 @@ try {
     }
     $dryRunText = $dryRunOutput -join "`n"
     $hasTechnical = $dryRunText -match 'same.md \[技术\]'
+    $hasCustom = $dryRunText -match 'custom.md \[技术\|自定义\]'
     $hasBook = $dryRunText -match 'book.md \[感悟\|读书\]'
     $hasPodcast = $dryRunText -match 'podcast.md \[感悟\|播客\]'
-    $hasCount = $dryRunText -match '共 3 篇笔记'
-    if (-not ($hasTechnical -and $hasBook -and $hasPodcast -and $hasCount)) {
+    $hasCount = $dryRunText -match '共 4 篇笔记'
+    if (-not ($hasTechnical -and $hasCustom -and $hasBook -and $hasPodcast -and $hasCount)) {
         throw 'dry-run output did not report all categories'
     }
 
