@@ -1,5 +1,7 @@
 # Quchaosheng's Notes
 
+**简体中文** | English version is not maintained for this blog project
+
 这是 `https://quchaosheng.github.io/` 的 Hexo 源码。
 
 - `source` 分支保存 Hexo 源码、Markdown 和发布脚本。
