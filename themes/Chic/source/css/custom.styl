@@ -199,6 +199,47 @@
   line-height 1.95
   text-align left
 
+// Compact mechanism diagrams used by the technical-note series.
+.note-flow
+  display flex
+  align-items stretch
+  gap .55rem
+  margin 1.5rem 0
+  padding 1rem
+  overflow-x auto
+  border-left 3px solid #5c8d71
+  background rgba(92,141,113,.07)
+  span
+    display flex
+    min-width 7.5rem
+    min-height 3.2rem
+    box-sizing border-box
+    align-items center
+    justify-content center
+    padding .65rem .8rem
+    border 1px solid rgba(92,141,113,.32)
+    border-radius 4px
+    background rgba(255,255,255,.72)
+    text-align center
+    line-height 1.45
+    font-size .9em
+  i
+    display flex
+    flex 0 0 auto
+    align-items center
+    color #5c8d71
+    font-style normal
+    font-weight bold
+
+.dark-theme .note-flow
+  background rgba(145,195,165,.08)
+  border-color #91c3a5
+  span
+    border-color rgba(145,195,165,.35)
+    background rgba(255,255,255,.045)
+  i
+    color #91c3a5
+
 .dark-theme
   .archive-intro
     border-color $dark-border-color
@@ -234,6 +275,15 @@
   .post-wrap.tags .post-title,
   .post-wrap.page .post-title
     font-size 1.8em
+  .note-flow
+    display grid
+    grid-template-columns 1fr
+    overflow visible
+    span
+      min-width 0
+    i
+      justify-content center
+      transform rotate(90deg)
 
 .copy-code-button
   position absolute
