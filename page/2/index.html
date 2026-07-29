@@ -78,6 +78,8 @@
             <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
             <div class="menu navbar-right">
                 
+                <a class="menu-item" href="/projects">Projects</a>
+                
                 <a class="menu-item" href="/archives">文章</a>
                 
                 <a class="menu-item" href="/category">分类</a>
@@ -108,6 +110,8 @@
                 </div>
             </div>
             <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
                 
                 <a class="menu-item" href="/archives">文章</a>
                 
@@ -170,6 +174,32 @@
         </div>
         <a class="profile-archive-link" href="/archives">浏览全部笔记 <span aria-hidden="true">→</span></a>
     </div>
+
+    <section class="project-showcase" aria-labelledby="projects-title">
+        <div class="section-kicker">SELECTED PROJECTS</div>
+        <h2 id="projects-title">机器人运行时与系统工程</h2>
+        <p class="project-intro">所有演示均标明验证环境，不将仿真、vcan 或 QEMU 结果描述为物理硬件能力。</p>
+        <div class="project-grid">
+            <article class="project-item">
+  <a class="project-media" href="https://github.com/Quchaosheng/embodied-agent-runtime" target="_blank" rel="noopener"><img src="/image/projects/embodied-runtime.jpg" alt="X5 摄像头识别 ArUco 标记"></a>
+  <div class="project-body"><span class="evidence-tag">X5 实体 I/O</span><h3>Embodied Agent Runtime</h3><p>受安全契约约束的 AI 到 ROS 2 Action、SocketCAN 任务链路。已验证 X5、UVC、ArUco 与双 CANable 台架。</p><a href="https://github.com/Quchaosheng/embodied-agent-runtime" target="_blank" rel="noopener">查看源码与证据 →</a></div>
+</article>
+<article class="project-item">
+  <a class="project-media" href="https://github.com/Quchaosheng/ros2-control-vcan-motor-demo" target="_blank" rel="noopener"><img src="/image/projects/vcan-diffbot.png" alt="ros2_control vcan 双虚拟电机演示"></a>
+  <div class="project-body"><span class="evidence-tag">vcan 软件闭环</span><h3>ros2_control vcan Motor Demo</h3><p>双虚拟电机反馈、watchdog、ACK 超时、bus-off 与 safe-stop，不声明真实电机负载。</p><a href="https://github.com/Quchaosheng/ros2-control-vcan-motor-demo" target="_blank" rel="noopener">查看完整演示 →</a></div>
+</article>
+<article class="project-item">
+  <a class="project-media" href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo" target="_blank" rel="noopener"><img src="/image/projects/apriltag-docking.png" alt="Gazebo AprilTag 视觉停靠演示"></a>
+  <div class="project-body"><span class="evidence-tag">Gazebo 仿真</span><h3>AprilTag Docking Demo</h3><p>AprilTag 观测、任务 Guard、Nav2 Docking 与取消路径的可复现仿真，不冒充真实机器人停靠。</p><a href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo" target="_blank" rel="noopener">查看仿真项目 →</a></div>
+</article>
+<article class="project-item">
+  <a class="project-media" href="https://github.com/Quchaosheng/quard-star-riscv64-net" target="_blank" rel="noopener"><img src="/image/projects/quard-qemu.png" alt="Quard Star RISC-V64 QEMU 验收演示"></a>
+  <div class="project-body"><span class="evidence-tag">QEMU / TAP</span><h3>Quard Star RISC-V64</h3><p>七核 SMP 内核与独立 FreeRTOS hart，覆盖 VirtIO、TCP/IP、存储及 PMP 双向隔离验证。</p><a href="https://github.com/Quchaosheng/quard-star-riscv64-net" target="_blank" rel="noopener">查看系统证据 →</a></div>
+</article>
+
+        </div>
+        <a class="projects-more" href="/projects/">查看全部项目与证据边界 →</a>
+    </section>
 
     <section class="recent-notes" aria-labelledby="recent-notes-title">
         <div class="section-kicker">LATEST NOTES</div>
