@@ -150,6 +150,35 @@
         <div class="section-kicker">CATEGORY</div>
         <h1 class="post-title">分类：技术</h1>
     </div>
+    
+    <section class="category-hub">
+        <div class="section-kicker">TECHNOLOGY SECTIONS</div>
+        <h2>按方向阅读</h2>
+        <div class="tech-hub-grid">
+            <a class="tech-hub-card" href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%86%85%E6%A0%B8/">
+                <span>01 · LINUX</span>
+                <h3>Linux 内核与网络</h3>
+                <p>调度、内存、进程、驱动模型，以及网络收包、TCP、UDP 与性能分析。</p>
+            </a>
+            <a class="tech-hub-card" href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8FLinux/">
+                <span>02 · EMBEDDED</span>
+                <h3>嵌入式 Linux</h3>
+                <p>设备树、驱动、中断、ARM64 平台与软硬件协同的系统实践。</p>
+            </a>
+            <a class="tech-hub-card" href="/category/%E6%8A%80%E6%9C%AF/%E8%AE%A1%E7%AE%97%E6%9C%BA%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84/">
+                <span>03 · ARCHITECTURE</span>
+                <h3>体系结构</h3>
+                <p>RISC-V、MMU、缓存、内存层次与底层执行模型。</p>
+            </a>
+            <a class="tech-hub-card" href="/category/%E6%8A%80%E6%9C%AF/C-C/">
+                <span>04 · ENGINEERING</span>
+                <h3>C/C++ 与调试</h3>
+                <p>语言基础、内存与并发问题定位，以及 GDB、Sanitizer 工具链。</p>
+            </a>
+        </div>
+    </section>
+    <h2 class="category-hub-archive-title">全部技术文章</h2>
+    
     <div class="post-wrap archive">
     
     
@@ -160,7 +189,7 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/udp-receive-optimization/">UDP 收包瓶颈：从网卡队列到应用线程</a>
+            <a class="archive-item-link" href="/2026/07/29/mutex-vs-spinlock/">互斥锁与自旋锁：等待时该睡眠还是忙等</a>
             <span class="archive-item-date">2026-07-29</span>
         </article>
     
@@ -169,7 +198,7 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/tcp-retransmission/">TCP 重传：可靠传输如何发现并修复丢包</a>
+            <a class="archive-item-link" href="/2026/07/29/mutex-futex-internals/">mutex 底层：无竞争走原子操作，有竞争才用 futex</a>
             <span class="archive-item-date">2026-07-29</span>
         </article>
     
@@ -178,7 +207,7 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/gdb-crash-debugging/">GDB 崩溃调试：从信号到调用栈</a>
+            <a class="archive-item-link" href="/2026/07/29/cpp20-coroutines/">C++20 协程：把异步流程写成顺序代码</a>
             <span class="archive-item-date">2026-07-29</span>
         </article>
     
@@ -187,7 +216,7 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/pthread-linux-internals/">pthread 底层：线程创建、同步与退出</a>
+            <a class="archive-item-link" href="/2026/07/29/linux-five-io-models/">Linux 五种 I/O 模型：阻塞、非阻塞与多路复用</a>
             <span class="archive-item-date">2026-07-29</span>
         </article>
     
@@ -196,7 +225,7 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/linux-napi-receive/">NAPI：Linux 如何承受高并发收包</a>
+            <a class="archive-item-link" href="/2026/07/29/cpp20-thread-pool/">C++20 线程池：任务队列、工作线程与停止协议</a>
             <span class="archive-item-date">2026-07-29</span>
         </article>
     
@@ -205,7 +234,7 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/linux-sk-buff/">sk_buff：Linux 网络包在内核中的旅行容器</a>
+            <a class="archive-item-link" href="/2026/07/29/lock-free-queue-selection/">无锁队列：CAS、内存序与工程选型</a>
             <span class="archive-item-date">2026-07-29</span>
         </article>
     
@@ -214,7 +243,7 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/linux-rcu/">RCU：读多写少场景下的并发设计</a>
+            <a class="archive-item-link" href="/2026/07/29/linux-memory-leak-diagnosis/">Linux 内存泄漏排查：先分清是哪一种内存增长</a>
             <span class="archive-item-date">2026-07-29</span>
         </article>
     
@@ -223,7 +252,7 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/linux-io-uring/">io_uring：用共享环减少异步 I/O 开销</a>
+            <a class="archive-item-link" href="/2026/07/29/malloc-free-internals/">malloc 与 free：用户态分配器如何管理堆内存</a>
             <span class="archive-item-date">2026-07-29</span>
         </article>
     
@@ -232,7 +261,7 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/linux-page-fault-walk/">缺页异常与页表遍历：一次内存访问的补救过程</a>
+            <a class="archive-item-link" href="/2026/07/29/linux-fasync-sigio/">fasync 与 SIGIO：Linux 信号驱动异步通知</a>
             <span class="archive-item-date">2026-07-29</span>
         </article>
     
@@ -241,13 +270,13 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/linux-buddy-slub/">伙伴系统与 SLUB：Linux 内核怎样分配内存</a>
+            <a class="archive-item-link" href="/2026/07/29/riscv-interrupt/">RISC-V 中断：从外设信号到处理函数</a>
             <span class="archive-item-date">2026-07-29</span>
         </article>
     
     
     <nav class="pagination">
-        <a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/">1</a><a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/page/2/">2</a><a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/page/5/">5</a>
+        <a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/">1</a><a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/page/2/">2</a><a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/page/5/">5</a><a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/page/6/">6</a><a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/page/7/">7</a>
     </nav>
 
 </div>
