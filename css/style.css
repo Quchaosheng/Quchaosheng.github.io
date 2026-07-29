@@ -1952,6 +1952,30 @@ body.dark-theme .highlight .code .meta {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
+.category-hub {
+  margin: 0 auto 3rem;
+  max-width: 76rem;
+}
+.category-hub h2 {
+  margin: 0.35rem 0 1.25rem;
+  letter-spacing: 0;
+}
+.category-hub-archive-title {
+  width: 100%;
+  max-width: 76rem;
+  margin: 0 auto 1.25rem;
+  font-size: 1.4em;
+  letter-spacing: 0;
+}
+.category-hub .tech-hub-card {
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.category-hub .tech-hub-card:hover {
+  border-color: #087f5b;
+  transform: translateY(-2px);
+}
 .tech-hub-card {
   display: flex;
   min-height: 13rem;
