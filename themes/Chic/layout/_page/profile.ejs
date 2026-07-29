@@ -23,6 +23,16 @@
         <a class="profile-archive-link" href="<%- url_for(theme.nav['文章'] || '/archives') %>">浏览全部笔记 <span aria-hidden="true">→</span></a>
     </div>
 
+    <section class="project-showcase" aria-labelledby="projects-title">
+        <div class="section-kicker">SELECTED PROJECTS</div>
+        <h2 id="projects-title">机器人运行时与系统工程</h2>
+        <p class="project-intro">所有演示均标明验证环境，不将仿真、vcan 或 QEMU 结果描述为物理硬件能力。</p>
+        <div class="project-grid">
+            <%- partial('_partial/project_cards') %>
+        </div>
+        <a class="projects-more" href="<%- url_for('/projects/') %>">查看全部项目与证据边界 →</a>
+    </section>
+
     <section class="recent-notes" aria-labelledby="recent-notes-title">
         <div class="section-kicker">LATEST NOTES</div>
         <h2 id="recent-notes-title">最近更新</h2>
