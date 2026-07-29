@@ -533,3 +533,55 @@
   .section-link
     min-height 0
     padding 1.35rem 1.25rem
+
+.tech-hub-intro
+  margin-bottom 1.8rem
+  h2
+    margin .35rem 0 .55rem
+    letter-spacing 0
+  p:last-child
+    max-width 46em
+    color $light-font-secondary-color
+
+.tech-hub-grid
+  display grid
+  grid-template-columns repeat(2, minmax(0, 1fr))
+  gap 1.25rem
+
+.tech-hub-card
+  display flex
+  min-height 13rem
+  flex-direction column
+  padding 1.4rem
+  border 1px solid rgba(102,112,133,.24)
+  border-radius 8px
+  background rgba(255,255,255,.72)
+  h3
+    margin .55rem 0 .7rem
+    letter-spacing 0
+  p
+    flex 1
+    margin 0 0 1rem
+    line-height 1.7
+  > span
+    color #087f5b
+    font-size .78em
+    font-weight bold
+    letter-spacing .08em
+
+.tech-hub-links
+  display flex
+  flex-wrap wrap
+  gap .85rem
+
+.dark-theme
+  .tech-hub-card
+    background rgba(255,255,255,.035)
+  .tech-hub-intro p:last-child
+    color $dark-font-secondary-color
+
+@media (max-width: 768px)
+  .tech-hub-grid
+    grid-template-columns 1fr
+  .tech-hub-card
+    min-height 0
