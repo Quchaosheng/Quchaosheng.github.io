@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>PREEMPT_RT：Linux 怎样变成可抢占的实时内核 | Quchaosheng&#39;s Notes</title>
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/tag">标签</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/tag">标签</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">PREEMPT_RT：Linux 怎样变成可抢占的实时内核</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">2026-07-21&nbsp;&nbsp;14:10:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    Category:
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">Linux实时</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>普通 Linux 擅长吞吐量和公平性，但内核中一次较长的关抢占、硬中断或自旋锁临界区，可能让刚被唤醒的高优先级任务等上很久。对音频、运动控制、工业通信这类周期任务而言，平均延迟再低也不够，真正关心的是最坏情况下“何时一定能运行”。PREEMPT_RT 的目标正是缩短这类不可抢占区，让高优先级线程即使在内核态也能更快获得 CPU。</p>
+<div class="note-flow"><span>高优先级任务被唤醒</span><i>→</i><span>检查当前抢占状态</span><i>→</i><span>抢占普通线程或内核路径</span><i>→</i><span>运行实时任务</span><i>→</i><span>完成后恢复被抢占任务</span></div>
+
+<h2 id="PREEMPT-RT-实际改变了什么"><a href="#PREEMPT-RT-实际改变了什么" class="headerlink" title="PREEMPT_RT 实际改变了什么"></a>PREEMPT_RT 实际改变了什么</h2><p>它不是给应用程序加一个“实时开关”，而是重塑了内核中的若干执行上下文。大量原本会忙等的自旋锁，在能够睡眠的情形下会以 <code>rtmutex</code> 方式工作；当高优先级线程等待锁时，持锁者可以得到优先级继承。许多设备中断也会由可调度的 IRQ 线程完成后半段处理，使调度器可以决定它与实时任务谁先运行。</p>
+<div class="note-map"><span><b>锁</b><small>尽可能用可睡眠的 rtmutex，缩短高优先级等待</small></span><span><b>中断</b><small>将大量处理移入 IRQ 线程，减少硬中断占用</small></span><span><b>抢占</b><small>让内核路径更频繁地成为可抢占点</small></span><span><b>调度</b><small>实时线程可在更短的内核延迟后得到 CPU</small></span><span><b>仍需单独处理</b><small>raw spinlock、NMI、SMI、固件和硬件延迟</small></span><span><b>最终目标</b><small>降低并解释最坏延迟，而不是追求最高吞吐</small></span></div>
+
+<p>这里的“尽可能”很关键。<code>raw_spinlock</code>、部分底层时钟路径、NMI&#x2F;SMI 与设备固件不一定能被抢占；驱动如果关中断太久，或者平台固件突然接管 CPU，实时补丁也无法凭空消除那段时间。因此 PREEMPT_RT 是实时系统的一层基础，不是最终证明。</p>
+<h2 id="怎样判断系统是否真的跑在-RT-内核上"><a href="#怎样判断系统是否真的跑在-RT-内核上" class="headerlink" title="怎样判断系统是否真的跑在 RT 内核上"></a>怎样判断系统是否真的跑在 RT 内核上</h2><p>首先确认构建配置中启用了 <code>CONFIG_PREEMPT_RT</code>，并在目标机上记录内核版本、启动参数、CPU 型号和 BIOS 版本。某些内核会在 <code>/sys/kernel/realtime</code> 暴露状态；无论是否有该文件，都应以实际的内核配置和延迟测试为准。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">uname</span> -a</span><br><span class="line">zgrep PREEMPT_RT /proc/config.gz 2&gt;/dev/null || \</span><br><span class="line">  grep PREEMPT_RT /boot/config-$(<span class="built_in">uname</span> -r)</span><br><span class="line"><span class="built_in">test</span> -r /sys/kernel/realtime &amp;&amp; <span class="built_in">cat</span> /sys/kernel/realtime</span><br></pre></td></tr></table></figure>
+
+<p>接着用 <code>cyclictest</code> 或 <code>rtla timerlat</code> 建立基线，并在相同硬件上比较普通内核与 RT 内核的最大值、P99 和长时间直方图。只在空闲桌面上跑几秒得到的漂亮数字，不是实时能力的证据。</p>
+<h2 id="适合它的工作，也有不适合它的工作"><a href="#适合它的工作，也有不适合它的工作" class="headerlink" title="适合它的工作，也有不适合它的工作"></a>适合它的工作，也有不适合它的工作</h2><p>PREEMPT_RT 很适合降低通用 Linux 上线程唤醒、锁竞争和中断处理带来的抖动。它不替代硬实时 MCU，不自动让垃圾回收、文件系统写入或网络对端变成确定性，也不保证每个驱动都已经适配得足够好。若控制周期只有几十微秒，或失控会立刻造成物理伤害，应仍由独立控制器与硬件安全链承担最后责任。</p>
+<p>部署顺序可以很朴素：先定义周期、截止期和最大允许抖动；再启用 RT 内核；随后布置调度、CPU&#x2F;IRQ、内存和电源策略；最后在 CPU、内存、网络和 I&#x2F;O 压力同时存在时捕获尖峰。每削掉一个尖峰，都要能解释它原先来自哪里。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://wiki.linuxfoundation.org/realtime/start">Real-time Linux</a> · <a target="_blank" rel="noopener" href="https://wiki.linuxfoundation.org/realtime/documentation/start">PREEMPT_RT Documentation</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>Permalink:</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/30/linux-preempt-rt/">https://quchaosheng.github.io/2026/07/30/linux-preempt-rt/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>License:</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/PREEMPT-RT/"># PREEMPT_RT</a>
+                    
+                        <a href="/tag/%E6%8A%A2%E5%8D%A0/"># 抢占</a>
+                    
+                        <a href="/tag/%E5%AE%9E%E6%97%B6Linux/"># 实时Linux</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/30/linux-realtime-scheduling-classes/">Linux 实时调度：SCHED_FIFO、RR 与 DEADLINE</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/manufacturing-test-interface/">产测接口：让每块板子都能快速证明自己正常</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

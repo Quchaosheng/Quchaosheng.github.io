@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层 | Quchaosheng&#39;s Notes</title>
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/tag">标签</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/tag">标签</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">2026-07-30&nbsp;&nbsp;14:10:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    Category:
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>GR00T 代表视觉-语言-动作（VLA）模型进入机器人任务的一条路线：模型接收图像、语言、状态等多模态信息，输出任务步骤、动作候选或连续控制参考。它的价值在于把过去需要大量手工规则的泛化理解交给数据驱动模型；它的风险也很直接，模型输出会受训练分布、上下文、延迟和硬件状态影响，不能因为“看起来懂了”就越过安全边界直接驱动执行器。</p>
+<div class="note-flow"><span>接收视觉与语言指令</span><i>→</i><span>模型生成任务/动作候选</span><i>→</i><span>运行时校验场景与约束</span><i>→</i><span>控制器执行有限动作</span><i>→</i><span>反馈结果或安全停止</span></div>
+
+<h2 id="VLA-模型适合做什么，不适合做什么"><a href="#VLA-模型适合做什么，不适合做什么" class="headerlink" title="VLA 模型适合做什么，不适合做什么"></a>VLA 模型适合做什么，不适合做什么</h2><p>它适合处理高层的、语义模糊的任务，例如把“整理桌面上的工具”分解为识别、选择、抓取和放置，或根据视觉观察给出下一个操作候选。它不适合独自承担电流环、碰撞检测、关节限位、急停或毫秒级同步控制；这些必须仍由经过验证的控制器、安全传感器和状态机完成。</p>
+<p>一个更稳妥的调用关系如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">VLA model -&gt; task proposal / action chunk</span><br><span class="line">          -&gt; task guard (object, pose, confidence, freshness)</span><br><span class="line">          -&gt; motion planner (collision, reachability, speed limits)</span><br><span class="line">          -&gt; controller (watchdog, torque/velocity limits, e-stop)</span><br></pre></td></tr></table></figure>
+
+<p>这里的 <code>task guard</code> 不只是一个 <code>if</code>。它需要检查模型输入是否过期、目标是否仍存在、坐标变换是否可用、当前状态机是否允许该动作，以及模型调用是否超过时间预算。</p>
+<h2 id="将模型输出限制成“可验证的动作”"><a href="#将模型输出限制成“可验证的动作”" class="headerlink" title="将模型输出限制成“可验证的动作”"></a>将模型输出限制成“可验证的动作”</h2><p>不要让模型输出自由文本后由另一个脚本随意解释。最好把可执行动作设计为固定 schema，例如 <code>pick(object_id, grasp_pose)</code>、<code>move_to(pose, max_speed)</code>、<code>open_gripper()</code>，并为每个字段定义坐标系、单位、范围和超时时间。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">action:</span> <span class="string">move_to</span></span><br><span class="line"><span class="attr">frame_id:</span> <span class="string">map</span></span><br><span class="line"><span class="attr">target:</span> &#123;<span class="attr">x:</span> <span class="number">1.20</span>, <span class="attr">y:</span> <span class="number">-0.35</span>, <span class="attr">yaw:</span> <span class="number">0.0</span>&#125;</span><br><span class="line"><span class="attr">max_speed_mps:</span> <span class="number">0.20</span></span><br><span class="line"><span class="attr">deadline_ms:</span> <span class="number">3000</span></span><br><span class="line"><span class="attr">requires:</span> [<span class="string">localization_valid</span>, <span class="string">path_clear</span>]</span><br></pre></td></tr></table></figure>
+
+<p>运行时先验证 schema，再将动作交给规划器，而不是把自然语言直接翻译成 CAN 帧或电机指令。这让日志、回放、测试和人工审核都有清晰的对象。</p>
+<h2 id="推理延迟也是控制约束的一部分"><a href="#推理延迟也是控制约束的一部分" class="headerlink" title="推理延迟也是控制约束的一部分"></a>推理延迟也是控制约束的一部分</h2><p>VLA 的输入通常比一个检测模型更大，推理耗时也更难预测。若模型花了 800 ms 才提出“向前走”，它看到的场景可能早已改变。任务层需要为输入设最大年龄，为模型设 timeout，为动作设独立 deadline；超过预算就丢弃结果并重新感知，而不是照单全收。</p>
+<p>还应记录模型版本、提示词&#x2F;任务上下文、输入传感器时间戳、原始输出、过滤原因、最终执行动作和退出状态。这样一次错误行为才有机会被重放、复现与修复，而不是只留下“AI 失灵了”的印象。</p>
+<h2 id="评估不该只看演示视频"><a href="#评估不该只看演示视频" class="headerlink" title="评估不该只看演示视频"></a>评估不该只看演示视频</h2><p>一个足够严谨的评估至少包括：已见与未见物体、遮挡、错误语言指令、目标突然移动、相机断流、网络延迟、规划不可达、取消动作和急停。每种情况都要有明确的预期结果，例如拒绝执行、请求确认、重新感知或安全停止。</p>
+<p>基础模型能扩大机器人的任务理解能力，但真正让它可部署的是外面的运行时边界。模型能力越强，动作权限、审计记录和降级路径越要清楚。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://developer.nvidia.com/isaac/gr00t">NVIDIA Isaac GR00T</a> · <a target="_blank" rel="noopener" href="https://docs.ros.org/en/rolling/Concepts/Basic/About-Actions.html">ROS 2 Actions</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>Permalink:</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/">https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>License:</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/GR00T/"># GR00T</a>
+                    
+                        <a href="/tag/VLA/"># VLA</a>
+                    
+                        <a href="/tag/%E5%85%B7%E8%BA%AB%E6%99%BA%E8%83%BD/"># 具身智能</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+            
+            <a class="next" rel="next" href="/2026/07/30/deepstream-multicamera-robot/">DeepStream 多相机机器人：视频流怎样批量进入 AI 管线</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

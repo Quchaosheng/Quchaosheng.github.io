@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU | Quchaosheng&#39;s Notes</title>
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/tag">标签</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/tag">标签</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">2026-07-28&nbsp;&nbsp;20:20:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    Category:
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>在机器人视觉链路中，“模型只跑了 8 ms，系统却要 80 ms”很常见。原因通常不是 CUDA kernel，而是图像经过驱动、ROS 消息、颜色转换、CPU 内存和 GPU 内存时发生了多次复制与排队。Isaac ROS 的 NITROS（NVIDIA Isaac Transport for ROS）利用 ROS 2 类型适配与 GXF，让一组兼容节点协商适合硬件加速的数据格式，尽量使图像和张量在加速内存中连续流动。</p>
+<div class="note-flow"><span>相机产生图像</span><i>→</i><span>NITROS 协商兼容格式</span><i>→</i><span>缓冲区留在加速内存</span><i>→</i><span>GPU 节点连续处理</span><i>→</i><span>只在边界转换数据</span></div>
+
+<h2 id="普通链路为什么容易慢"><a href="#普通链路为什么容易慢" class="headerlink" title="普通链路为什么容易慢"></a>普通链路为什么容易慢</h2><p>一个典型的非加速链路是：相机驱动将帧写入 CPU 内存，发布 <code>sensor_msgs/Image</code>；订阅者收到消息后做颜色空间转换；随后把输入复制到 GPU；模型输出又拷回 CPU，再封装成检测消息。每一步单独看不慢，但高分辨率、多相机或同机录包时，内存带宽和回调队列会把延迟放大。</p>
+<p>NITROS 的目标不是改变 ROS 2 的语义，而是让相邻的加速节点能在发布&#x2F;订阅关系中使用协商后的类型和缓冲区。对于视觉、TensorRT 推理、立体匹配或 Visual SLAM 这类连续 GPU 图，减少中间转换通常比微调单个模型更有效。</p>
+<h2 id="“零拷贝”成立需要哪些条件"><a href="#“零拷贝”成立需要哪些条件" class="headerlink" title="“零拷贝”成立需要哪些条件"></a>“零拷贝”成立需要哪些条件</h2><p>它并不是一个开关。下列任一条件不满足，都可能重新引入复制或同步等待：</p>
+<ul>
+<li>驱动输出的数据格式与下游节点需要的格式不同，例如 NV12、RGB、BGR 之间转换。</li>
+<li>中间混入了只理解普通 ROS 消息的节点，或图跨越不兼容的进程&#x2F;设备边界。</li>
+<li>下游节点在 GPU 上执行，但上游缓冲区仍在普通页内存。</li>
+<li>为了可视化、录包或调试强制把 GPU 数据转换回 CPU 图像。</li>
+</ul>
+<p>所以设计图时不要只问“是否用了 NITROS”，而要画出每个缓冲区的所有权、位置和格式：它在 CPU 还是 GPU，在 pinned memory 还是普通内存，谁负责释放，在哪一处发生同步。</p>
+<h2 id="怎么判断优化有没有真的生效"><a href="#怎么判断优化有没有真的生效" class="headerlink" title="怎么判断优化有没有真的生效"></a>怎么判断优化有没有真的生效</h2><p>从外部先量整条链路，而不是先看某个节点的日志。相机消息应保留采集时间戳；检测&#x2F;定位结果也要带产生该结果的原始帧时间。这样可以得到真正的感知年龄：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">perception_age = control_time - camera_frame.header.stamp</span><br></pre></td></tr></table></figure>
+
+<p>配合 <code>ros2 topic hz</code> 看发布频率、<code>ros2 topic delay</code> 看消息到达延迟，再用系统 profiler 检查 CPU-GPU copy 与 CUDA stream 是否频繁同步。若 FPS 提高了但 <code>perception_age</code> 没变，问题往往是队列积压，而不是拷贝。</p>
+<h2 id="与你的-ROS-2-工程怎样连接"><a href="#与你的-ROS-2-工程怎样连接" class="headerlink" title="与你的 ROS 2 工程怎样连接"></a>与你的 ROS 2 工程怎样连接</h2><p>把 NITROS 放在相机到感知模型的“数据平面”；任务 Guard、Action、SocketCAN 和安全检查仍属于“控制平面”。前者追求少搬运和高吞吐，后者追求可审计、可取消和有确定性边界。两类节点之间应只传递压缩后的语义结果与明确时间戳，不让 GPU 资源管理细节渗到控制器里。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://nvidia-isaac-ros.github.io/">Isaac ROS Documentation</a> · <a target="_blank" rel="noopener" href="https://design.ros2.org/articles/ros2_type_adaptation.html">ROS 2 Type Adaptation</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>Permalink:</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/30/isaac-ros-nitros-zero-copy/">https://quchaosheng.github.io/2026/07/30/isaac-ros-nitros-zero-copy/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>License:</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/Isaac-ROS/"># Isaac ROS</a>
+                    
+                        <a href="/tag/NITROS/"># NITROS</a>
+                    
+                        <a href="/tag/%E9%9B%B6%E6%8B%B7%E8%B4%9D/"># 零拷贝</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/30/tensorrt-robot-inference/">TensorRT 机器人推理：从训练模型到稳定延迟</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/30/jetson-robot-deployment/">Jetson 机器人部署：功耗、算力与实时控制怎样分工</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>
