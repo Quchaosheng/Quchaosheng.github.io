@@ -18,14 +18,14 @@
 
 <title>Page Cache：文件 I/O 为什么常常先经过内存 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="Page Cache 缓存文件内容页面。读文件时优先命中缓存；写文件时通常先写脏页，再由回写机制异步落盘，从而合并 I&amp;#x2F;O 并提升吞吐。 read/write 系统调用 → 查询 Page Cache → 命中直接访问 → 未命中读取磁盘 → 脏页后台回写 buffer cache 是历史概念；现代 Linux 大量文件缓存统一由 page...">
+    <meta name="description" content="Page Cache 缓存文件内容页面。读文件时先查询缓存，命中就直接复制给用户态；未命中才从存储读取并填入缓存。写文件时通常先修改缓存页并标记为脏页，后台回写再把它们批量落盘。它让很多小 I&amp;#x2F;O 合并为更高效的存储访问，但也让“ write() 返回成功”与“数据已经安全落盘”成为两件事。 read/write 系统调用 → 查询 Page...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-page-cache/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Page Cache：文件 I/O 为什么常常先经过内存 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="Page Cache 缓存文件内容页面。读文件时优先命中缓存；写文件时通常先写脏页，再由回写机制异步落盘，从而合并 I&amp;#x2F;O 并提升吞吐。 read/write 系统调用 → 查询 Page Cache → 命中直接访问 → 未命中读取磁盘 → 脏页后台回写 buffer cache 是历史概念；现代 Linux 大量文件缓存统一由 page...">
+    <meta property="og:description" content="Page Cache 缓存文件内容页面。读文件时先查询缓存，命中就直接复制给用户态；未命中才从存储读取并填入缓存。写文件时通常先修改缓存页并标记为脏页，后台回写再把它们批量落盘。它让很多小 I&amp;#x2F;O 合并为更高效的存储访问，但也让“ write() 返回成功”与“数据已经安全落盘”成为两件事。 read/write 系统调用 → 查询 Page...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-page-cache/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Page Cache：文件 I/O 为什么常常先经过内存 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="Page Cache 缓存文件内容页面。读文件时优先命中缓存；写文件时通常先写脏页，再由回写机制异步落盘，从而合并 I&amp;#x2F;O 并提升吞吐。 read/write 系统调用 → 查询 Page Cache → 命中直接访问 → 未命中读取磁盘 → 脏页后台回写 buffer cache 是历史概念；现代 Linux 大量文件缓存统一由 page...">
+    <meta name="twitter:description" content="Page Cache 缓存文件内容页面。读文件时先查询缓存，命中就直接复制给用户态；未命中才从存储读取并填入缓存。写文件时通常先修改缓存页并标记为脏页，后台回写再把它们批量落盘。它让很多小 I&amp;#x2F;O 合并为更高效的存储访问，但也让“ write() 返回成功”与“数据已经安全落盘”成为两件事。 read/write 系统调用 → 查询 Page...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,10 +264,14 @@
         </header>
 
         <div class="post-content">
-            <p>Page Cache 缓存文件内容页面。读文件时优先命中缓存；写文件时通常先写脏页，再由回写机制异步落盘，从而合并 I&#x2F;O 并提升吞吐。</p>
+            <p>Page Cache 缓存文件内容页面。读文件时先查询缓存，命中就直接复制给用户态；未命中才从存储读取并填入缓存。写文件时通常先修改缓存页并标记为脏页，后台回写再把它们批量落盘。它让很多小 I&#x2F;O 合并为更高效的存储访问，但也让“<code>write()</code> 返回成功”与“数据已经安全落盘”成为两件事。</p>
 <div class="note-flow"><span>read/write 系统调用</span><i>→</i><span>查询 Page Cache</span><i>→</i><span>命中直接访问</span><i>→</i><span>未命中读取磁盘</span><i>→</i><span>脏页后台回写</span></div>
 
-<p>buffer cache 是历史概念；现代 Linux 大量文件缓存统一由 page cache 管理。<code>fsync</code> 影响持久化语义，<code>O_DIRECT</code> 则试图绕过页缓存但有对齐和性能权衡。</p>
+<figure class="note-visual"><figcaption><span>缓存图</span>读路径追求命中，写路径需要区分“进入缓存”和“持久化完成”。</figcaption><div class="note-map"><span><b>address_space</b><small>文件的页缓存索引，连接 inode、缓存页和回写操作。</small></span><span><b>缓存命中</b><small>用户读到内存中的数据，不需要等待底层设备。</small></span><span><b>缺页读取</b><small>文件系统和块层把所需数据读入缓存，再唤醒等待者。</small></span><span><b>脏页</b><small>write 修改后的缓存数据，尚未保证已到达持久介质。</small></span><span><b>回写</b><small>内核按阈值和时机把脏页提交给文件系统和设备。</small></span><span><b>fsync</b><small>请求把相关数据及必要元数据推进到持久化语义边界。</small></span></div></figure>
+
+<h2 id="缓存命中快，不代表应用没有排队"><a href="#缓存命中快，不代表应用没有排队" class="headerlink" title="缓存命中快，不代表应用没有排队"></a>缓存命中快，不代表应用没有排队</h2><p>一个文件读得很快，可能只是数据刚好还在内存中；第一次冷读、内存压力下被回收后的再读，以及多个任务争抢同一块存储，表现都会不同。性能分析要区分缓存命中率、读放大、队列等待和实际设备延迟，不能只用一次 <code>cat</code> 的时间得出结论。</p>
+<p>预读会在顺序访问时提前填充后续页面，随机访问则更依赖工作集是否留得住。不同访问模式可通过 <code>mmap</code>、普通 read、预读提示等路径表现出来，选择之前应先测工作负载而不是为“零拷贝”或“缓存绕过”贴标签。</p>
+<h2 id="fsync-和-O-DIRECT-都有明确代价"><a href="#fsync-和-O-DIRECT-都有明确代价" class="headerlink" title="fsync 和 O_DIRECT 都有明确代价"></a><code>fsync</code> 和 <code>O_DIRECT</code> 都有明确代价</h2><p><code>fsync</code> 用于需要更强持久化语义的场景，但频繁调用会增加提交压力。<code>O_DIRECT</code> 试图绕过页缓存，通常伴随地址、长度和偏移对齐要求，也可能与缓存读写交错造成一致性和性能问题。它们不是通用加速开关，应由数据丢失容忍度和真实 I&#x2F;O 模式决定。</p>
 <p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=MzkzNDk2NTUwOQ==&mid=2247485247&idx=1&sn=4f0df0a72816b80bc1ff3415a8a9b0d1">Page Cache 与 Buffer Cache</a></p>
 
         </div>

@@ -18,14 +18,14 @@
 
 <title>嵌入式崩溃转储：复位后仍能还原现场 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="异常发生时应在最短路径保存复位原因、寄存器、栈片段、任务信息和固件版本到保留 RAM 或预擦除 Flash，下一次启动再上传解析。 异常/看门狗触发 → 冻结最小现场 → 写入带 CRC 的转储槽 → 系统复位 → 启动后读取、上传并符号化 异常路径不可依赖锁、堆和复杂驱动。参考： CmBacktrace">
+    <meta name="description" content="设备现场复位后，最有价值的信息通常已经消失了。崩溃转储的作用是在异常或看门狗复位时保住一份足够小、却能还原问题的现场：复位原因、寄存器、少量栈、任务身份、固件版本和最近事件。下一次正常启动后再上传或符号化，而不是指望故障时串口一定还能工作。 异常/看门狗触发 → 冻结最小现场 → 写入带 CRC 的转储槽 → 系统复位 → 启动后读取、上传并符号化 转...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-crash-dump/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="嵌入式崩溃转储：复位后仍能还原现场 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="异常发生时应在最短路径保存复位原因、寄存器、栈片段、任务信息和固件版本到保留 RAM 或预擦除 Flash，下一次启动再上传解析。 异常/看门狗触发 → 冻结最小现场 → 写入带 CRC 的转储槽 → 系统复位 → 启动后读取、上传并符号化 异常路径不可依赖锁、堆和复杂驱动。参考： CmBacktrace">
+    <meta property="og:description" content="设备现场复位后，最有价值的信息通常已经消失了。崩溃转储的作用是在异常或看门狗复位时保住一份足够小、却能还原问题的现场：复位原因、寄存器、少量栈、任务身份、固件版本和最近事件。下一次正常启动后再上传或符号化，而不是指望故障时串口一定还能工作。 异常/看门狗触发 → 冻结最小现场 → 写入带 CRC 的转储槽 → 系统复位 → 启动后读取、上传并符号化 转...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-crash-dump/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="嵌入式崩溃转储：复位后仍能还原现场 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="异常发生时应在最短路径保存复位原因、寄存器、栈片段、任务信息和固件版本到保留 RAM 或预擦除 Flash，下一次启动再上传解析。 异常/看门狗触发 → 冻结最小现场 → 写入带 CRC 的转储槽 → 系统复位 → 启动后读取、上传并符号化 异常路径不可依赖锁、堆和复杂驱动。参考： CmBacktrace">
+    <meta name="twitter:description" content="设备现场复位后，最有价值的信息通常已经消失了。崩溃转储的作用是在异常或看门狗复位时保住一份足够小、却能还原问题的现场：复位原因、寄存器、少量栈、任务身份、固件版本和最近事件。下一次正常启动后再上传或符号化，而不是指望故障时串口一定还能工作。 异常/看门狗触发 → 冻结最小现场 → 写入带 CRC 的转储槽 → 系统复位 → 启动后读取、上传并符号化 转...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,10 +264,15 @@
         </header>
 
         <div class="post-content">
-            <p>异常发生时应在最短路径保存复位原因、寄存器、栈片段、任务信息和固件版本到保留 RAM 或预擦除 Flash，下一次启动再上传解析。</p>
+            <p>设备现场复位后，最有价值的信息通常已经消失了。崩溃转储的作用是在异常或看门狗复位时保住一份足够小、却能还原问题的现场：复位原因、寄存器、少量栈、任务身份、固件版本和最近事件。下一次正常启动后再上传或符号化，而不是指望故障时串口一定还能工作。</p>
 <div class="note-flow"><span>异常/看门狗触发</span><i>→</i><span>冻结最小现场</span><i>→</i><span>写入带 CRC 的转储槽</span><i>→</i><span>系统复位</span><i>→</i><span>启动后读取、上传并符号化</span></div>
 
-<p>异常路径不可依赖锁、堆和复杂驱动。参考：<a target="_blank" rel="noopener" href="https://github.com/armink/CmBacktrace">CmBacktrace</a></p>
+<figure class="note-visual"><figcaption><span>转储内容</span>优先保存能回答“哪版固件、在哪个线程、为什么复位”的字段。</figcaption><div class="note-map"><span><b>复位来源</b><small>区分看门狗、低压、软件复位和异常路径。</small></span><span><b>寄存器帧</b><small>保存 PC、LR、SP 和故障状态，供地址还原。</small></span><span><b>任务信息</b><small>记录线程名、优先级或当前状态，缩小并发问题范围。</small></span><span><b>栈片段</b><small>长度固定，避免一次故障转储占满存储。</small></span><span><b>固件标识</b><small>哈希、版本和构建号必须能找到对应符号文件。</small></span><span><b>CRC 与提交位</b><small>启动时只解析完整写入的转储，防止误报。</small></span></div></figure>
+
+<h2 id="故障路径只能做确定的事"><a href="#故障路径只能做确定的事" class="headerlink" title="故障路径只能做确定的事"></a>故障路径只能做确定的事</h2><p>异常处理器不应等待互斥锁、申请内存、格式化长字符串或访问复杂驱动。这些组件可能正是故障的一部分。预先分配一个固定大小的保留 RAM 区或 Flash 槽，把固定字段按二进制写入、计算校验并提交即可；复杂的 JSON、网络上传和符号解析放到下次启动后的普通任务里。</p>
+<p>如果需要写 Flash，要考虑擦除时间和掉电窗口。保留 RAM 可以在快速复位后保存现场，Flash 更适合跨断电保存。两者也可配合：故障时先写 RAM，启动后的恢复任务再把有效转储移入持久槽。</p>
+<h2 id="把转储当作一份有版本的协议"><a href="#把转储当作一份有版本的协议" class="headerlink" title="把转储当作一份有版本的协议"></a>把转储当作一份有版本的协议</h2><p>转储结构会随着固件演进。为它设置 magic、版本、长度和 CRC，并在解析工具中保留旧版本兼容路径。一次转储只有配套的 ELF 和链接地址才有意义，因此产物归档和构建标识是调试链路的一部分，不是发布后的附加工作。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://github.com/armink/CmBacktrace">CmBacktrace</a></p>
 
         </div>
 

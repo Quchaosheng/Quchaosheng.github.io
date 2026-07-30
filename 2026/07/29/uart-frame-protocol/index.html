@@ -18,14 +18,14 @@
 
 <title>串口帧协议：解决粘包、丢字节与错误恢复 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="可靠串口协议应包含帧头、长度、类型、序号、负载和校验。接收端按字节推进状态机，遇到非法长度或 CRC 错误时重新搜索帧头。 DMA/中断接收字节 → 寻找帧头 → 读取长度与负载 → 校验 CRC → 分发或重新同步 帧头转义、最大长度、超时和序号能提高噪声环境下的恢复能力。参考： EmbedSummary">
+    <meta name="description" content="UART 只提供连续字节流，不知道一条消息从哪里开始、在哪里结束。可靠协议必须自行定义帧头、长度、类型、序号、负载和校验；接收端按字节推进状态机，遇到非法长度、超时或 CRC 错误后丢弃当前候选帧并重新同步。 DMA/中断接收字节 → 寻找帧头 → 读取长度与负载 → 校验 CRC → 分发或重新同步 解析图 接收状态机永远要能从坏数据中回到寻找帧头的...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/uart-frame-protocol/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="串口帧协议：解决粘包、丢字节与错误恢复 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="可靠串口协议应包含帧头、长度、类型、序号、负载和校验。接收端按字节推进状态机，遇到非法长度或 CRC 错误时重新搜索帧头。 DMA/中断接收字节 → 寻找帧头 → 读取长度与负载 → 校验 CRC → 分发或重新同步 帧头转义、最大长度、超时和序号能提高噪声环境下的恢复能力。参考： EmbedSummary">
+    <meta property="og:description" content="UART 只提供连续字节流，不知道一条消息从哪里开始、在哪里结束。可靠协议必须自行定义帧头、长度、类型、序号、负载和校验；接收端按字节推进状态机，遇到非法长度、超时或 CRC 错误后丢弃当前候选帧并重新同步。 DMA/中断接收字节 → 寻找帧头 → 读取长度与负载 → 校验 CRC → 分发或重新同步 解析图 接收状态机永远要能从坏数据中回到寻找帧头的...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/uart-frame-protocol/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="串口帧协议：解决粘包、丢字节与错误恢复 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="可靠串口协议应包含帧头、长度、类型、序号、负载和校验。接收端按字节推进状态机，遇到非法长度或 CRC 错误时重新搜索帧头。 DMA/中断接收字节 → 寻找帧头 → 读取长度与负载 → 校验 CRC → 分发或重新同步 帧头转义、最大长度、超时和序号能提高噪声环境下的恢复能力。参考： EmbedSummary">
+    <meta name="twitter:description" content="UART 只提供连续字节流，不知道一条消息从哪里开始、在哪里结束。可靠协议必须自行定义帧头、长度、类型、序号、负载和校验；接收端按字节推进状态机，遇到非法长度、超时或 CRC 错误后丢弃当前候选帧并重新同步。 DMA/中断接收字节 → 寻找帧头 → 读取长度与负载 → 校验 CRC → 分发或重新同步 解析图 接收状态机永远要能从坏数据中回到寻找帧头的...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,10 +264,14 @@
         </header>
 
         <div class="post-content">
-            <p>可靠串口协议应包含帧头、长度、类型、序号、负载和校验。接收端按字节推进状态机，遇到非法长度或 CRC 错误时重新搜索帧头。</p>
+            <p>UART 只提供连续字节流，不知道一条消息从哪里开始、在哪里结束。可靠协议必须自行定义帧头、长度、类型、序号、负载和校验；接收端按字节推进状态机，遇到非法长度、超时或 CRC 错误后丢弃当前候选帧并重新同步。</p>
 <div class="note-flow"><span>DMA/中断接收字节</span><i>→</i><span>寻找帧头</span><i>→</i><span>读取长度与负载</span><i>→</i><span>校验 CRC</span><i>→</i><span>分发或重新同步</span></div>
 
-<p>帧头转义、最大长度、超时和序号能提高噪声环境下的恢复能力。参考：<a target="_blank" rel="noopener" href="https://github.com/ZhengNianLi/EmbedSummary">EmbedSummary</a></p>
+<figure class="note-visual"><figcaption><span>解析图</span>接收状态机永远要能从坏数据中回到寻找帧头的状态。</figcaption><div class="note-map"><span><b>接收缓冲</b><small>DMA 或中断把字节放进有界环形队列，业务不直接读寄存器。</small></span><span><b>帧头</b><small>需要足够容易识别，必要时对负载做转义或编码。</small></span><span><b>长度字段</b><small>先检查最大值，避免坏字节诱导超大分配或等待。</small></span><span><b>类型与序号</b><small>支持多种消息、请求响应匹配和重复帧检测。</small></span><span><b>CRC</b><small>校验通过后才交给业务层，失败立即进入重同步。</small></span><span><b>帧间超时</b><small>半帧长时间不完整时丢弃，避免状态机永久卡住。</small></span></div></figure>
+
+<h2 id="解析器要逐字节前进，也要随时能后退"><a href="#解析器要逐字节前进，也要随时能后退" class="headerlink" title="解析器要逐字节前进，也要随时能后退"></a>解析器要逐字节前进，也要随时能后退</h2><p>每次输入一个字节后，状态机只做有限工作：寻找帧头、收集固定头、校验长度、收集负载、核对 CRC。任何非法长度、未知类型或 CRC 失败都应回到同步状态，而不是继续沿用一部分旧字段。若帧头可能出现在负载中，需要采用转义、长度加 CRC 或 COBS&#x2F;SLIP 一类编码，不能只靠“这个字节一般不会出现”。</p>
+<h2 id="传输语义要补在帧格式之外"><a href="#传输语义要补在帧格式之外" class="headerlink" title="传输语义要补在帧格式之外"></a>传输语义要补在帧格式之外</h2><p>CRC 只能发现传输错误，不能保证消息恰好执行一次。控制命令可以带序号，接收端保存最近处理过的序号并返回对应结果；发送端按超时重试时就不会因为重复包重复执行危险动作。对于流量控制，还要定义接收缓冲满时丢弃、暂停还是覆盖，避免高频数据把关键命令淹没。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://github.com/ZhengNianLi/EmbedSummary">EmbedSummary</a></p>
 
         </div>
 

@@ -18,14 +18,14 @@
 
 <title>嵌入式单元测试：把硬件依赖隔离在边界之外 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="可测试固件应把业务逻辑与寄存器、时钟和 I&amp;#x2F;O 隔离，通过接口注入模拟依赖。大部分测试在主机高速运行，少量硬件在环测试验证真实时序。 拆分纯逻辑与硬件适配 → 为依赖建立 Mock → 主机运行单元测试 → 目标板集成测试 → CI 汇总覆盖与回归 参考： Unity">
+    <meta name="description" content="固件很难在目标板上覆盖所有异常路径，但大部分业务规则其实不需要真实寄存器就能验证。把决策逻辑和硬件适配隔开后，主机测试可以快速覆盖超时、重试、输入边界和状态转换；目标板测试则集中验证驱动、时序、电平和真实设备行为。 拆分纯逻辑与硬件适配 → 为依赖建立 Mock → 主机运行单元测试 → 目标板集成测试 → CI 汇总覆盖与回归 测试边界 测试替身放在...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-unit-testing/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="嵌入式单元测试：把硬件依赖隔离在边界之外 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="可测试固件应把业务逻辑与寄存器、时钟和 I&amp;#x2F;O 隔离，通过接口注入模拟依赖。大部分测试在主机高速运行，少量硬件在环测试验证真实时序。 拆分纯逻辑与硬件适配 → 为依赖建立 Mock → 主机运行单元测试 → 目标板集成测试 → CI 汇总覆盖与回归 参考： Unity">
+    <meta property="og:description" content="固件很难在目标板上覆盖所有异常路径，但大部分业务规则其实不需要真实寄存器就能验证。把决策逻辑和硬件适配隔开后，主机测试可以快速覆盖超时、重试、输入边界和状态转换；目标板测试则集中验证驱动、时序、电平和真实设备行为。 拆分纯逻辑与硬件适配 → 为依赖建立 Mock → 主机运行单元测试 → 目标板集成测试 → CI 汇总覆盖与回归 测试边界 测试替身放在...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-unit-testing/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="嵌入式单元测试：把硬件依赖隔离在边界之外 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="可测试固件应把业务逻辑与寄存器、时钟和 I&amp;#x2F;O 隔离，通过接口注入模拟依赖。大部分测试在主机高速运行，少量硬件在环测试验证真实时序。 拆分纯逻辑与硬件适配 → 为依赖建立 Mock → 主机运行单元测试 → 目标板集成测试 → CI 汇总覆盖与回归 参考： Unity">
+    <meta name="twitter:description" content="固件很难在目标板上覆盖所有异常路径，但大部分业务规则其实不需要真实寄存器就能验证。把决策逻辑和硬件适配隔开后，主机测试可以快速覆盖超时、重试、输入边界和状态转换；目标板测试则集中验证驱动、时序、电平和真实设备行为。 拆分纯逻辑与硬件适配 → 为依赖建立 Mock → 主机运行单元测试 → 目标板集成测试 → CI 汇总覆盖与回归 测试边界 测试替身放在...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,9 +264,14 @@
         </header>
 
         <div class="post-content">
-            <p>可测试固件应把业务逻辑与寄存器、时钟和 I&#x2F;O 隔离，通过接口注入模拟依赖。大部分测试在主机高速运行，少量硬件在环测试验证真实时序。</p>
+            <p>固件很难在目标板上覆盖所有异常路径，但大部分业务规则其实不需要真实寄存器就能验证。把决策逻辑和硬件适配隔开后，主机测试可以快速覆盖超时、重试、输入边界和状态转换；目标板测试则集中验证驱动、时序、电平和真实设备行为。</p>
 <div class="note-flow"><span>拆分纯逻辑与硬件适配</span><i>→</i><span>为依赖建立 Mock</span><i>→</i><span>主机运行单元测试</span><i>→</i><span>目标板集成测试</span><i>→</i><span>CI 汇总覆盖与回归</span></div>
 
+<figure class="note-visual"><figcaption><span>测试边界</span>测试替身放在硬件边界，业务规则就可以脱离板子运行。</figcaption><div class="note-map"><span><b>纯逻辑</b><small>状态机、协议解析、参数校验和重试策略适合主机单测。</small></span><span><b>接口边界</b><small>把时钟、存储、网络和寄存器访问抽象成小接口。</small></span><span><b>Mock/Fake</b><small>可控制返回值、延迟和错误，专门覆盖异常分支。</small></span><span><b>构建配置</b><small>主机和目标机使用相同核心逻辑，避免测试另一份代码。</small></span><span><b>集成测试</b><small>目标板验证 DMA、时钟、协议电气特性和真实外设。</small></span><span><b>回归记录</b><small>失败用例和缺陷修复都应进入持续运行的测试集。</small></span></div></figure>
+
+<h2 id="让依赖从函数参数或接口进入"><a href="#让依赖从函数参数或接口进入" class="headerlink" title="让依赖从函数参数或接口进入"></a>让依赖从函数参数或接口进入</h2><p>例如把 <code>now()</code>、<code>storage_read()</code>、<code>can_send()</code> 放在接口中，业务对象只依赖这些能力，而不是直接读 SysTick 寄存器或调用厂商库。测试时传入可控的假时钟和假总线，就能稳定地复现“正好超时”“发送失败两次后恢复”等情况。</p>
+<p>mock 的目标不是复制真实硬件，而是给出可预期的输入并验证交互。过度模拟每个寄存器细节会让测试和实现一起变脆；底层驱动的真实时序仍应留给目标板集成测试。</p>
+<h2 id="失败路径比成功路径更值得覆盖"><a href="#失败路径比成功路径更值得覆盖" class="headerlink" title="失败路径比成功路径更值得覆盖"></a>失败路径比成功路径更值得覆盖</h2><p>优先补齐输入长度异常、CRC 失败、队列满、设备未响应、掉电恢复和重试上限等路径。每次线上故障修复后，都把最小复现加进测试。这样单元测试不是一份“覆盖率报告”，而是防止同一个问题再次回来的工具。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://github.com/ThrowTheSwitch/Unity">Unity</a></p>
 
         </div>

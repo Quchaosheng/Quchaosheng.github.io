@@ -18,14 +18,14 @@
 
 <title>VFS 路径查找：目录字符串如何定位 inode | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 path/inode dentry 表示“名称到 inode”的关联，负 dentry 还能缓存不存...">
+    <meta name="description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。像 /a/b/c 这样简单的字符串，在内核里不是一次哈希查找，而是一连串带边界条件的目录遍历。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 pat...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/vfs-path-lookup/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="VFS 路径查找：目录字符串如何定位 inode | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 path/inode dentry 表示“名称到 inode”的关联，负 dentry 还能缓存不存...">
+    <meta property="og:description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。像 /a/b/c 这样简单的字符串，在内核里不是一次哈希查找，而是一连串带边界条件的目录遍历。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 pat...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/vfs-path-lookup/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="VFS 路径查找：目录字符串如何定位 inode | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 path/inode dentry 表示“名称到 inode”的关联，负 dentry 还能缓存不存...">
+    <meta name="twitter:description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。像 /a/b/c 这样简单的字符串，在内核里不是一次哈希查找，而是一连串带边界条件的目录遍历。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 pat...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,10 +264,14 @@
         </header>
 
         <div class="post-content">
-            <p>路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。</p>
+            <p>路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。像 <code>/a/b/c</code> 这样简单的字符串，在内核里不是一次哈希查找，而是一连串带边界条件的目录遍历。</p>
 <div class="note-flow"><span>选择起始目录</span><i>→</i><span>逐段解析路径</span><i>→</i><span>查询 dcache</span><i>→</i><span>必要时读取文件系统元数据</span><i>→</i><span>得到最终 path/inode</span></div>
 
-<p>dentry 表示“名称到 inode”的关联，负 dentry 还能缓存不存在的结果。<code>openat2</code> 可通过 resolve 标志限制越界、链接和挂载穿越。</p>
+<figure class="note-visual"><figcaption><span>路径图</span>一个路径组件会经过 dentry、inode、挂载和权限等多层检查。</figcaption><div class="note-map"><span><b>起始 path</b><small>绝对路径从根开始，相对路径从 cwd 或 `dirfd` 开始。</small></span><span><b>dentry cache</b><small>缓存“名称到 inode”的关联，也可缓存不存在的负结果。</small></span><span><b>inode</b><small>提供对象元数据和具体文件系统的 lookup 操作。</small></span><span><b>挂载点</b><small>解析途中可能切换到另一个挂载的根目录。</small></span><span><b>符号链接</b><small>会引入新的路径解析，次数和边界都需要限制。</small></span><span><b>权限检查</b><small>目录搜索权限和最终对象权限都可能让查找失败。</small></span></div></figure>
+
+<h2 id="快路径依赖缓存，慢路径才会访问文件系统"><a href="#快路径依赖缓存，慢路径才会访问文件系统" class="headerlink" title="快路径依赖缓存，慢路径才会访问文件系统"></a>快路径依赖缓存，慢路径才会访问文件系统</h2><p>常见路径的组件往往已在 dcache 中，内核可快速完成查找；缓存未命中、目录发生变化或遇到需要引用计数保护的情况时，会走更重的路径并调用文件系统操作。负 dentry 缓存“不存在”也很重要，否则频繁探测缺失文件会反复触发底层查找。</p>
+<p>遇到路径性能问题时，要区分是大量组件解析、符号链接、挂载穿越、权限检查，还是缓存频繁失效。盲目增加缓存或把路径拼得更短，都不一定解决真正的 I&#x2F;O 或锁竞争。</p>
+<h2 id="路径约束是服务安全边界"><a href="#路径约束是服务安全边界" class="headerlink" title="路径约束是服务安全边界"></a>路径约束是服务安全边界</h2><p>当服务代表用户访问文件时，<code>../</code> 过滤远远不够，符号链接和目录替换仍可能越出预期目录。<code>openat2</code> 提供解析约束，能限制链接、挂载穿越等行为；无论使用何种接口，都应从受控目录 fd 出发，并明确哪些路径操作被允许。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://www.kerneltravel.net/blog/2020/checkpath_cpc/">Linux 路径名查找过程</a></p>
 
         </div>

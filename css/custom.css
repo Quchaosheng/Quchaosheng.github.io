@@ -574,6 +574,29 @@
   line-height: 1.95;
   text-align: left;
 }
+.note-visual {
+  margin: 1.75rem 0;
+}
+.note-visual figcaption {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  margin: 0 0 0.55rem;
+  color: $light-font-secondary-color;
+  font-size: 0.84em;
+  line-height: 1.55;
+}
+.note-visual figcaption span {
+  flex-shrink: 0;
+  color: #087f5b;
+  font-size: 0.82em;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+}
+.note-visual .note-flow,
+.note-visual .note-map {
+  margin: 0.55rem 0 0;
+}
 .note-flow {
   display: flex;
   align-items: stretch;
@@ -616,6 +639,12 @@
   background: rgba(255,255,255,0.045);
 }
 .dark-theme .note-flow i {
+  color: #91c3a5;
+}
+.dark-theme .note-visual figcaption {
+  color: $dark-font-secondary-color;
+}
+.dark-theme .note-visual figcaption span {
   color: #91c3a5;
 }
 .note-map {

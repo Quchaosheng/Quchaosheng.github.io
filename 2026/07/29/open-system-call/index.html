@@ -18,14 +18,14 @@
 
 <title>open 系统调用：路径怎样变成文件描述符 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="openat 从系统调用入口进入 VFS，完成路径解析、权限检查与文件对象创建，最后把 struct file 安装到进程文件描述符表。 用户传入路径和 flags → 复制参数并分配 fd → VFS 路径查找 → 创建/打开 inode → 安装 file 并返回 fd fd 是进程表中的整数索引； struct file 表示一次打开实例；ino...">
+    <meta name="description" content="openat 从系统调用入口进入 VFS，完成路径解析、权限检查与文件对象创建，最后把 struct file 安装到进程文件描述符表。看起来只是返回一个整数，但这个过程中既要解释路径、穿过挂载点和符号链接，也要处理创建、权限、锁和文件偏移等语义。 用户传入路径和 flags → 复制参数并分配 fd → VFS 路径查找 → 创建/打开 inode...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/open-system-call/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="open 系统调用：路径怎样变成文件描述符 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="openat 从系统调用入口进入 VFS，完成路径解析、权限检查与文件对象创建，最后把 struct file 安装到进程文件描述符表。 用户传入路径和 flags → 复制参数并分配 fd → VFS 路径查找 → 创建/打开 inode → 安装 file 并返回 fd fd 是进程表中的整数索引； struct file 表示一次打开实例；ino...">
+    <meta property="og:description" content="openat 从系统调用入口进入 VFS，完成路径解析、权限检查与文件对象创建，最后把 struct file 安装到进程文件描述符表。看起来只是返回一个整数，但这个过程中既要解释路径、穿过挂载点和符号链接，也要处理创建、权限、锁和文件偏移等语义。 用户传入路径和 flags → 复制参数并分配 fd → VFS 路径查找 → 创建/打开 inode...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/open-system-call/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="open 系统调用：路径怎样变成文件描述符 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="openat 从系统调用入口进入 VFS，完成路径解析、权限检查与文件对象创建，最后把 struct file 安装到进程文件描述符表。 用户传入路径和 flags → 复制参数并分配 fd → VFS 路径查找 → 创建/打开 inode → 安装 file 并返回 fd fd 是进程表中的整数索引； struct file 表示一次打开实例；ino...">
+    <meta name="twitter:description" content="openat 从系统调用入口进入 VFS，完成路径解析、权限检查与文件对象创建，最后把 struct file 安装到进程文件描述符表。看起来只是返回一个整数，但这个过程中既要解释路径、穿过挂载点和符号链接，也要处理创建、权限、锁和文件偏移等语义。 用户传入路径和 flags → 复制参数并分配 fd → VFS 路径查找 → 创建/打开 inode...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,10 +264,13 @@
         </header>
 
         <div class="post-content">
-            <p><code>openat</code> 从系统调用入口进入 VFS，完成路径解析、权限检查与文件对象创建，最后把 <code>struct file</code> 安装到进程文件描述符表。</p>
+            <p><code>openat</code> 从系统调用入口进入 VFS，完成路径解析、权限检查与文件对象创建，最后把 <code>struct file</code> 安装到进程文件描述符表。看起来只是返回一个整数，但这个过程中既要解释路径、穿过挂载点和符号链接，也要处理创建、权限、锁和文件偏移等语义。</p>
 <div class="note-flow"><span>用户传入路径和 flags</span><i>→</i><span>复制参数并分配 fd</span><i>→</i><span>VFS 路径查找</span><i>→</i><span>创建/打开 inode</span><i>→</i><span>安装 file 并返回 fd</span></div>
 
-<p>fd 是进程表中的整数索引；<code>struct file</code> 表示一次打开实例；inode 表示底层文件对象。多个 fd 可以引用同一个 file 或同一个 inode。</p>
+<figure class="note-visual"><figcaption><span>对象图</span>fd、`struct file` 和 inode 分别属于进程表、一次打开和底层文件对象。</figcaption><div class="note-map"><span><b>路径参数</b><small>相对路径从当前目录或 `dirfd` 出发，绝对路径从根开始。</small></span><span><b>namei</b><small>逐段查找 dentry、处理挂载点、权限和符号链接。</small></span><span><b>inode</b><small>描述底层对象的元数据和文件系统操作。</small></span><span><b>struct file</b><small>表示一次打开实例，包含 flags、当前位置和操作表。</small></span><span><b>fd table</b><small>进程用整数索引引用 `struct file`，可被复制或关闭。</small></span><span><b>创建语义</b><small>`O_CREAT`、`O_EXCL`、`O_TRUNC` 会改变查找后的行为。</small></span></div></figure>
+
+<h2 id="三个对象解释很多“奇怪现象”"><a href="#三个对象解释很多“奇怪现象”" class="headerlink" title="三个对象解释很多“奇怪现象”"></a>三个对象解释很多“奇怪现象”</h2><p>fd 只是进程文件表中的索引；<code>struct file</code> 才保存一次打开实例的状态；inode 表示底层文件。两个独立的 <code>open()</code> 可指向同一 inode 却拥有各自的文件偏移；<code>dup()</code> 或 <code>fork()</code> 得到的 fd 则可能引用同一个 <code>struct file</code>，因此共享偏移和状态。理解这层关系后，很多并发读写和关闭顺序问题就不再神秘。</p>
+<h2 id="路径安全不能只靠字符串拼接"><a href="#路径安全不能只靠字符串拼接" class="headerlink" title="路径安全不能只靠字符串拼接"></a>路径安全不能只靠字符串拼接</h2><p>服务程序如果把用户输入拼进路径，再调用普通 <code>open()</code>，可能受到符号链接、目录替换和路径穿越影响。<code>openat</code> 系列让程序从受控目录 fd 出发；需要更严格约束时，可考虑 <code>openat2</code> 的 resolve 语义。无论使用什么接口，都要先明确允许跨越哪些目录、挂载点和链接，而不是在错误发生后再过滤字符串。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://www.kerneltravel.net/blog/2021/open_syscall_szp1/">open 系统调用</a></p>
 
         </div>
