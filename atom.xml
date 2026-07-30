@@ -76,7 +76,15 @@
     <link href="https://quchaosheng.github.io/2026/07/29/gdb-crash-debugging/"/>
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">崩溃调试的目标不是盯着最后一行代码，而是还原“异常信号、出错线程、调用路径、关键变量和内存状态”这条证据链。 排查路径 开启 core dump 并保留与二进制匹配的调试符号。使用 gdb program core 后先看信号与全部线程，再定位故障栈帧，检查参数、局部变量、寄存器和相关内存。 程序收到致命信号 → 内核生成 core → 加载二进制与符号 → 定位异常线程和栈帧 → 验证变量与内存 常用命令 thread apply all bt full ：查看全部线程调用栈。 frame 、 info locals 、 info args ：检...</summary>
+    <summary type="html">程序收到 SIGSEGV 后停在 memcpy() ，问题就一定出在这个函数吗？通常不是。越界写可能早已破坏对象，悬空指针也可能在很久以后才被解引用。GDB 崩溃分析真正要做的是保存现场，然后回答：哪个线程收到什么信号，调用路径是什么，关键对象何时开始不合理。 先保证 core 文件可用 分析前需要四样东西：core 文件、产生它的可执行文件、完全匹配的共享库，以及调试符号。重新编译一个“差不多”的二进制通常不够，因为地址布局、优化和源码行都可能变化。 程序收到致命信号 → 系统保存 core 与元数据 → 加载匹配二进制和符号 → 确定异常线程 ...</summary>
+  </entry>
+  <entry>
+    <title>CFS 与 vruntime：Linux 如何分配 CPU 时间</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-cfs-vruntime/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-cfs-vruntime/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">两个一直占用 CPU 的任务，nice 值不同，为什么最终得到的处理器时间也不同？传统 CFS 的回答不是固定时间片，而是一把随运行不断更新的“公平尺子”： vruntime 。任务实际运行得越久，虚拟运行时间越大；权重越高，同样一段实际时间折算出的增量越小。 这里讨论的是理解 Linux 公平调度的经典 CFS 模型。较新的 Linux 内核已在公平类中引入 EEVDF 选择逻辑，但 vruntime 、权重和公平份额仍是理解新实现的基础。 vruntime 怎样体现权重 概念上可以把增量写成： 1 delta_vruntime = delta_...</summary>
   </entry>
   <entry>
     <title>伙伴系统与 SLUB：Linux 内核怎样分配内存</title>
@@ -85,22 +93,6 @@
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
     <summary type="html">内核既要分配整页和连续物理页，也要频繁创建几十到几千字节的小对象。只用一种分配器很难同时兼顾碎片、速度和对象复用，因此 Linux 将问题分层：页分配器管理物理页，伙伴系统组织可合并的连续页块，SLUB 再从页块中切出固定大小的对象槽。 从 order 到对象槽 伙伴系统按 order 管理空闲块：order 0 是一页，order 1 是两页，依次按 2 的幂增长。申请某个 order 时，若该链表没有空闲块，可以拆分更高 order；释放时，只有地址对齐且同阶空闲的伙伴才能合并。它能快速拆分和合并，但不能保证系统运行很久后仍能满足高阶连续分配。...</summary>
-  </entry>
-  <entry>
-    <title>CFS 与 vruntime：Linux 如何分配 CPU 时间</title>
-    <id>https://quchaosheng.github.io/2026/07/29/linux-cfs-vruntime/</id>
-    <link href="https://quchaosheng.github.io/2026/07/29/linux-cfs-vruntime/"/>
-    <published>2026-07-29T08:09:18.000Z</published>
-    <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">CFS 的目标不是让每个任务运行同样久，而是按权重实现公平。它用 vruntime 记录任务经过权重修正后的运行时间，优先选择 vruntime 较小的可运行任务。 调度过程 传统 CFS 运行队列使用红黑树组织调度实体，最左节点代表当前最“欠 CPU 时间”的任务。nice 值越低，权重越大，同样运行时间带来的 vruntime 增量越小。 任务进入运行队列 → 按 vruntime 排序 → 选择最小者运行 → 累计加权运行时间 → 重新入队 记忆要点 vruntime 是“公平债务”，不是实际墙上时间。 红黑树提供有序插入和删除，选择最左节点...</summary>
-  </entry>
-  <entry>
-    <title>EEVDF：从公平调度到虚拟截止时间</title>
-    <id>https://quchaosheng.github.io/2026/07/29/linux-eevdf-scheduler/</id>
-    <link href="https://quchaosheng.github.io/2026/07/29/linux-eevdf-scheduler/"/>
-    <published>2026-07-29T08:09:18.000Z</published>
-    <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">EEVDF（Earliest Eligible Virtual Deadline First）在公平的基础上引入“可运行资格”和“虚拟截止时间”。它既关注任务是否欠 CPU 时间，也关注任务本次请求何时应该完成。 选择逻辑 调度器先从可运行任务中判断哪些已满足 eligibility，再选择虚拟截止时间最早者。较短的时间片会得到较早的虚拟截止时间，因此交互型任务可获得更低延迟，同时长期权重公平仍然保留。 计算任务 lag → 筛选 eligible 任务 → 计算虚拟截止时间 → 运行截止时间最早者 记忆要点 lag 表示任务相对公平份额是超前还是...</summary>
   </entry>
   <entry>
     <title>Linux 设备驱动模型：总线、设备和驱动如何相遇</title>
@@ -116,7 +108,7 @@
     <link href="https://quchaosheng.github.io/2026/07/29/linux-fasync-sigio/"/>
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">fasync 允许设备状态变化时由驱动向订阅进程发送 SIGIO 。它适合事件频率不高、只需通知“可以读写”的场景；大量事件通常更适合 poll&amp;#x2F;epoll 或专用事件队列。 建立通知 用户空间设置文件描述符所有者并启用 O_ASYNC ，VFS 调用驱动的 fasync 回调维护订阅者列表。设备事件到来时，驱动调用 kill_fasync() ，进程收到信号后再执行实际读写。 应用设置 F_SETOWN → 启用 O_ASYNC → 驱动登记 fasync → 设备事件触发 kill_fasync → 应用收到 SIGIO 并读取 记忆...</summary>
+    <summary type="html">字符设备准备好了数据，应用又不想一直阻塞在 read() 上，可以让驱动主动发一条通知吗？ fasync 与 SIGIO 就是 Linux 提供的一条老而直接的路径。它传递的是“文件描述符状态可能变化了”，不是数据本身。应用收到信号后，仍要回到正常的 read() 或 write() 路径确认状态。 这种方式适合低频、简单的设备事件，例如按键、少量传感器数据或实验性字符驱动。连接多、事件密集或需要精确排队时， poll/epoll 、 eventfd 或专用消息队列通常更容易控制。 订阅是怎样建立的 用户空间先用 F_SETOWN 指定由谁接收 I...</summary>
   </entry>
   <entry>
     <title>fork、exec 与 COW：进程是怎样创建的</title>
@@ -127,12 +119,28 @@
     <summary type="html">Shell 启动外部命令时，常见路径是先 fork() 得到子进程，再由子进程 execve() 新程序。Linux 不会在 fork 当场复制父进程的全部用户内存，而是复制必要的进程元数据和页表关系，让父子暂时共享物理页。只有某一方写入共享私有页时，才触发写时复制（COW）。 fork 实际复制与共享什么 子进程得到独立的虚拟地址空间视图、进程 ID 和调度实体，但许多内核对象以引用方式继承。文件描述符表中的条目引用相同的 open file description，因此父子可能共享文件偏移和状态标志。信号处理、定时器、锁和其他属性则按 POSI...</summary>
   </entry>
   <entry>
+    <title>EEVDF：从公平调度到虚拟截止时间</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-eevdf-scheduler/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-eevdf-scheduler/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">传统 CFS 常被概括成“选择 vruntime 最小的任务”。这个模型容易理解长期公平，却不方便直接表达一次请求的服务期限。Linux 6.6 开始在公平调度类中采用 EEVDF。它仍以虚拟时间和权重为基础，但把选择过程拆成两问：任务现在是否有资格运行，如果有，谁的虚拟截止时间更早。 EEVDF 不是 SCHED_DEADLINE 。这里的 deadline 是公平调度器内部的虚拟截止时间，不是应用向内核承诺的硬实时期限。 lag 先判断谁还欠服务 可以把每个任务想成按权重领取 CPU 份额。它实际得到的服务比理想份额少，lag 表示它仍“欠着”...</summary>
+  </entry>
+  <entry>
     <title>io_uring：用共享环减少异步 I/O 开销</title>
     <id>https://quchaosheng.github.io/2026/07/29/linux-io-uring/</id>
     <link href="https://quchaosheng.github.io/2026/07/29/linux-io-uring/"/>
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
     <summary type="html">传统的同步 I&amp;#x2F;O 常把“提交操作”和“等待结果”绑在一次系统调用里；高并发程序若为每个请求建立线程，又会付出调度与栈空间成本。 io_uring 将提交队列（SQ）和完成队列（CQ）映射到用户态，让应用批量描述请求、批量收割结果。它减少的是进入内核和管理请求的开销，不会让存储设备本身凭空变快。 四个对象先分清 SQ ：提交环，保存待处理 SQE 的索引。 SQE ：提交项，描述操作码、文件、缓冲区、偏移和用户标识。 CQ ：完成环，保存内核已经完成的 CQE。 CQE ：完成项， res 表示结果或负的 errno， user_data...</summary>
+  </entry>
+  <entry>
+    <title>Linux 内存泄漏排查：先分清是哪一种内存增长</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-memory-leak-diagnosis/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-memory-leak-diagnosis/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">服务的 RSS 从 500 MiB 涨到 2 GiB，不足以证明发生了内存泄漏。它可能有不可达的堆对象，也可能只是缓存仍被业务持有、文件映射变多、线程栈增加、共享页计入方式变化，或分配器保留了空闲 arena 没有归还内核。第一步不是换工具，而是先给“增长”分类。 三层问题不要混在一起 应用层关心对象是否还可达、缓存是否有上限；分配器层关心 arena、碎片和线程缓存；内核层看到的是匿名页、文件页、共享页和 swap。三个层次的数字不会天然相等。 固定版本与负载复现增长 → 确认进程和增长区间 → 用 smaps 拆分映射类型 → 定位分配栈或持有...</summary>
   </entry>
   <entry>
     <title>MMU：虚拟地址如何找到物理内存</title>
@@ -143,20 +151,12 @@
     <summary type="html">用户程序看到的是虚拟地址。MMU 按操作系统建立的页表把虚拟页映射到物理页框，同时检查用户&amp;#x2F;内核、读&amp;#x2F;写和可执行权限。这样每个进程可以拥有独立地址空间，同一物理页也能被多个地址空间共享。地址翻译主要由硬件完成，但页表内容、缺页处理和映射生命周期由内核管理。 地址怎样被拆开 以多级页表为例，虚拟地址被拆成多级索引和页内偏移。每一级页表项指向下一级表，最后一级给出物理页框号和权限位。最终物理地址由页框基址与页内偏移组合而成。具体级数、位宽和大页形式由架构与内核配置决定，不能把 x86-64 的字段直接套到 ARM64 或 RISC-...</summary>
   </entry>
   <entry>
-    <title>Linux 内存泄漏排查：先分清是哪一种内存增长</title>
-    <id>https://quchaosheng.github.io/2026/07/29/linux-memory-leak-diagnosis/</id>
-    <link href="https://quchaosheng.github.io/2026/07/29/linux-memory-leak-diagnosis/"/>
-    <published>2026-07-29T08:09:18.000Z</published>
-    <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">“内存占用变大”不等于“发生泄漏”。进程 RSS 增长可能来自真正不可达的堆对象、仍被引用的缓存、内存映射、线程栈、共享内存，或分配器尚未归还的空闲页。排查第一步是确定增长属于哪一类。 诊断路径 先用系统指标确认增长进程和时间段，再分析 /proc/&amp;lt;pid&amp;gt;/smaps 区分匿名页、文件映射与共享页。能复现时使用 ASan、LSan、Valgrind 或 heap profiler 定位分配栈；线上则优先采用低开销采样和趋势对比。 监控发现 RSS 增长 → 确认增长是否持续 → 用 smaps 分类内存 → 采样分配调用栈 → 复现...</summary>
-  </entry>
-  <entry>
     <title>NUMA：CPU 为什么更偏爱本地内存</title>
     <id>https://quchaosheng.github.io/2026/07/29/linux-numa-memory-access/</id>
     <link href="https://quchaosheng.github.io/2026/07/29/linux-numa-memory-access/"/>
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">NUMA（非一致内存访问）把 CPU、内存划分为多个节点。CPU 访问本节点内存延迟较低，跨节点访问则要经过互连总线，因此线程跑在哪个节点、页面落在哪个节点会直接影响性能。 核心机制 Linux 默认采用“首次触碰”策略：虚拟内存被首次实际写入时，物理页通常分配在执行该线程所在的 NUMA 节点。调度器会尽量保持 CPU 与内存亲和性，自动 NUMA balancing 也可能迁移任务或页面。 线程在 Node 0 运行 → 首次写入虚拟页 → Node 0 分配物理页 → 后续本地访问 记忆要点 numactl --hardware 查看节点拓扑...</summary>
+    <summary type="html">在双路服务器上，线程固定到一个 CPU 后反而变慢，原因可能不是算力，而是数据仍留在另一个 NUMA 节点。NUMA 把处理器和内存组织成多个节点。CPU 访问本节点内存通常路径更短；跨节点访问需要经过处理器互连，还会占用远端内存控制器和链路带宽。 NUMA 优化的核心不是简单地“绑核”，而是同时回答两个问题：线程在哪里运行，物理页在哪里分配。 物理页何时决定归属 malloc() 成功往往只建立虚拟地址区间。匿名页通常在第一次实际写入时才通过缺页分配物理页。若没有显式内存策略，这个页倾向于落在执行首次触碰线程所在的节点，这就是常说的 first ...</summary>
   </entry>
   <entry>
     <title>缺页异常与页表遍历：一次内存访问的补救过程</title>

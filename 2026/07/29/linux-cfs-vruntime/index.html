@@ -18,14 +18,14 @@
 
 <title>CFS 与 vruntime：Linux 如何分配 CPU 时间 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="CFS 的目标不是让每个任务运行同样久，而是按权重实现公平。它用 vruntime 记录任务经过权重修正后的运行时间，优先选择 vruntime 较小的可运行任务。 调度过程 传统 CFS 运行队列使用红黑树组织调度实体，最左节点代表当前最“欠 CPU 时间”的任务。nice 值越低，权重越大，同样运行时间带来的 vruntime 增量越小。 任务进入...">
+    <meta name="description" content="用 vruntime、权重和运行队列解释传统 CFS 的公平模型，并给出从进程指标到调度跟踪的验证方法。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-cfs-vruntime/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="CFS 与 vruntime：Linux 如何分配 CPU 时间 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="CFS 的目标不是让每个任务运行同样久，而是按权重实现公平。它用 vruntime 记录任务经过权重修正后的运行时间，优先选择 vruntime 较小的可运行任务。 调度过程 传统 CFS 运行队列使用红黑树组织调度实体，最左节点代表当前最“欠 CPU 时间”的任务。nice 值越低，权重越大，同样运行时间带来的 vruntime 增量越小。 任务进入...">
+    <meta property="og:description" content="用 vruntime、权重和运行队列解释传统 CFS 的公平模型，并给出从进程指标到调度跟踪的验证方法。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-cfs-vruntime/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="CFS 与 vruntime：Linux 如何分配 CPU 时间 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="CFS 的目标不是让每个任务运行同样久，而是按权重实现公平。它用 vruntime 记录任务经过权重修正后的运行时间，优先选择 vruntime 较小的可运行任务。 调度过程 传统 CFS 运行队列使用红黑树组织调度实体，最左节点代表当前最“欠 CPU 时间”的任务。nice 值越低，权重越大，同样运行时间带来的 vruntime 增量越小。 任务进入...">
+    <meta name="twitter:description" content="用 vruntime、权重和运行队列解释传统 CFS 的公平模型，并给出从进程指标到调度跟踪的验证方法。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -265,17 +265,35 @@
         </header>
 
         <div class="post-content">
-            <p>CFS 的目标不是让每个任务运行同样久，而是按权重实现公平。它用 <code>vruntime</code> 记录任务经过权重修正后的运行时间，优先选择 vruntime 较小的可运行任务。</p>
-<h2 id="调度过程"><a href="#调度过程" class="headerlink" title="调度过程"></a>调度过程</h2><p>传统 CFS 运行队列使用红黑树组织调度实体，最左节点代表当前最“欠 CPU 时间”的任务。nice 值越低，权重越大，同样运行时间带来的 vruntime 增量越小。</p>
-<div class="note-flow"><span>任务进入运行队列</span><i>→</i><span>按 vruntime 排序</span><i>→</i><span>选择最小者运行</span><i>→</i><span>累计加权运行时间</span><i>→</i><span>重新入队</span></div>
+            <p>两个一直占用 CPU 的任务，nice 值不同，为什么最终得到的处理器时间也不同？传统 CFS 的回答不是固定时间片，而是一把随运行不断更新的“公平尺子”：<code>vruntime</code>。任务实际运行得越久，虚拟运行时间越大；权重越高，同样一段实际时间折算出的增量越小。</p>
+<p>这里讨论的是理解 Linux 公平调度的经典 CFS 模型。较新的 Linux 内核已在公平类中引入 EEVDF 选择逻辑，但 <code>vruntime</code>、权重和公平份额仍是理解新实现的基础。</p>
+<h2 id="vruntime-怎样体现权重"><a href="#vruntime-怎样体现权重" class="headerlink" title="vruntime 怎样体现权重"></a>vruntime 怎样体现权重</h2><p>概念上可以把增量写成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">delta_vruntime = delta_exec * NICE_0_LOAD / weight</span><br></pre></td></tr></table></figure>
 
-<h2 id="记忆要点"><a href="#记忆要点" class="headerlink" title="记忆要点"></a>记忆要点</h2><ul>
-<li>vruntime 是“公平债务”，不是实际墙上时间。</li>
-<li>红黑树提供有序插入和删除，选择最左节点成本低。</li>
-<li>唤醒抢占还会考虑粒度，避免频繁切换。</li>
+<p><code>delta_exec</code> 是任务本次实际执行时间，<code>weight</code> 由 nice 值映射而来。nice 越低，权重越大，<code>vruntime</code> 增长越慢。调度器因此允许高权重任务运行更久，同时让各任务的虚拟进度长期接近。</p>
+<div class="note-flow"><span>任务进入可运行队列</span><i>→</i><span>比较虚拟进度</span><i>→</i><span>选择最欠公平份额的任务</span><i>→</i><span>累计实际执行时间</span><i>→</i><span>按权重更新 vruntime</span></div>
+
+<div class="note-map"><span><b>实际运行时间</b><small>任务真正占用 CPU 的时间，来自调度时钟统计</small></span><span><b>权重</b><small>由 nice 值映射，决定任务的长期 CPU 份额</small></span><span><b>vruntime</b><small>按权重缩放后的虚拟进度，不等于墙上时间</small></span><span><b>min_vruntime</b><small>运行队列的公平基线，避免新任务从零开始获利</small></span><span><b>红黑树</b><small>传统 CFS 用它有序组织调度实体</small></span><span><b>唤醒抢占</b><small>兼顾响应时间与切换成本，不是见到更小值就无条件切换</small></span></div>
+
+<p>传统实现把可运行调度实体放进按虚拟时间组织的红黑树。最左侧实体通常是虚拟进度最小者，也就是相对更“欠”CPU 的任务。运行队列还维护 <code>min_vruntime</code>。一个刚唤醒或刚创建的任务不会简单地以零为起点，否则它会长期压过已经运行的任务。</p>
+<h2 id="公平不等于每毫秒都平分"><a href="#公平不等于每毫秒都平分" class="headerlink" title="公平不等于每毫秒都平分"></a>公平不等于每毫秒都平分</h2><p>CFS 追求一段时间内的比例公平。调度粒度、唤醒行为、CPU 数量、任务睡眠与迁移都会让短时间观测产生偏差。一个 I&#x2F;O 密集任务睡眠很久后被唤醒，调度器希望它尽快响应，但也要限制这种优势，不能让反复睡眠成为无限获取 CPU 的办法。</p>
+<p>多核场景还多了一层负载均衡。每个 CPU 有自己的运行队列，调度域按拓扑周期性比较负载并迁移任务。任务亲和性、缓存热度和 NUMA 位置都会影响迁移决策，所以单核公式不能完整解释多核吞吐。</p>
+<h2 id="在机器上看权重与运行时间"><a href="#在机器上看权重与运行时间" class="headerlink" title="在机器上看权重与运行时间"></a>在机器上看权重与运行时间</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 启动两个持续计算任务，并降低第二个任务的调度优先级</span></span><br><span class="line">taskset -c 2 <span class="built_in">yes</span> &gt; /dev/null &amp;</span><br><span class="line">P1=$!</span><br><span class="line">taskset -c 2 <span class="built_in">nice</span> -n 10 <span class="built_in">yes</span> &gt; /dev/null &amp;</span><br><span class="line">P2=$!</span><br><span class="line"></span><br><span class="line"><span class="comment"># 观察两个任务的 CPU 时间、nice 与调度统计</span></span><br><span class="line">ps -o pid,ni,pri,psr,<span class="keyword">time</span>,<span class="built_in">comm</span> -p <span class="variable">$P1</span>,<span class="variable">$P2</span></span><br><span class="line">grep -E <span class="string">&#x27;se\.vruntime|sum_exec_runtime|nr_switches&#x27;</span> /proc/<span class="variable">$P1</span>/sched</span><br><span class="line">grep -E <span class="string">&#x27;se\.vruntime|sum_exec_runtime|nr_switches&#x27;</span> /proc/<span class="variable">$P2</span>/sched</span><br><span class="line"></span><br><span class="line"><span class="built_in">kill</span> <span class="variable">$P1</span> <span class="variable">$P2</span></span><br></pre></td></tr></table></figure>
+
+<p>这只是教学实验。应固定到同一 CPU，避免不同核并行掩盖份额差异；同时不要在繁忙生产机上运行无限循环。字段名称和 <code>/proc/PID/sched</code> 输出会随内核配置、版本变化。</p>
+<p>如果需要定位一次异常切换，可记录调度事件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> perf <span class="built_in">sched</span> record -- <span class="built_in">sleep</span> 5</span><br><span class="line"><span class="built_in">sudo</span> perf <span class="built_in">sched</span> timehist</span><br></pre></td></tr></table></figure>
+
+<p><code>perf sched</code> 展示实际发生了什么，但不能单独证明调度器有问题。锁竞争、缺页、中断和 I&#x2F;O 等待都会让任务离开 CPU。</p>
+<h2 id="常见误解"><a href="#常见误解" class="headerlink" title="常见误解"></a>常见误解</h2><ul>
+<li><code>vruntime</code> 小不等于进程刚创建，它表示相对公平基线的虚拟进度。</li>
+<li>nice 不是给任务预留固定百分比。可运行任务集合变化后，份额也会变化。</li>
+<li>红黑树是组织与选择手段，不是公平策略本身。</li>
+<li>CPU 使用率低不一定是没被调度，任务可能正在等待锁、I&#x2F;O 或定时器。</li>
+<li>在 cgroup 中，进程权重还会受到组调度层级影响。</li>
 </ul>
-<p>一句话回答：<strong>CFS 用加权虚拟运行时间衡量公平，让欠得最多的任务先运行。</strong></p>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494598&idx=1&sn=6ab2a6e66df2ceda53462349a38319d8">不懂 CFS 与 vruntime 红黑树，别再说你懂 Linux 内核了</a></p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文用传统 CFS 解释 <code>vruntime</code>，不把它当成所有内核版本的完整选取算法。Linux 6.6 起公平调度逐步采用 EEVDF 机制，具体字段、树结构和抢占细节应以目标内核源码与文档为准。实验结论也只适用于相同 CPU 亲和性、负载和 cgroup 配置。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/scheduler/sched-design-CFS.html">CFS Scheduler</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/scheduler/sched-nice-design.html">Scheduler Nice Design</a> · <a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/sched.7.html">sched(7)</a> · <a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494598&idx=1&sn=6ab2a6e66df2ceda53462349a38319d8">不懂 CFS 与 vruntime 红黑树，别再说你懂 Linux 内核了</a></p>
 
         </div>
 
@@ -350,10 +368,10 @@
         </section>
         <section class="post-nav">
             
-                <a class="prev" rel="prev" href="/2026/07/29/linux-buddy-slub/">伙伴系统与 SLUB：Linux 内核怎样分配内存</a>
+                <a class="prev" rel="prev" href="/2026/07/29/gdb-crash-debugging/">GDB 崩溃调试：从信号到调用栈</a>
             
             
-            <a class="next" rel="next" href="/2026/07/29/linux-eevdf-scheduler/">EEVDF：从公平调度到虚拟截止时间</a>
+            <a class="next" rel="next" href="/2026/07/29/linux-buddy-slub/">伙伴系统与 SLUB：Linux 内核怎样分配内存</a>
             
         </section>
 

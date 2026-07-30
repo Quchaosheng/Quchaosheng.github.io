@@ -18,14 +18,14 @@
 
 <title>事件驱动状态机：让裸机程序摆脱超级循环 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="事件驱动架构把中断、定时器和输入转换为事件，再由状态机根据当前状态执行短小动作。它解决的不是“如何写一个循环”，而是如何把隐藏在大量 if 、延时和标志位里的状态关系显式写出来。这样超时、取消和异常输入才有清楚的去处。 中断/定时器产生事件 → 事件入队 → 调度器分发 → 状态机执行转换 → 输出动作并等待下一事件 状态图 状态、事件、守卫条件和动作...">
+    <meta name="description" content="用事件队列和显式状态转换拆开中断、超时与业务动作，并说明满队列和旧事件该怎样处理。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-event-state-machine/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="事件驱动状态机：让裸机程序摆脱超级循环 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="事件驱动架构把中断、定时器和输入转换为事件，再由状态机根据当前状态执行短小动作。它解决的不是“如何写一个循环”，而是如何把隐藏在大量 if 、延时和标志位里的状态关系显式写出来。这样超时、取消和异常输入才有清楚的去处。 中断/定时器产生事件 → 事件入队 → 调度器分发 → 状态机执行转换 → 输出动作并等待下一事件 状态图 状态、事件、守卫条件和动作...">
+    <meta property="og:description" content="用事件队列和显式状态转换拆开中断、超时与业务动作，并说明满队列和旧事件该怎样处理。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-event-state-machine/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="事件驱动状态机：让裸机程序摆脱超级循环 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="事件驱动架构把中断、定时器和输入转换为事件，再由状态机根据当前状态执行短小动作。它解决的不是“如何写一个循环”，而是如何把隐藏在大量 if 、延时和标志位里的状态关系显式写出来。这样超时、取消和异常输入才有清楚的去处。 中断/定时器产生事件 → 事件入队 → 调度器分发 → 状态机执行转换 → 输出动作并等待下一事件 状态图 状态、事件、守卫条件和动作...">
+    <meta name="twitter:description" content="用事件队列和显式状态转换拆开中断、超时与业务动作，并说明满队列和旧事件该怎样处理。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -272,6 +272,11 @@
 
 <h2 id="中断里只投递事件"><a href="#中断里只投递事件" class="headerlink" title="中断里只投递事件"></a>中断里只投递事件</h2><p>中断处理程序应该尽快读取必要状态、清除硬件标志并投递事件。它不应等待通信、调用复杂回调或执行状态转换，因为这些操作会放大中断延迟，也容易与主循环并发修改同一份状态。事件队列的生产者、消费者和满队列策略要明确：关键故障事件不能被普通日志挤掉。</p>
 <h2 id="让所有退出路径都可见"><a href="#让所有退出路径都可见" class="headerlink" title="让所有退出路径都可见"></a>让所有退出路径都可见</h2><p>好的状态机不仅有“成功下一步”，还要有超时、取消、资源缺失和恢复路径。给每个等待状态配置一个超时事件，给每个外部输入定义可接受状态，避免收到旧事件后误触发新的任务。状态转换表比层层嵌套的 <code>switch</code> 更容易审查，尤其适合通信协议、升级流程和设备初始化。</p>
+<h2 id="用转换函数守住状态边界"><a href="#用转换函数守住状态边界" class="headerlink" title="用转换函数守住状态边界"></a>用转换函数守住状态边界</h2><p>事件结构应包含类型和必要快照，不能只放一个全局标志。状态机消费事件时先判断当前状态，再执行动作并更新状态。无法处理的事件要有统一策略：忽略、记录，或转入 fault，而不是落入未定义路径。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span> &#123;</span> ST_IDLE, ST_WAIT_ACK, ST_RUNNING, ST_FAULT &#125; <span class="type">state_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span> &#123;</span> EV_START, EV_ACK, EV_TIMEOUT, EV_CANCEL &#125; <span class="type">event_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">state_t</span> <span class="title function_">dispatch</span><span class="params">(<span class="type">state_t</span> state, <span class="type">event_t</span> event)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">switch</span> (state) &#123;</span><br><span class="line">    <span class="keyword">case</span> ST_IDLE:</span><br><span class="line">        <span class="keyword">if</span> (event == EV_START) &#123;</span><br><span class="line">            send_request();</span><br><span class="line">            arm_timeout();</span><br><span class="line">            <span class="keyword">return</span> ST_WAIT_ACK;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> ST_WAIT_ACK:</span><br><span class="line">        <span class="keyword">if</span> (event == EV_ACK) &#123;</span><br><span class="line">            cancel_timeout();</span><br><span class="line">            <span class="keyword">return</span> ST_RUNNING;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (event == EV_TIMEOUT || event == EV_CANCEL)</span><br><span class="line">            <span class="keyword">return</span> ST_IDLE;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">        <span class="keyword">return</span> ST_FAULT;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> state;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当一次操作可以被取消并重新开始时，事件最好携带 generation 或 request ID。状态机只接受与当前操作一致的 ACK 和超时，避免上一轮迟到事件破坏新状态。</p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>这种结构不能自动保证实时性。最坏响应时间还取决于队列深度、事件生产速率、单次转换耗时和中断屏蔽时间。EFSM 链接用于观察一种实现方式，具体队列并发、内存占用和许可证仍需按目标项目核对。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://gitee.com/simpost/EFSM">EFSM</a></p>
 
         </div>
