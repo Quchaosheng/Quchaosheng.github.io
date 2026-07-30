@@ -146,71 +146,6 @@
                 <div class="container">
     
     
-        <div class="post-toc">
-    <div class="tocbot-list">
-    </div>
-    <div class="tocbot-list-menu">
-        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
-        <a onclick="go_top()">Back to top</a>
-        <a onclick="go_bottom()">Go to bottom</a>
-    </div>
-</div>
-
-<script>
-    var tocbot_timer;
-    var DEPTH_MAX = 6; // 为 6 时展开所有
-    var tocbot_default_config = {
-        tocSelector: '.tocbot-list',
-        contentSelector: '.post-content',
-        headingSelector: 'h1, h2, h3, h4, h5',
-        orderedList: false,
-        scrollSmooth: true,
-        onClick: extend_click,
-    };
-
-    function extend_click() {
-        clearTimeout(tocbot_timer);
-        tocbot_timer = setTimeout(function() {
-            tocbot.refresh(obj_merge(tocbot_default_config, {
-                hasInnerContainers: true
-            }));
-        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
-    }
-
-    document.ready(function() {
-        tocbot.init(obj_merge(tocbot_default_config, {
-            collapseDepth: 1
-        }));
-    });
-
-    function expand_toc() {
-        var b = document.querySelector('.tocbot-toc-expand');
-        var expanded = b.getAttribute('data-expanded');
-        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
-        tocbot.refresh(obj_merge(tocbot_default_config, {
-            collapseDepth: expanded ? 1 : DEPTH_MAX
-        }));
-        b.innerText = expanded ? 'Expand all' : 'Collapse all';
-    }
-
-    function go_top() {
-        window.scrollTo(0, 0);
-    }
-
-    function go_bottom() {
-        window.scrollTo(0, document.body.scrollHeight);
-    }
-
-    function obj_merge(target, source) {
-        for (var item in source) {
-            if (source.hasOwnProperty(item)) {
-                target[item] = source[item];
-            }
-        }
-        return target;
-    }
-</script>
-    
 
     
     <article class="post-wrap">
@@ -242,22 +177,10 @@
         </header>
 
         <div class="post-content">
-            <p>交叉编译的难点不在于把 <code>gcc</code> 换成 <code>aarch64-linux-gnu-gcc</code>，而在于让配置阶段、头文件查找、库查找、try-compile 和安装路径都始终站在“目标机”视角。CMake 的 toolchain file 就是这份目标环境声明：它告诉 CMake 目标系统、架构、编译器、sysroot 以及程序&#x2F;库&#x2F;头文件的查找规则。写得不完整时，最危险的结果不是立即报错，而是悄悄链接到宿主机库。</p>
+            <p>交叉编译工具链文件声明目标系统、编译器、sysroot 和查找策略，使 CMake 在主机执行配置、为目标生成二进制。</p>
 <div class="note-flow"><span>读取 toolchain.cmake</span><i>→</i><span>识别目标编译器与 sysroot</span><i>→</i><span>查找目标头文件和库</span><i>→</i><span>生成构建系统</span><i>→</i><span>编译并部署到目标板</span></div>
 
-<h2 id="Toolchain-file-必须回答哪些问题"><a href="#Toolchain-file-必须回答哪些问题" class="headerlink" title="Toolchain file 必须回答哪些问题"></a>Toolchain file 必须回答哪些问题</h2><p>目标系统是什么、CPU&#x2F;ABI 是什么、C&#x2F;C++ 编译器在哪里、sysroot 在哪里，以及 CMake 查找外部程序和目标库时各该去哪。宿主机上运行的工具（代码生成器、pkg-config wrapper）与目标机上的库是不同概念，不能混在同一个搜索路径里。</p>
-<div class="note-map"><span><b>CMAKE_SYSTEM_NAME</b><small>声明目标系统，例如 Linux，触发交叉编译模式</small></span><span><b>CMAKE_SYSTEM_PROCESSOR</b><small>目标架构/处理器信息，供项目选择架构相关代码</small></span><span><b>编译器</b><small>CMAKE_C_COMPILER/CXX_COMPILER 指向目标工具链</small></span><span><b>sysroot</b><small>目标头文件、库和动态链接器所属的根目录</small></span><span><b>find root path</b><small>限制 find_library/find_path 不误用宿主机依赖</small></span><span><b>try-compile</b><small>交叉构建时配置测试程序不能直接在宿主机执行</small></span></div>
-
-<p>一个最小工具链文件可以从下面开始，再按 SDK&#x2F;Buildroot 输出调整路径：</p>
-<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span>(CMAKE_SYSTEM_NAME Linux)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_SYSTEM_PROCESSOR aarch64)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_SYSROOT /opt/sdk/sysroot)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_FIND_ROOT_PATH <span class="variable">$&#123;CMAKE_SYSROOT&#125;</span>)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)</span><br></pre></td></tr></table></figure>
-
-<p>最后一行可避免一些 <code>try_compile</code> 测试在配置阶段尝试运行目标程序。它不是万能设置，使用 <code>try_run()</code> 的项目仍需要提供预置结果或交叉编译替代方案。</p>
-<h2 id="最常见的三个错误"><a href="#最常见的三个错误" class="headerlink" title="最常见的三个错误"></a>最常见的三个错误</h2><p>第一，<code>find_package()</code> 找到了 <code>/usr/lib</code> 的宿主机库，产物在目标板上无法运行或 ABI 不匹配。第二，pkg-config 没有设置 sysroot&#x2F;库目录，给出了宿主机 <code>.pc</code> 文件的路径。第三，项目把绝对 SDK 路径写进 <code>CMakeLists.txt</code>，导致其他开发机或 CI 无法复现。</p>
-<p>应把工具链路径、sysroot、第三方依赖和部署目录放进 toolchain file、CMake cache 或预设，而不是散落在源码里。构建后用 <code>file</code>、<code>readelf -d</code> 和目标机运行测试确认 ELF 架构、动态链接器和依赖库都正确。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">file my_app</span><br><span class="line">readelf -d my_app | grep NEEDED</span><br></pre></td></tr></table></figure>
-
-<h2 id="交叉编译的交付边界"><a href="#交叉编译的交付边界" class="headerlink" title="交叉编译的交付边界"></a>交叉编译的交付边界</h2><p>一个能编过的二进制还不等于可部署：目标 rootfs 是否有对应 C 库和动态链接器？运行时插件、配置和数据文件是否安装到正确路径？调试符号如何保留？升级 SDK 后怎样确认 ABI 没变？将这些问题写进 CMake install、打包和 CI，工具链文件才从“临时参数”变成工程契约。</p>
-<p>参考：<a target="_blank" rel="noopener" href="https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html">CMake Cross Compiling</a> · <a target="_blank" rel="noopener" href="https://cmake.org/cmake/help/latest/variable/CMAKE_SYSROOT.html">CMAKE_SYSROOT</a></p>
+<p>避免把绝对路径写进项目，编译器检查程序不能在主机直接运行时需调整 try-compile。参考：<a target="_blank" rel="noopener" href="https://cmake.org/">CMake</a></p>
 
         </div>
 

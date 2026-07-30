@@ -146,71 +146,6 @@
                 <div class="container">
     
     
-        <div class="post-toc">
-    <div class="tocbot-list">
-    </div>
-    <div class="tocbot-list-menu">
-        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
-        <a onclick="go_top()">Back to top</a>
-        <a onclick="go_bottom()">Go to bottom</a>
-    </div>
-</div>
-
-<script>
-    var tocbot_timer;
-    var DEPTH_MAX = 6; // 为 6 时展开所有
-    var tocbot_default_config = {
-        tocSelector: '.tocbot-list',
-        contentSelector: '.post-content',
-        headingSelector: 'h1, h2, h3, h4, h5',
-        orderedList: false,
-        scrollSmooth: true,
-        onClick: extend_click,
-    };
-
-    function extend_click() {
-        clearTimeout(tocbot_timer);
-        tocbot_timer = setTimeout(function() {
-            tocbot.refresh(obj_merge(tocbot_default_config, {
-                hasInnerContainers: true
-            }));
-        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
-    }
-
-    document.ready(function() {
-        tocbot.init(obj_merge(tocbot_default_config, {
-            collapseDepth: 1
-        }));
-    });
-
-    function expand_toc() {
-        var b = document.querySelector('.tocbot-toc-expand');
-        var expanded = b.getAttribute('data-expanded');
-        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
-        tocbot.refresh(obj_merge(tocbot_default_config, {
-            collapseDepth: expanded ? 1 : DEPTH_MAX
-        }));
-        b.innerText = expanded ? 'Expand all' : 'Collapse all';
-    }
-
-    function go_top() {
-        window.scrollTo(0, 0);
-    }
-
-    function go_bottom() {
-        window.scrollTo(0, document.body.scrollHeight);
-    }
-
-    function obj_merge(target, source) {
-        for (var item in source) {
-            if (source.hasOwnProperty(item)) {
-                target[item] = source[item];
-            }
-        }
-        return target;
-    }
-</script>
-    
 
     
     <article class="post-wrap">
@@ -242,19 +177,11 @@
         </header>
 
         <div class="post-content">
-            <p>设备中断到来时，CPU 处在最不适合做复杂工作的上下文：不能随意睡眠，长时间占用会阻塞其他中断和实时任务。下半部机制的目的就是把“必须立刻完成的设备确认”与“可以稍后处理的数据、状态机和 I&#x2F;O”分开。现代内核驱动通常优先考虑线程化 IRQ 或工作队列；tasklet 属于历史上常见的 softirq 下半部机制，新代码一般应避免再引入它。</p>
+            <p>下半部把非紧急工作从硬中断移出。tasklet 运行在软中断上下文，不能睡眠；工作队列由内核线程执行，可以阻塞并使用多数普通内核接口。</p>
 <div class="note-flow"><span>硬中断确认设备</span><i>→</i><span>清除中断并保存最少状态</span><i>→</i><span>调度下半部</span><i>→</i><span>tasklet 快速处理或 workqueue 可睡眠处理</span></div>
 
-<h2 id="先按执行上下文区分，而不是按“快慢”选"><a href="#先按执行上下文区分，而不是按“快慢”选" class="headerlink" title="先按执行上下文区分，而不是按“快慢”选"></a>先按执行上下文区分，而不是按“快慢”选</h2><p>硬中断顶半部要尽量短：读取必要寄存器、确认&#x2F;屏蔽中断、保存少量状态并安排后续处理。tasklet 运行在 softirq 上下文，仍不能睡眠，也不适合访问可能阻塞的资源；工作队列回调由内核线程执行，可以睡眠、获取 mutex、等待 I&#x2F;O 并调用多数普通内核 API。</p>
-<div class="note-map"><span><b>硬中断</b><small>最小确认路径；不能睡眠；尽快离开</small></span><span><b>线程化 IRQ</b><small>可调度的中断后续处理，适合需要优先级/亲和性的路径</small></span><span><b>tasklet</b><small>softirq 上下文；不能睡眠；新代码通常不推荐</small></span><span><b>workqueue</b><small>进程上下文；可睡眠；适合慢操作和复杂状态机</small></span><span><b>专用 worker</b><small>可控制并发和 CPU 归属，适合设备生命周期敏感的工作</small></span><span><b>销毁同步</b><small>取消/flush 正在排队或运行的工作，避免 UAF</small></span></div>
-
-<h2 id="工作队列的并发语义很重要"><a href="#工作队列的并发语义很重要" class="headerlink" title="工作队列的并发语义很重要"></a>工作队列的并发语义很重要</h2><p><code>queue_work()</code> 只是把回调交给某个 worker pool，并不等于“立刻执行”或“不会并发”。同一 <code>work_struct</code> 在排队期间不能被重复当作独立任务使用；多个不同 work 则可能并发运行。若设备寄存器或缓存要求串行访问，应使用单线程&#x2F;有序队列、显式锁，或把状态合并到一个可重复检查的工作项中。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 中断中：只记录事件，后续由可睡眠的 worker 处理 */</span></span><br><span class="line"><span class="keyword">if</span> (device_event_pending(dev)) &#123;</span><br><span class="line">    ack_device_irq(dev);</span><br><span class="line">    queue_work(dev-&gt;workqueue, &amp;dev-&gt;event_work);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 卸载/错误恢复中：确保回调不再访问即将释放的 dev */</span></span><br><span class="line">cancel_work_sync(&amp;dev-&gt;event_work);</span><br></pre></td></tr></table></figure>
-
-<p>真实驱动还要处理设备已经拔出、复位、重复中断与错误恢复等状态。一个只在正常路径正确的工作队列回调，常会在卸载时变成 use-after-free。</p>
-<h2 id="怎样选一条可维护的路径"><a href="#怎样选一条可维护的路径" class="headerlink" title="怎样选一条可维护的路径"></a>怎样选一条可维护的路径</h2><p>若后续工作需要睡眠、等待 DMA、拿 mutex、调用文件系统或执行较长状态机，选 workqueue。若中断处理本身需要可调度、可绑核或与 PREEMPT_RT 配合，优先考虑线程化 IRQ。只有在确实需要极短且不能睡眠的下半部，并且你维护的是已有历史代码时，才需要面对 tasklet 的限制。</p>
-<p>最后不要只测吞吐：在高频中断、设备拔插、错误恢复和系统 suspend&#x2F;resume 下检查工作项是否积压、是否漏事件、是否在销毁后仍运行。下半部设计的好坏，更多体现在异常生命周期而非正常 demo。</p>
-<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/core-api/workqueue.html">Workqueue</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/core-api/genericirq.html">Generic IRQ</a></p>
+<p>新代码通常优先线程化中断或工作队列。取消工作时要同步处理正在运行的回调，避免设备释放后发生 use-after-free。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://www.kerneltravel.net/blog/2020/interrupt_tasklet_hds/">中断处理的工作队列机制</a></p>
 
         </div>
 

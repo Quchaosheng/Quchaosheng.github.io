@@ -146,71 +146,6 @@
                 <div class="container">
     
     
-        <div class="post-toc">
-    <div class="tocbot-list">
-    </div>
-    <div class="tocbot-list-menu">
-        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
-        <a onclick="go_top()">Back to top</a>
-        <a onclick="go_bottom()">Go to bottom</a>
-    </div>
-</div>
-
-<script>
-    var tocbot_timer;
-    var DEPTH_MAX = 6; // 为 6 时展开所有
-    var tocbot_default_config = {
-        tocSelector: '.tocbot-list',
-        contentSelector: '.post-content',
-        headingSelector: 'h1, h2, h3, h4, h5',
-        orderedList: false,
-        scrollSmooth: true,
-        onClick: extend_click,
-    };
-
-    function extend_click() {
-        clearTimeout(tocbot_timer);
-        tocbot_timer = setTimeout(function() {
-            tocbot.refresh(obj_merge(tocbot_default_config, {
-                hasInnerContainers: true
-            }));
-        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
-    }
-
-    document.ready(function() {
-        tocbot.init(obj_merge(tocbot_default_config, {
-            collapseDepth: 1
-        }));
-    });
-
-    function expand_toc() {
-        var b = document.querySelector('.tocbot-toc-expand');
-        var expanded = b.getAttribute('data-expanded');
-        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
-        tocbot.refresh(obj_merge(tocbot_default_config, {
-            collapseDepth: expanded ? 1 : DEPTH_MAX
-        }));
-        b.innerText = expanded ? 'Expand all' : 'Collapse all';
-    }
-
-    function go_top() {
-        window.scrollTo(0, 0);
-    }
-
-    function go_bottom() {
-        window.scrollTo(0, document.body.scrollHeight);
-    }
-
-    function obj_merge(target, source) {
-        for (var item in source) {
-            if (source.hasOwnProperty(item)) {
-                target[item] = source[item];
-            }
-        }
-        return target;
-    }
-</script>
-    
 
     
     <article class="post-wrap">
@@ -242,19 +177,11 @@
         </header>
 
         <div class="post-content">
-            <p>多核程序的问题不只是“两个线程同时改了同一个变量”。编译器为了优化会重排独立读写，CPU 为了流水线和缓存效率也可能让不同核心在不同时间观察到写入。C++ 原子操作和内存序用来表达哪些读写必须以什么顺序对其他线程可见。理解它的目标不是把所有操作写成 <code>seq_cst</code>，而是为每一条跨线程数据路径建立清晰的 happens-before 关系。</p>
+            <p>编译器和 CPU 都可能重排独立读写；不同核心也可能在不同时间观察到写入。内存屏障和 C++ 原子内存序用于建立可见性与先后关系。</p>
 <div class="note-flow"><span>生产者写入数据</span><i>→</i><span>release 发布标志</span><i>→</i><span>消费者 acquire 标志</span><i>→</i><span>安全读取数据</span></div>
 
-<h2 id="最常用的发布—订阅模式"><a href="#最常用的发布—订阅模式" class="headerlink" title="最常用的发布—订阅模式"></a>最常用的发布—订阅模式</h2><p>生产者先写普通 payload，再以 release 语义写入原子 <code>ready=true</code>；消费者以 acquire 语义读到 <code>ready=true</code> 后，保证能够看到生产者在 release 前写好的 payload。这不是“屏障让所有内存立即同步”，而是针对这次原子同步建立了一条可推理的顺序关系。</p>
-<div class="note-map"><span><b>relaxed</b><small>只保证该原子变量自身原子性，不建立跨线程数据顺序</small></span><span><b>release</b><small>本线程此前读写不能被移动到发布之后</small></span><span><b>acquire</b><small>本线程之后读写不能被移动到获取之前</small></span><span><b>acq_rel</b><small>读改写原子操作同时承担获取与发布语义</small></span><span><b>seq_cst</b><small>提供单一全局顺序，易理解但可能比需要的更强</small></span><span><b>happens-before</b><small>正确性目标：消费者读取数据前，生产者写入已对其可见</small></span></div>
-
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Message</span> &#123; <span class="type">int</span> value; &#125; msg;</span><br><span class="line">std::atomic&lt;<span class="type">bool</span>&gt; ready&#123;<span class="literal">false</span>&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// producer</span></span><br><span class="line">msg.value = <span class="number">42</span>;</span><br><span class="line">ready.<span class="built_in">store</span>(<span class="literal">true</span>, std::memory_order_release);</span><br><span class="line"></span><br><span class="line"><span class="comment">// consumer</span></span><br><span class="line"><span class="keyword">if</span> (ready.<span class="built_in">load</span>(std::memory_order_acquire))</span><br><span class="line">    <span class="built_in">use</span>(msg.value);  <span class="comment">// 可看到 value = 42</span></span><br></pre></td></tr></table></figure>
-
-<p>如果把两端都换成 <code>relaxed</code>，<code>ready</code> 本身仍是原子的，却不能保证 <code>msg.value</code> 的可见顺序。反之，若只是在单个计数器上做统计且计数与其他数据无关，relaxed 通常恰好是需要的语义。</p>
-<h2 id="volatile-不是线程同步工具"><a href="#volatile-不是线程同步工具" class="headerlink" title="volatile 不是线程同步工具"></a>volatile 不是线程同步工具</h2><p><code>volatile</code> 主要用于告诉编译器某次访问不能被随意省略&#x2F;合并，常用于 MMIO 或信号等特殊场景；它不建立 C++ 线程间的原子性和 happens-before。将共享状态标为 volatile 可能让 bug 更隐蔽，而不是更安全。线程同步应使用 <code>std::atomic</code>、mutex、condition variable 或经过验证的并发协议。</p>
-<h2 id="从协议出发选择内存序"><a href="#从协议出发选择内存序" class="headerlink" title="从协议出发选择内存序"></a>从协议出发选择内存序</h2><p>先画出生产者何时写 payload、何时发布状态，消费者先读什么、何时可安全访问数据；再选择最弱但足够的内存序。不要从 CPU 指令或性能传闻反推语义。复杂 MPMC 队列、无锁链表和对象回收往往需要比简单 release&#x2F;acquire 更完整的证明与压力测试。</p>
-<p>ThreadSanitizer 可帮助发现数据竞争，但不等价于证明所有内存序协议正确；在不同 CPU 架构和优化级别下运行测试，才能更早暴露 x86 上偶然没有出现的重排 bug。</p>
-<p>参考：<a target="_blank" rel="noopener" href="https://en.cppreference.com/w/cpp/atomic/memory_order">std::memory_order</a> · <a target="_blank" rel="noopener" href="https://en.cppreference.com/w/cpp/language/memory_model">C++ memory model</a></p>
+<p><code>relaxed</code> 只保证原子性；release&#x2F;acquire 构建发布—订阅关系；<code>seq_cst</code> 更强且易理解。不要把 volatile 当作线程同步工具，也不要无理由把所有操作设为最强内存序。</p>
+<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=MzkzNDk2NTUwOQ==&mid=2247484878&idx=1&sn=72cb67af2ea2c1f1a9e3715939864c99">内存屏障</a></p>
 
         </div>
 
