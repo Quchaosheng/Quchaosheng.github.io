@@ -245,6 +245,8 @@
             <p>“Physical AI”听起来像一个大模型控制机器人，实际是一条比聊天模型长得多的工程链路：传感器要可靠地产生时间对齐的数据，模型要在目标硬件上稳定推理，规划器要把语义意图拆成受约束的动作，底层控制器还要能在模型失误时独立把系统带回安全状态。NVIDIA 的 Cosmos、Isaac Sim、Isaac ROS、TensorRT 与 Jetson 分别覆盖数据、仿真、机器人计算图、推理和边缘算力，而 ROS 2、控制器和安全 I&#x2F;O 负责把这些能力接入真实机器。</p>
 <div class="note-flow"><span>采集或生成机器人数据</span><i>→</i><span>训练感知/决策模型</span><i>→</i><span>Isaac Sim 仿真验证</span><i>→</i><span>Jetson 边缘推理</span><i>→</i><span>ROS 2 与控制器安全执行</span></div>
 
+<div class="note-map"><span><b>数据与模型</b><small>传感器数据要带时间戳、置信度与失效状态，模型不应只输出动作。</small></span><span><b>仿真与验证</b><small>先在 Isaac Sim 或等价环境验证坐标、时延和失败路径，再接真实设备。</small></span><span><b>推理与部署</b><small>TensorRT 与 Jetson 负责目标硬件上的吞吐、内存和 P99 延迟。</small></span><span><b>任务与通信</b><small>ROS 2 节点要约定消息时效、取消、超时和降级语义。</small></span><span><b>实时执行</b><small>MCU、PLC 或实时控制线程独立处理限位、看门狗和急停。</small></span><span><b>安全闭环</b><small>模型不可用、通信中断或约束失效时，系统必须进入确定的安全状态。</small></span></div>
+
 <h2 id="先把机器人分成三层"><a href="#先把机器人分成三层" class="headerlink" title="先把机器人分成三层"></a>先把机器人分成三层</h2><p><strong>感知与认知层</strong>处理图像、点云、语音和语言指令，输出目标、位姿、地图或任务意图。这个层可以使用 GPU 和大模型，允许有几十到几百毫秒的延迟，但必须带时间戳、置信度和失效信号。</p>
 <p><strong>决策与任务层</strong>把“去拿桌上的杯子”转成有限状态机、行为树或 ROS 2 Action。它应明确任务前置条件，例如地图可用、机械臂已回零、抓取区没有人，并能随时取消或超时。</p>
 <p><strong>实时执行层</strong>负责电机闭环、限位、急停和通信看门狗。它不等待语言模型回复，也不把障碍物距离交给模型自由解释。工业机器人常让 MCU、PLC 或经过实时化的控制线程承担这一层；Jetson 更适合运行前两层。</p>
