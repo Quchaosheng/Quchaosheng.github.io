@@ -18,14 +18,14 @@
 
 <title>软件定时器：用一个硬件时基管理多个超时 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="一个 MCU 的硬件定时器数量有限，但超时需求很多：按键长按、通信重试、传感器采样、状态机等待和看门狗监督都需要各自的截止时间。软件定时器把这些截止时间组织到统一数据结构中，由一个时基推进；关键在于选择合适的结构，并把“发现到期”和“执行回调”分开。 注册超时与回调 → 插入定时器结构 → Tick/硬件比较到期 → 取出到期项 → 任务上下文执行回调...">
+    <meta name="description" content="比较链表、最小堆和时间轮的取舍，并处理定时器回绕、取消与回调并发语义。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-software-timer/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="软件定时器：用一个硬件时基管理多个超时 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="一个 MCU 的硬件定时器数量有限，但超时需求很多：按键长按、通信重试、传感器采样、状态机等待和看门狗监督都需要各自的截止时间。软件定时器把这些截止时间组织到统一数据结构中，由一个时基推进；关键在于选择合适的结构，并把“发现到期”和“执行回调”分开。 注册超时与回调 → 插入定时器结构 → Tick/硬件比较到期 → 取出到期项 → 任务上下文执行回调...">
+    <meta property="og:description" content="比较链表、最小堆和时间轮的取舍，并处理定时器回绕、取消与回调并发语义。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-software-timer/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="软件定时器：用一个硬件时基管理多个超时 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="一个 MCU 的硬件定时器数量有限，但超时需求很多：按键长按、通信重试、传感器采样、状态机等待和看门狗监督都需要各自的截止时间。软件定时器把这些截止时间组织到统一数据结构中，由一个时基推进；关键在于选择合适的结构，并把“发现到期”和“执行回调”分开。 注册超时与回调 → 插入定时器结构 → Tick/硬件比较到期 → 取出到期项 → 任务上下文执行回调...">
+    <meta name="twitter:description" content="比较链表、最小堆和时间轮的取舍，并处理定时器回绕、取消与回调并发语义。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -272,6 +272,12 @@
 
 <h2 id="到期不等于现在就执行回调"><a href="#到期不等于现在就执行回调" class="headerlink" title="到期不等于现在就执行回调"></a>到期不等于现在就执行回调</h2><p>如果在 Tick 中断里执行网络发送、Flash 写入或复杂状态机，所有更高优先级中断都会被拖慢。中断应记录到期标记或投递事件；后台任务在可控上下文里执行回调。这样回调耗时、队列积压和失败处理都能观察到，也不会把定时器误写成隐藏的任务调度器。</p>
 <h2 id="回绕和竞态必须写进接口语义"><a href="#回绕和竞态必须写进接口语义" class="headerlink" title="回绕和竞态必须写进接口语义"></a>回绕和竞态必须写进接口语义</h2><p>硬件计数器会回绕，比较时间点时需要使用能处理有符号差值的方式，不能简单比较两个无符号整数大小。取消、重启和销毁定时器时，还要与中断和回调执行路径同步。一个清楚的接口会说明：取消成功后回调是否保证不再执行，还是只保证不会再次周期触发。</p>
+<h2 id="回绕比较有适用条件"><a href="#回绕比较有适用条件" class="headerlink" title="回绕比较有适用条件"></a>回绕比较有适用条件</h2><p>对 32 位单调 tick，可用有符号差值判断是否到期，但前提是任意定时区间小于计数范围的一半。接口若允许更长超时，就要扩展计数位宽或在每次回绕时维护高位。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">bool</span> <span class="title function_">time_reached</span><span class="params">(<span class="type">uint32_t</span> now, <span class="type">uint32_t</span> deadline)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> (<span class="type">int32_t</span>)(now - deadline) &gt;= <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">timer_isr</span><span class="params">(<span class="type">uint32_t</span> now)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">while</span> (heap_size() &amp;&amp; time_reached(now, heap_min()-&gt;deadline)) &#123;</span><br><span class="line">        <span class="type">timer_t</span> *timer = heap_pop();</span><br><span class="line">        timer-&gt;state = TIMER_PENDING;</span><br><span class="line">        enqueue_timer_event_from_isr(timer);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>回调开始前应把状态从 pending 原子地改成 running。取消函数遇到 running 时，是等待回调结束、返回 busy，还是只阻止下一周期，必须由接口文档固定。否则调用者释放回调参数后，后台任务仍可能访问旧地址。</p>
+<p>周期定时器还要定义补偿方式。用“本次执行时刻加周期”会逐步积累回调延迟；用“上一次 deadline 加周期”能维持相位，但过载后可能连续补执行。控制任务通常需要限制追赶次数，并记录 missed deadline。</p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文没有给某种数据结构下绝对结论。定时器数量、注册频率、tick 粒度、回调上下文和 MCU 算力都会改变取舍。MultiTimer 是可参考实现，是否满足中断安全、回绕范围和取消语义，应以所用版本源码和目标负载测试为准。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://github.com/0x1abin/MultiTimer">MultiTimer</a></p>
 
         </div>

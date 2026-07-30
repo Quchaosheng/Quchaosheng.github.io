@@ -18,14 +18,14 @@
 
 <title>GDB 崩溃调试：从信号到调用栈 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="崩溃调试的目标不是盯着最后一行代码，而是还原“异常信号、出错线程、调用路径、关键变量和内存状态”这条证据链。 排查路径 开启 core dump 并保留与二进制匹配的调试符号。使用 gdb program core 后先看信号与全部线程，再定位故障栈帧，检查参数、局部变量、寄存器和相关内存。 程序收到致命信号 → 内核生成 core → 加载二进制与符...">
+    <meta name="description" content="建立从 core 文件、构建产物和线程栈到内存证据的排查顺序，减少只盯崩溃行造成的误判。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/gdb-crash-debugging/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="GDB 崩溃调试：从信号到调用栈 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="崩溃调试的目标不是盯着最后一行代码，而是还原“异常信号、出错线程、调用路径、关键变量和内存状态”这条证据链。 排查路径 开启 core dump 并保留与二进制匹配的调试符号。使用 gdb program core 后先看信号与全部线程，再定位故障栈帧，检查参数、局部变量、寄存器和相关内存。 程序收到致命信号 → 内核生成 core → 加载二进制与符...">
+    <meta property="og:description" content="建立从 core 文件、构建产物和线程栈到内存证据的排查顺序，减少只盯崩溃行造成的误判。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/gdb-crash-debugging/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="GDB 崩溃调试：从信号到调用栈 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="崩溃调试的目标不是盯着最后一行代码，而是还原“异常信号、出错线程、调用路径、关键变量和内存状态”这条证据链。 排查路径 开启 core dump 并保留与二进制匹配的调试符号。使用 gdb program core 后先看信号与全部线程，再定位故障栈帧，检查参数、局部变量、寄存器和相关内存。 程序收到致命信号 → 内核生成 core → 加载二进制与符...">
+    <meta name="twitter:description" content="建立从 core 文件、构建产物和线程栈到内存证据的排查顺序，减少只盯崩溃行造成的误判。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -265,17 +265,34 @@
         </header>
 
         <div class="post-content">
-            <p>崩溃调试的目标不是盯着最后一行代码，而是还原“异常信号、出错线程、调用路径、关键变量和内存状态”这条证据链。</p>
-<h2 id="排查路径"><a href="#排查路径" class="headerlink" title="排查路径"></a>排查路径</h2><p>开启 core dump 并保留与二进制匹配的调试符号。使用 <code>gdb program core</code> 后先看信号与全部线程，再定位故障栈帧，检查参数、局部变量、寄存器和相关内存。</p>
-<div class="note-flow"><span>程序收到致命信号</span><i>→</i><span>内核生成 core</span><i>→</i><span>加载二进制与符号</span><i>→</i><span>定位异常线程和栈帧</span><i>→</i><span>验证变量与内存</span></div>
+            <p>程序收到 <code>SIGSEGV</code> 后停在 <code>memcpy()</code>，问题就一定出在这个函数吗？通常不是。越界写可能早已破坏对象，悬空指针也可能在很久以后才被解引用。GDB 崩溃分析真正要做的是保存现场，然后回答：哪个线程收到什么信号，调用路径是什么，关键对象何时开始不合理。</p>
+<h2 id="先保证-core-文件可用"><a href="#先保证-core-文件可用" class="headerlink" title="先保证 core 文件可用"></a>先保证 core 文件可用</h2><p>分析前需要四样东西：core 文件、产生它的可执行文件、完全匹配的共享库，以及调试符号。重新编译一个“差不多”的二进制通常不够，因为地址布局、优化和源码行都可能变化。</p>
+<div class="note-flow"><span>程序收到致命信号</span><i>→</i><span>系统保存 core 与元数据</span><i>→</i><span>加载匹配二进制和符号</span><i>→</i><span>确定异常线程</span><i>→</i><span>沿调用栈验证参数、对象与内存</span></div>
 
-<h2 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h2><ul>
-<li><code>thread apply all bt full</code>：查看全部线程调用栈。</li>
-<li><code>frame</code>、<code>info locals</code>、<code>info args</code>：检查目标栈帧。</li>
-<li><code>x</code>、<code>p</code>、<code>info registers</code>：查看内存、表达式和寄存器。</li>
+<div class="note-map"><span><b>core 文件</b><small>保存进程地址空间、寄存器和线程状态的快照</small></span><span><b>ELF 与 build ID</b><small>用来匹配当时运行的二进制和调试符号</small></span><span><b>致命信号</b><small>说明停止原因，但不总能指出破坏发生的位置</small></span><span><b>异常线程</b><small>当前触发故障的线程，可能不是最初写坏内存的线程</small></span><span><b>调用栈</b><small>从当前指令回溯调用关系，受优化与栈损坏影响</small></span><span><b>交叉证据</b><small>日志、输入、Sanitizer 和版本信息用于验证推断</small></span></div>
+
+<p>传统 core 可先这样开启：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ulimit</span> -c unlimited</span><br><span class="line"><span class="built_in">cat</span> /proc/sys/kernel/core_pattern</span><br><span class="line">./demo</span><br><span class="line"></span><br><span class="line"><span class="comment"># 传统 core 文件</span></span><br><span class="line">gdb ./demo ./core</span><br><span class="line"></span><br><span class="line"><span class="comment"># systemd-coredump 管理的系统</span></span><br><span class="line">coredumpctl list demo</span><br><span class="line">coredumpctl info demo</span><br><span class="line">coredumpctl debug demo</span><br></pre></td></tr></table></figure>
+
+<p><code>core_pattern</code> 可能把 core 交给 systemd-coredump 或其他收集程序，因此当前目录没文件不等于没有生成。容器、服务单元的 <code>LimitCORE</code>、磁盘配额和安全策略也会改变结果。</p>
+<h2 id="进入-GDB-后按证据顺序看"><a href="#进入-GDB-后按证据顺序看" class="headerlink" title="进入 GDB 后按证据顺序看"></a>进入 GDB 后按证据顺序看</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">set pagination off</span><br><span class="line">info files</span><br><span class="line">info sharedlibrary</span><br><span class="line">info threads</span><br><span class="line">thread apply all bt full</span><br><span class="line"></span><br><span class="line">thread 7</span><br><span class="line">frame 0</span><br><span class="line">info args</span><br><span class="line">info locals</span><br><span class="line">info registers</span><br><span class="line">x/16gx pointer</span><br><span class="line">p *object</span><br></pre></td></tr></table></figure>
+
+<p>先看 <code>info files</code> 和共享库是否匹配，再找带有致命信号的线程。对死锁或 watchdog 触发的 dump，真正有用的可能是另一个持锁线程，因此 <code>thread apply all bt full</code> 往往比只看当前线程更重要。</p>
+<p>沿栈向上走时，每一帧只回答一个具体问题：传入的长度是否越界，指针是否指向已释放区域，对象字段是否违反状态机约束。看到一个异常值后，继续确认它来自函数参数、共享对象还是已经损坏的栈，别急着把最后赋值者当成根因。</p>
+<h2 id="优化构建会改变你看到的东西"><a href="#优化构建会改变你看到的东西" class="headerlink" title="优化构建会改变你看到的东西"></a>优化构建会改变你看到的东西</h2><p><code>-g</code> 负责调试信息，<code>-O0</code> 才是关闭优化，两者不是同一个开关。生产二进制可以保留优化并单独保存调试符号；构建系统应记录 commit、编译器、flags 和 build ID。常用的折中设置是保留帧指针，但这会影响性能和 ABI 选择，应通过项目构建配置统一决定。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">readelf -n ./demo | grep -A3 <span class="string">&#x27;Build ID&#x27;</span></span><br><span class="line">file ./demo</span><br><span class="line">gdb -batch -ex <span class="string">&#x27;thread apply all bt full&#x27;</span> ./demo ./core &gt; backtrace.txt</span><br></pre></td></tr></table></figure>
+
+<p>如果 GDB 显示 <code>&lt;optimized out&gt;</code>、栈回溯突然断裂或多个源码行合并，不代表变量从未存在。编译器可能把变量留在寄存器、消除存储或内联函数。此时结合反汇编、寄存器和调用约定检查，必要时用同一输入在 ASan&#x2F;UBSan 构建上复现。</p>
+<h2 id="什么时候-core-也不够"><a href="#什么时候-core-也不够" class="headerlink" title="什么时候 core 也不够"></a>什么时候 core 也不够</h2><ul>
+<li>堆越界在数分钟后才触发崩溃，core 只留下最后受害者。</li>
+<li>数据竞争依赖时序，离线快照看不到发生顺序。</li>
+<li>栈或 unwind 信息已损坏，回溯结果不可信。</li>
+<li>二进制、共享库或 debuginfo 不匹配，源码行只是错配结果。</li>
+<li>进程被 <code>SIGKILL</code> 终止，通常没有用户态崩溃现场可供回溯。</li>
 </ul>
-<p>优化会导致内联、变量消失和执行顺序变化，必要时用可复现输入和 sanitizers 交叉验证。</p>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494945&idx=1&sn=9dffabf351197d5418549c39e4ee7202">深入 GDB 调试原理，拆解程序崩溃内核</a></p>
+<p>这类问题需要更早的证据：Sanitizer、崩溃前环形日志、请求 ID、关键状态变更记录，或可控的复现输入。工具越靠近错误首次发生的位置，推断链越短。</p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>core 是某一时刻的快照，能证明寄存器、内存和线程当时是什么状态，不能单独证明哪一行最早破坏了它们。文中的命令适用于常见 Linux ELF 环境；转储范围、路径和隐私内容受 <code>core_pattern</code>、<code>coredump_filter</code>、systemd 配置及权限控制。core 可能包含密钥和用户数据，上传或长期保存前必须脱敏并限制访问。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://sourceware.org/gdb/current/onlinedocs/gdb.html/">Debugging with GDB</a> · <a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/core.5.html">core(5)</a> · <a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494945&idx=1&sn=9dffabf351197d5418549c39e4ee7202">深入 GDB 调试原理，拆解程序崩溃内核</a></p>
 
         </div>
 
@@ -353,7 +370,7 @@
                 <a class="prev" rel="prev" href="/2026/07/29/cpu-memory-hierarchy/">CPU 很快，为什么取数据仍然很慢</a>
             
             
-            <a class="next" rel="next" href="/2026/07/29/linux-buddy-slub/">伙伴系统与 SLUB：Linux 内核怎样分配内存</a>
+            <a class="next" rel="next" href="/2026/07/29/linux-cfs-vruntime/">CFS 与 vruntime：Linux 如何分配 CPU 时间</a>
             
         </section>
 

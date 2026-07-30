@@ -18,14 +18,14 @@
 
 <title>fasync 与 SIGIO：Linux 信号驱动异步通知 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="fasync 允许设备状态变化时由驱动向订阅进程发送 SIGIO 。它适合事件频率不高、只需通知“可以读写”的场景；大量事件通常更适合 poll&amp;#x2F;epoll 或专用事件队列。 建立通知 用户空间设置文件描述符所有者并启用 O_ASYNC ，VFS 调用驱动的 fasync 回调维护订阅者列表。设备事件到来时，驱动调用 kill_fasync(...">
+    <meta name="description" content="从用户态订阅、驱动 fasync 队列和信号处理限制出发，说明 SIGIO 适用在哪里，以及怎样避免丢事件和生命周期错误。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-fasync-sigio/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="fasync 与 SIGIO：Linux 信号驱动异步通知 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="fasync 允许设备状态变化时由驱动向订阅进程发送 SIGIO 。它适合事件频率不高、只需通知“可以读写”的场景；大量事件通常更适合 poll&amp;#x2F;epoll 或专用事件队列。 建立通知 用户空间设置文件描述符所有者并启用 O_ASYNC ，VFS 调用驱动的 fasync 回调维护订阅者列表。设备事件到来时，驱动调用 kill_fasync(...">
+    <meta property="og:description" content="从用户态订阅、驱动 fasync 队列和信号处理限制出发，说明 SIGIO 适用在哪里，以及怎样避免丢事件和生命周期错误。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-fasync-sigio/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="fasync 与 SIGIO：Linux 信号驱动异步通知 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="fasync 允许设备状态变化时由驱动向订阅进程发送 SIGIO 。它适合事件频率不高、只需通知“可以读写”的场景；大量事件通常更适合 poll&amp;#x2F;epoll 或专用事件队列。 建立通知 用户空间设置文件描述符所有者并启用 O_ASYNC ，VFS 调用驱动的 fasync 回调维护订阅者列表。设备事件到来时，驱动调用 kill_fasync(...">
+    <meta name="twitter:description" content="从用户态订阅、驱动 fasync 队列和信号处理限制出发，说明 SIGIO 适用在哪里，以及怎样避免丢事件和生命周期错误。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -265,16 +265,30 @@
         </header>
 
         <div class="post-content">
-            <p><code>fasync</code> 允许设备状态变化时由驱动向订阅进程发送 <code>SIGIO</code>。它适合事件频率不高、只需通知“可以读写”的场景；大量事件通常更适合 poll&#x2F;epoll 或专用事件队列。</p>
-<h2 id="建立通知"><a href="#建立通知" class="headerlink" title="建立通知"></a>建立通知</h2><p>用户空间设置文件描述符所有者并启用 <code>O_ASYNC</code>，VFS 调用驱动的 fasync 回调维护订阅者列表。设备事件到来时，驱动调用 <code>kill_fasync()</code>，进程收到信号后再执行实际读写。</p>
-<div class="note-flow"><span>应用设置 F_SETOWN</span><i>→</i><span>启用 O_ASYNC</span><i>→</i><span>驱动登记 fasync</span><i>→</i><span>设备事件触发 kill_fasync</span><i>→</i><span>应用收到 SIGIO 并读取</span></div>
+            <p>字符设备准备好了数据，应用又不想一直阻塞在 <code>read()</code> 上，可以让驱动主动发一条通知吗？<code>fasync</code> 与 <code>SIGIO</code> 就是 Linux 提供的一条老而直接的路径。它传递的是“文件描述符状态可能变化了”，不是数据本身。应用收到信号后，仍要回到正常的 <code>read()</code> 或 <code>write()</code> 路径确认状态。</p>
+<p>这种方式适合低频、简单的设备事件，例如按键、少量传感器数据或实验性字符驱动。连接多、事件密集或需要精确排队时，<code>poll/epoll</code>、<code>eventfd</code> 或专用消息队列通常更容易控制。</p>
+<h2 id="订阅是怎样建立的"><a href="#订阅是怎样建立的" class="headerlink" title="订阅是怎样建立的"></a>订阅是怎样建立的</h2><p>用户空间先用 <code>F_SETOWN</code> 指定由谁接收 I&#x2F;O 信号，再通过 <code>F_SETFL</code> 打开 <code>O_ASYNC</code>。VFS 随后调用驱动 <code>file_operations.fasync</code> 回调。驱动一般把工作交给 <code>fasync_helper()</code>，由它维护与该文件关联的 <code>struct fasync_struct</code> 订阅链。</p>
+<div class="note-flow"><span>应用设置 F_SETOWN</span><i>→</i><span>启用 O_ASYNC</span><i>→</i><span>VFS 调用驱动 fasync</span><i>→</i><span>设备产生事件</span><i>→</i><span>kill_fasync 发送 SIGIO</span><i>→</i><span>应用重新读取到 EAGAIN</span></div>
 
-<h2 id="记忆要点"><a href="#记忆要点" class="headerlink" title="记忆要点"></a>记忆要点</h2><ul>
-<li>信号只是通知，不应把完整数据塞进信号处理流程。</li>
-<li>关闭文件时必须从异步队列移除订阅者。</li>
-<li>信号处理函数只能调用异步信号安全的接口。</li>
+<div class="note-map"><span><b>F_SETOWN</b><small>指定接收 SIGIO 的进程或进程组</small></span><span><b>O_ASYNC</b><small>打开或关闭当前文件描述符的异步通知</small></span><span><b>fasync_helper</b><small>把打开的 file 加入或移出驱动订阅链</small></span><span><b>kill_fasync</b><small>事件到来时向订阅者发送指定信号与 band</small></span><span><b>信号处理器</b><small>只做最小通知，不能承担完整 I/O 处理</small></span><span><b>read/poll</b><small>真正确认数据是否存在，并处理竞争与批量消费</small></span></div>
+
+<p>驱动侧的骨架并不长，难点在对象生命周期和并发：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">fasync_struct</span> *<span class="title">async_queue</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">demo_fasync</span><span class="params">(<span class="type">int</span> fd, <span class="keyword">struct</span> file *filp, <span class="type">int</span> on)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> fasync_helper(fd, filp, on, &amp;async_queue);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">demo_release</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span></span><br><span class="line">&#123;</span><br><span class="line">    demo_fasync(<span class="number">-1</span>, filp, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">demo_irq</span><span class="params">(<span class="type">int</span> irq, <span class="type">void</span> *data)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">/* 先更新受锁保护的设备状态，再通知用户空间。 */</span></span><br><span class="line">    kill_fasync(&amp;async_queue, SIGIO, POLL_IN);</span><br><span class="line">    <span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>关闭文件时必须把订阅者移出队列。设备解绑、错误恢复和模块卸载也要先阻止新事件，再同步仍在运行的中断或工作项，最后释放队列依赖的对象。否则 <code>kill_fasync()</code> 可能碰到已经失效的状态。</p>
+<h2 id="用户空间不要在信号里读完所有数据"><a href="#用户空间不要在信号里读完所有数据" class="headerlink" title="用户空间不要在信号里读完所有数据"></a>用户空间不要在信号里读完所有数据</h2><p>信号处理函数只能调用异步信号安全函数。更稳妥的做法是让处理器只设置 <code>sig_atomic_t</code> 标志，或向 self-pipe 写一个字节，再在主循环里读取设备直到 <code>EAGAIN</code>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">volatile</span> <span class="type">sig_atomic_t</span> io_ready;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">on_sigio</span><span class="params">(<span class="type">int</span> signo)</span></span><br><span class="line">&#123;</span><br><span class="line">    io_ready = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 初始化时安装 sigaction，设置 F_SETOWN，再打开 O_NONBLOCK | O_ASYNC。 */</span></span><br><span class="line"><span class="keyword">if</span> (io_ready) &#123;</span><br><span class="line">    io_ready = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (read(fd, buf, <span class="keyword">sizeof</span>(buf)) &gt; <span class="number">0</span>)</span><br><span class="line">        consume(buf);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>标准信号通常不会为每次设备事件各保存一个排队实例。两个事件在应用处理前连续到来，可能只观察到一次 <code>SIGIO</code>。所以正确语义应是“有工作可做”，收到通知后把当前可读数据排空，而不是把信号次数当成事件数。</p>
+<h2 id="容易踩的坑"><a href="#容易踩的坑" class="headerlink" title="容易踩的坑"></a>容易踩的坑</h2><ul>
+<li>先发信号、后写入设备缓冲区，应用醒来却读不到数据。</li>
+<li>在处理器里调用 <code>printf</code>、分配内存或取得普通互斥锁。</li>
+<li>把 <code>SIGIO</code> 次数当作无损计数，忽略信号合并。</li>
+<li>只实现 <code>fasync</code>，却没有让 <code>read()</code>、<code>poll()</code> 和非阻塞语义保持一致。</li>
+<li>多个打开者共享一条设备队列，却没有明确每个文件实例是否都应收到通知。</li>
 </ul>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494999&idx=1&sn=998f50d0caeb7080afac1ac8ee0782fd">吃透内核 fasync 机制，弄懂信号驱动异步通知</a></p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文描述字符设备常见实现，不保证每种文件类型都支持 <code>O_ASYNC</code>。信号投递时机、所有者语义和可用 band 还受具体驱动与内核版本影响。要验证“没有丢数据”，应给设备事件编号并比较生产与消费序列，不能只统计收到多少次 <code>SIGIO</code>。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/fcntl.2.html">fcntl(2)</a> · <a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/signal-safety.7.html">signal-safety(7)</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/driver-api/basics.html">Linux Driver Basics</a> · <a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494999&idx=1&sn=998f50d0caeb7080afac1ac8ee0782fd">吃透内核 fasync 机制，弄懂信号驱动异步通知</a></p>
 
         </div>
 

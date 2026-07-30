@@ -268,6 +268,8 @@
             <p>机器人要自主移动，至少需要回答两个问题：自己在哪里，以及周围哪些空间安全。Visual SLAM 通过相机特征与 IMU 估计连续位姿；nvblox 将深度观测按位姿融合，维护 TSDF、占据栅格或 ESDF 等空间表示。前者提供“运动轨迹”，后者提供“可通行距离”，二者接到导航栈后，规划器才有可靠的起点与障碍信息。</p>
 <div class="note-flow"><span>同步相机与 IMU</span><i>→</i><span>Visual SLAM 估计位姿</span><i>→</i><span>深度数据按位姿融合</span><i>→</i><span>生成三维地图/距离场</span><i>→</i><span>导航规划并反馈新观测</span></div>
 
+<figure class="note-visual"><figcaption><span>坐标图</span>定位、建图和导航共享一条时间与 TF 链，任一环错位都会污染后续结果。</figcaption><div class="note-map"><span><b>camera_link</b><small>相机外参与采集时间决定视觉观测从哪里产生</small></span><span><b>base_link</b><small>机器人机体基准，传感器静态变换应可独立校验</small></span><span><b>odom</b><small>保持局部连续，允许长期漂移，供短时控制使用</small></span><span><b>map</b><small>提供全局一致坐标，重定位时可相对 odom 修正</small></span><span><b>TSDF/ESDF</b><small>按对应时刻位姿融合深度，再计算表面或障碍距离</small></span><span><b>导航代价图</b><small>检查地图年龄、清除语义和安全膨胀后再规划</small></span></div></figure>
+
 <h2 id="先分清四个坐标系"><a href="#先分清四个坐标系" class="headerlink" title="先分清四个坐标系"></a>先分清四个坐标系</h2><p>在 ROS 2 机器人里，<code>base_link</code> 通常表示机体，<code>camera_link</code> 表示相机，<code>odom</code> 提供连续但会漂移的局部里程计坐标，<code>map</code> 则用于长期一致的全局地图。Visual SLAM、轮速计和导航模块发布或消费的变换必须形成一棵没有环的 TF 树。</p>
 <p>一个很实用的排查顺序是：先看相机到机体的静态外参是否正确，再看 IMU 轴向和单位，接着看时间戳是否单调且接近同步，最后再看算法参数。很多“SLAM 漂移”最终是外参、IMU 时间延迟或发布帧名不一致，不是特征点不够。</p>
 <h2 id="为什么同步比帧率更重要"><a href="#为什么同步比帧率更重要" class="headerlink" title="为什么同步比帧率更重要"></a>为什么同步比帧率更重要</h2><p>视觉帧与 IMU 之间只要存在固定偏移，机器人快速转动时就会把同一时刻的图像和另一时刻的角速度强行融合。结果可能表现为轨迹抖动、重定位失败或地图扭曲。深度帧与位姿不同步同样会把障碍物插到错误位置。</p>
@@ -342,11 +344,11 @@
                 <span class="tag">
                     
                     
-                        <a href="/tag/Isaac-ROS/"># Isaac ROS</a>
-                    
                         <a href="/tag/Visual-SLAM/"># Visual SLAM</a>
                     
                         <a href="/tag/nvblox/"># nvblox</a>
+                    
+                        <a href="/tag/Isaac-ROS/"># Isaac ROS</a>
                     
                         
                 </span>
