@@ -55,6 +55,7 @@ declare -a BASE_NAMES=()
 declare -a SLUGS=()
 declare -a CATEGORY_SPECS=()
 declare -a TITLES=()
+declare -a GIT_PATHS=()
 
 add_note() {
   local input_arg="$1"
@@ -149,12 +150,14 @@ for ((i = 0; i < ${#INPUT_PATHS[@]}; i++)); do
   fi
 
   cp -- "$TEMP_FILE" "$destination"
+  GIT_PATHS+=("source/_posts/$slug.md")
 
   asset_source="$(dirname -- "$input_path")/$base_name"
   if [[ -d "$asset_source" ]]; then
     asset_destination="$POST_DIR/$slug"
     mkdir -p "$asset_destination"
     cp -a -- "$asset_source/." "$asset_destination/"
+    GIT_PATHS+=("source/_posts/$slug")
     printf '已复制文章资源：%s\n' "$asset_source"
   fi
 
@@ -173,14 +176,14 @@ npx hexo clean
 npx hexo generate
 
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  git add --all
-  if ! git diff --cached --quiet; then
+  git add -- "${GIT_PATHS[@]}"
+  if ! git diff --cached --quiet -- "${GIT_PATHS[@]}"; then
     if (( ${#TITLES[@]} == 1 )); then
       commit_message="Add post: ${TITLES[0]}"
     else
       commit_message="Add ${#TITLES[@]} notes"
     fi
-    git commit -m "$commit_message"
+    git commit -m "$commit_message" -- "${GIT_PATHS[@]}"
   fi
   printf '正在备份 Hexo 源码到 source 分支……\n'
   git push --set-upstream origin source

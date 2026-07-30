@@ -5,6 +5,7 @@ const path = require('path');
 
 const FRONT_MATTER_BOUNDARY = '---';
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
+const SHANGHAI_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 function readFrontMatter(content) {
   const lines = String(content || '').replace(/^\uFEFF/, '').split(/\r?\n/);
@@ -39,21 +40,34 @@ function parseLocalDateTime(value) {
   }
 
   const [, year, month, day, hour = '00', minute = '00', second = '00'] = match;
-  const date = new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute),
-    Number(second)
-  );
-  return Number.isNaN(date.getTime()) ? null : date;
+  const parts = [year, month, day, hour, minute, second].map(Number);
+  const [yearNumber, monthNumber, dayNumber, hourNumber, minuteNumber, secondNumber] = parts;
+  const validation = new Date(Date.UTC(
+    yearNumber,
+    monthNumber - 1,
+    dayNumber,
+    hourNumber,
+    minuteNumber,
+    secondNumber
+  ));
+  if (
+    validation.getUTCFullYear() !== yearNumber ||
+    validation.getUTCMonth() !== monthNumber - 1 ||
+    validation.getUTCDate() !== dayNumber ||
+    validation.getUTCHours() !== hourNumber ||
+    validation.getUTCMinutes() !== minuteNumber ||
+    validation.getUTCSeconds() !== secondNumber
+  ) {
+    return null;
+  }
+  return new Date(validation.getTime() - SHANGHAI_OFFSET_MS);
 }
 
 function localDateKey(date) {
-  const year = String(date.getFullYear()).padStart(4, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const shanghaiDate = new Date(date.getTime() + SHANGHAI_OFFSET_MS);
+  const year = String(shanghaiDate.getUTCFullYear()).padStart(4, '0');
+  const month = String(shanghaiDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(shanghaiDate.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
