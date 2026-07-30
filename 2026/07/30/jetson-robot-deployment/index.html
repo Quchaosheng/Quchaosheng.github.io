@@ -18,14 +18,14 @@
 
 <title>Jetson 机器人部署：功耗、算力与实时控制怎样分工 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器集成在一块边缘板上。JetPack 将 Linux for Tegra、CUDA、TensorRT、cuDNN 和系统组件打包起来，使相机、视觉推理与 ROS 2 能在机器人本体运行。它很适合“看懂环境”和“生成任务”，但 GPU 的高吞吐量并不自动等于电机控制回路拥有可预测的最...">
+    <meta name="description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。 选择 JetPack 与...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Jetson 机器人部署：功耗、算力与实时控制怎样分工 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器集成在一块边缘板上。JetPack 将 Linux for Tegra、CUDA、TensorRT、cuDNN 和系统组件打包起来，使相机、视觉推理与 ROS 2 能在机器人本体运行。它很适合“看懂环境”和“生成任务”，但 GPU 的高吞吐量并不自动等于电机控制回路拥有可预测的最...">
+    <meta property="og:description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。 选择 JetPack 与...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Jetson 机器人部署：功耗、算力与实时控制怎样分工 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器集成在一块边缘板上。JetPack 将 Linux for Tegra、CUDA、TensorRT、cuDNN 和系统组件打包起来，使相机、视觉推理与 ROS 2 能在机器人本体运行。它很适合“看懂环境”和“生成任务”，但 GPU 的高吞吐量并不自动等于电机控制回路拥有可预测的最...">
+    <meta name="twitter:description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。 选择 JetPack 与...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -264,7 +264,7 @@
         </header>
 
         <div class="post-content">
-            <p>Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器集成在一块边缘板上。JetPack 将 Linux for Tegra、CUDA、TensorRT、cuDNN 和系统组件打包起来，使相机、视觉推理与 ROS 2 能在机器人本体运行。它很适合“看懂环境”和“生成任务”，但 GPU 的高吞吐量并不自动等于电机控制回路拥有可预测的最坏时延。</p>
+            <p>Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。</p>
 <div class="note-flow"><span>选择 JetPack 与功耗模式</span><i>→</i><span>部署模型和 ROS 2 节点</span><i>→</i><span>测量 CPU/GPU/内存负载</span><i>→</i><span>分离推理与实时控制</span><i>→</i><span>在温度稳定后复测长尾</span></div>
 
 <h2 id="Jetson-上实际要争抢哪些资源"><a href="#Jetson-上实际要争抢哪些资源" class="headerlink" title="Jetson 上实际要争抢哪些资源"></a>Jetson 上实际要争抢哪些资源</h2><p>推理不只占 GPU。摄像头采集和图像颜色转换可能使用 ISP 或 VIC，视频解码会使用专用引擎，TensorRT 占 GPU 和显存带宽，ROS 2 节点、DDS 和驱动则会占用 CPU。多路相机加上大模型时，瓶颈往往从 GPU 算力变成内存带宽、CPU 回调排队或散热引起的降频。</p>
@@ -288,7 +288,7 @@
 <li>用 <code>tegrastats</code> 与 ROS 2 时间戳一起记录，观察 P95&#x2F;P99，而不是只看平均 FPS。</li>
 <li>施加内存压力、拔插相机、降低照度、制造模型超时，验证控制器是否按预期降级。</li>
 </ol>
-<p>只有在这些情况下仍能解释清楚系统行为，Jetson 才算从“能跑 demo”进入“能放在机器人上”。</p>
+<p>这些情况都跑过后，才知道这套 Jetson 配置在机器人上遇到压力时会怎样反应。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://docs.nvidia.com/jetson/">NVIDIA Jetson Documentation</a> · <a target="_blank" rel="noopener" href="https://docs.nvidia.com/jetson/archives/">Jetson Linux Developer Guide</a></p>
 
         </div>

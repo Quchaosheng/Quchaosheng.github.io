@@ -18,14 +18,14 @@
 
 <title>证据日志 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="EVIDENCE LOG 这里记录项目在什么环境下验证过什么，也记录尚未验证什么。代码、仿真、虚拟总线、实体 I/O 和正式测试不是同一种证据，不能相互替代。 实现公开 仿真 / 代理 实体 I/O 正式会话待补 记录方法 固定环境与版本 → 记录命令与输入 → 保存原始工件 → 标明能证明什么 → 保留失败与边界 一次“跑通”不是结论。能复查的记录至...">
+    <meta name="description" content="验证记录 这页只写已经做过的测试。每一行都说明测试环境、这次能说明什么，以及还没有测什么。 实现公开 仿真 / 代理 实体 I/O 正式会话待补 怎么看这张表 代码、Gazebo、vcan、QEMU、实体 I&amp;#x2F;O 和正式测试回答的问题不同。只有截图或口头描述时，先把它当作线索；要判断结果是否可靠，还要看运行环境、命令、负载和原始日志。 当前项...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/evidence/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="website">
 <meta property="og:title" content="证据日志 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="EVIDENCE LOG 这里记录项目在什么环境下验证过什么，也记录尚未验证什么。代码、仿真、虚拟总线、实体 I/O 和正式测试不是同一种证据，不能相互替代。 实现公开 仿真 / 代理 实体 I/O 正式会话待补 记录方法 固定环境与版本 → 记录命令与输入 → 保存原始工件 → 标明能证明什么 → 保留失败与边界 一次“跑通”不是结论。能复查的记录至...">
+    <meta property="og:description" content="验证记录 这页只写已经做过的测试。每一行都说明测试环境、这次能说明什么，以及还没有测什么。 实现公开 仿真 / 代理 实体 I/O 正式会话待补 怎么看这张表 代码、Gazebo、vcan、QEMU、实体 I&amp;#x2F;O 和正式测试回答的问题不同。只有截图或口头描述时，先把它当作线索；要判断结果是否可靠，还要看运行环境、命令、负载和原始日志。 当前项...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/evidence/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="证据日志 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="EVIDENCE LOG 这里记录项目在什么环境下验证过什么，也记录尚未验证什么。代码、仿真、虚拟总线、实体 I/O 和正式测试不是同一种证据，不能相互替代。 实现公开 仿真 / 代理 实体 I/O 正式会话待补 记录方法 固定环境与版本 → 记录命令与输入 → 保存原始工件 → 标明能证明什么 → 保留失败与边界 一次“跑通”不是结论。能复查的记录至...">
+    <meta name="twitter:description" content="验证记录 这页只写已经做过的测试。每一行都说明测试环境、这次能说明什么，以及还没有测什么。 实现公开 仿真 / 代理 实体 I/O 正式会话待补 怎么看这张表 代码、Gazebo、vcan、QEMU、实体 I&amp;#x2F;O 和正式测试回答的问题不同。只有截图或口头描述时，先把它当作线索；要判断结果是否可靠，还要看运行环境、命令、负载和原始日志。 当前项...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -172,20 +172,16 @@
         
         <section class="post-content">
             <div class="page-lead">
-  <p class="section-kicker">EVIDENCE LOG</p>
-  <p>这里记录项目在什么环境下验证过什么，也记录尚未验证什么。代码、仿真、虚拟总线、实体 I/O 和正式测试不是同一种证据，不能相互替代。</p>
+  <p class="section-kicker">验证记录</p>
+  <p>这页只写已经做过的测试。每一行都说明测试环境、这次能说明什么，以及还没有测什么。</p>
 </div>
 
 <div class="evidence-legend"><span class="status-badge status-implementation">实现公开</span><span class="status-badge status-proxy">仿真 / 代理</span><span class="status-badge status-physical">实体 I/O</span><span class="status-badge status-pending">正式会话待补</span></div>
 
-<h2 id="记录方法"><a href="#记录方法" class="headerlink" title="记录方法"></a>记录方法</h2><div class="note-flow"><span>固定环境与版本</span><i>→</i><span>记录命令与输入</span><i>→</i><span>保存原始工件</span><i>→</i><span>标明能证明什么</span><i>→</i><span>保留失败与边界</span></div>
-
-<p>一次“跑通”不是结论。能复查的记录至少包含平台、软件版本、负载、原始输出、通过阈值和失败时的现场信息；若只有截图或口头描述，就只能把它当作线索，而不是验收证据。</p>
+<h2 id="怎么看这张表"><a href="#怎么看这张表" class="headerlink" title="怎么看这张表"></a>怎么看这张表</h2><p>代码、Gazebo、vcan、QEMU、实体 I&#x2F;O 和正式测试回答的问题不同。只有截图或口头描述时，先把它当作线索；要判断结果是否可靠，还要看运行环境、命令、负载和原始日志。</p>
 <h2 id="当前项目台账"><a href="#当前项目台账" class="headerlink" title="当前项目台账"></a>当前项目台账</h2><div class="evidence-table-wrap"><table class="evidence-table"><thead><tr><th>项目</th><th>当前证据</th><th>可说明的范围</th><th>下一步</th></tr></thead><tbody><tr><td><a href="/projects/robotraceopt/">RoboTraceOpt</a></td><td><span class="status-badge status-implementation">实现公开</span><br><span class="status-badge status-proxy">开发 / 预检</span></td><td>RuntimeEvent、ROS 2 tracing、eBPF、CAN/vcan 适配与诊断/优化流程已有公开实现；WSL、dry-run、vcan 不构成正式测量结论。</td><td>在原生 Linux 或 X5 运行冻结矩阵，保存能力报告与 artifact manifest。</td></tr><tr><td><a href="/projects/embodied-agent-runtime/">Embodied Agent Runtime</a></td><td><span class="status-badge status-physical">X5 实体 I/O</span></td><td>X5、UVC、ArUco 与双 CANable 台架的任务链路；不外推为电机负载、硬件急停或完整闭环控制验证。</td><td>独立设计执行器、安全链路和闭环控制测试。</td></tr><tr><td><a href="/projects/ros2-control-vcan/">ros2_control vcan Motor Demo</a></td><td><span class="status-badge status-proxy">vcan 软件闭环</span></td><td>ACK、反馈、watchdog、bus-off、超时与 safe-stop 的软件路径。</td><td>如需声明真实电机能力，补充电气总线与负载条件下的独立测试。</td></tr><tr><td><a href="/projects/apriltag-docking/">AprilTag Docking Demo</a></td><td><span class="status-badge status-proxy">Gazebo 仿真</span></td><td>视觉观测、Guard、Nav2 Docking 与取消路径的可复现仿真。</td><td>真实传感器、定位误差、底盘制动和安全空间需单列验收。</td></tr><tr><td><a href="/projects/quard-star-riscv64/">Quard Star RISC-V64</a></td><td><span class="status-badge status-proxy">QEMU / TAP</span></td><td>七核 SMP、FreeRTOS hart、VirtIO、TCP/IP、存储与 PMP 隔离的虚拟平台验证。</td><td>硬件差异、时序和性能数据必须在目标板上重新测量。</td></tr></tbody></table></div>
 
-<h2 id="新增记录的最小模板"><a href="#新增记录的最小模板" class="headerlink" title="新增记录的最小模板"></a>新增记录的最小模板</h2><div class="note-map"><span><b>问题与阈值</b><small>测什么、允许多大抖动/错误、失败后如何处置。</small></span><span><b>环境快照</b><small>硬件、内核、固件、启动参数、工具和提交版本。</small></span><span><b>负载与命令</b><small>输入、时长、并发、seed、运行命令和输出目录。</small></span><span><b>原始工件</b><small>trace、日志、直方图、包、截图及其哈希或来源。</small></span><span><b>结论范围</b><small>本次能说明什么，哪些条件变化后不再成立。</small></span><span><b>后续动作</b><small>补测、回归、修复、回滚或明确暂不验证的原因。</small></span></div>
-
-<p>记录会随着实际实验更新；没有相应工件的项目不会用“已验证”替代“看起来合理”。<a href="/evidence/template/">实验记录模板</a>可以作为每一次新实验的起点。</p>
+<p>有新的测试时会更新这张表。没有对应日志、trace 或测试记录的项目，不会写成“已验证”。</p>
 
         </section>
     </article>

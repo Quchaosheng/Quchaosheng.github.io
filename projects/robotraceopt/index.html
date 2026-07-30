@@ -172,8 +172,8 @@
         
         <section class="post-content">
             <div class="page-lead">
-  <p class="section-kicker">PROJECT DOSSIER</p>
-  <p>RoboTraceOpt 是一个面向 ROS 2 机器人的运行时分析项目：把应用事件、ROS 2 trace、Linux 调度证据和 CAN ACK 生命周期放进同一条可审计链路，再用诊断结果约束可尝试的配置优化动作。</p>
+  <p class="section-kicker">项目说明</p>
+  <p>RoboTraceOpt 用来查 ROS 2 机器人里的超时、抖动和 CAN ACK 问题。它把应用事件、ROS 2 trace、Linux 调度记录和 CAN ACK 的时间放到一起，方便看问题发生在哪一层。</p>
 </div>
 
 <figure class="project-hero-image"><img src="/image/projects/robotraceopt.png" alt="RoboTraceOpt GitHub 项目预览图"></figure>
@@ -181,15 +181,15 @@
 <div class="project-facts">
   <div><span>目标环境</span><strong>Ubuntu 22.04 · ROS 2 Humble</strong></div>
   <div><span>运行时信号</span><strong>RuntimeEvent · tracing · eBPF · CAN</strong></div>
-  <div><span>工程原则</span><strong>诊断先于调参，证据边界先于结论</strong></div>
+  <div><span>处理方式</span><strong>先定位，再调参数</strong></div>
 </div>
 
-<h2 id="它解决什么"><a href="#它解决什么" class="headerlink" title="它解决什么"></a>它解决什么</h2><p>机器人系统出现超时、抖动或 ACK 异常时，单看某个日志常常无法判断问题是在业务回调、DDS、调度、系统调用，还是总线一侧。RoboTraceOpt 将这些层的信号通过明确适配器和拓扑契约关联起来；对于证据冲突或不足的情况，诊断层会保留不确定性，而不是强行给出一个根因标签。</p>
-<div class="note-flow"><span>RuntimeEvent<br>应用事件</span><i>→</i><span>ROS 2 / eBPF / CAN<br>跨层适配</span><i>→</i><span>类型化证据图<br>保留缺失与冲突</span><i>→</i><span>可审计诊断<br>允许弃权</span><i>→</i><span>受约束试验<br>验证与回滚</span></div>
+<h2 id="用来查什么问题"><a href="#用来查什么问题" class="headerlink" title="用来查什么问题"></a>用来查什么问题</h2><p>机器人出现超时、抖动或 ACK 异常时，只看一份日志很难知道问题在业务回调、DDS、调度、系统调用还是总线。RoboTraceOpt 把这些记录按时间关联。记录对不上或不够时，它会保留“暂时无法判断”，不会硬给一个根因。</p>
+<div class="note-flow"><span>应用事件<br>RuntimeEvent</span><i>→</i><span>ROS 2 / eBPF / CAN<br>收集记录</span><i>→</i><span>按时间关联<br>留下来源</span><i>→</i><span>找可疑位置<br>允许未知</span><i>→</i><span>改一个设置<br>重新测试</span></div>
 
-<h2 id="从信号到动作"><a href="#从信号到动作" class="headerlink" title="从信号到动作"></a>从信号到动作</h2><div class="note-map"><span><b>拓扑契约</b><small>冻结工作负载允许经过的阶段，未知工作负载不会被隐式套用。</small></span><span><b>关联决策</b><small>每个系统事件必须有明确接受、拒绝、未匹配或歧义结果。</small></span><span><b>证据图</b><small>Trace、StageWindow、ROS callback、DDS、调度和 ACK 等节点保留来源。</small></span><span><b>诊断边界</b><small>冲突或缺失证据可以得到“不足以判断”，而不是伪确定结论。</small></span><span><b>动作注册表</b><small>只能尝试与诊断原因匹配的配置动作，避免无边界盲调。</small></span><span><b>候选验证</b><small>每个候选方案都要经过验证；失败时保留离线回滚决策。</small></span></div>
+<h2 id="处理时会看什么"><a href="#处理时会看什么" class="headerlink" title="处理时会看什么"></a>处理时会看什么</h2><div class="note-map"><span><b>运行路径</b><small>先写清某类工作负载会经过哪些阶段。</small></span><span><b>事件匹配</b><small>每条系统事件都标记为匹配、未匹配或不确定。</small></span><span><b>关联结果</b><small>Trace、回调、DDS、调度和 ACK 都保留来源。</small></span><span><b>无法判断</b><small>记录缺失或冲突时，结果会明确写成证据不足。</small></span><span><b>可改设置</b><small>只尝试与问题有关的配置项。</small></span><span><b>重新测试</b><small>每次改动都要重跑，失败时保留回滚信息。</small></span></div>
 
-<h2 id="公开实现范围"><a href="#公开实现范围" class="headerlink" title="公开实现范围"></a>公开实现范围</h2><table>
+<h2 id="仓库里有什么"><a href="#仓库里有什么" class="headerlink" title="仓库里有什么"></a>仓库里有什么</h2><table>
 <thead>
 <tr>
 <th>模块</th>
@@ -220,24 +220,24 @@
 <tr>
 <td><code>scripts/</code></td>
 <td>构建、预检、采集、smoke 与实验入口</td>
-<td>让过程可复现、可审计</td>
+<td>运行和检查这些步骤</td>
 </tr>
 </tbody></table>
-<h2 id="最小可重复预检"><a href="#最小可重复预检" class="headerlink" title="最小可重复预检"></a>最小可重复预检</h2><p>下面的命令用于构建核心工作区并跑软件 smoke；它们不是性能结论，也不会替代正式测量会话。</p>
+<h2 id="先跑一次"><a href="#先跑一次" class="headerlink" title="先跑一次"></a>先跑一次</h2><p>下面的命令先确认核心工作区能构建、软件 smoke 能通过。性能和调度问题还要在目标环境里单独测。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bash scripts/build_core.sh</span><br><span class="line"><span class="built_in">source</span> ~/.cache/robotraceopt_build/install/setup.bash</span><br><span class="line">bash scripts/run_smoke_workload.sh all 8</span><br><span class="line">python3 -m unittest discover -s tests -q</span><br></pre></td></tr></table></figure>
 
-<p>在 RDK X5 上，先运行只读能力预检，再决定哪些正式 case 可以进入原生 Linux &#x2F; X5 会话。预检、dry-run、WSL 和 vcan 输出会被明确标记为开发或代理证据。</p>
-<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><ul>
-<li><strong>已公开的实现事实：</strong> RuntimeEvent v2 插桩、<code>ros2_tracing</code>、eBPF 调度记录、SocketCAN&#x2F;vcan ACK 生命周期适配、证据图和受约束搜索逻辑。</li>
-<li><strong>开发&#x2F;代理证据：</strong> WSL dry-run、RuntimeEvent-only 与 vcan 可用于检查链路和协议，不可宣称为正式调度归因或物理 CAN 结论。</li>
-<li><strong>正式结论所需：</strong> 合格的原生 Linux 或 X5 测试会话、完整 artifact manifest、环境报告和冻结的实验矩阵。</li>
+<p>在 RDK X5 上，先跑只读能力检查，再决定哪些测试能放到原生 Linux 或 X5 上。预检、dry-run、WSL 和 vcan 的结果只用于开发检查。</p>
+<h2 id="现在能说明什么"><a href="#现在能说明什么" class="headerlink" title="现在能说明什么"></a>现在能说明什么</h2><ul>
+<li>代码里有 RuntimeEvent v2 插桩、<code>ros2_tracing</code>、eBPF 调度记录、SocketCAN&#x2F;vcan ACK 适配、关联和配置搜索逻辑。</li>
+<li>WSL dry-run、RuntimeEvent-only 和 vcan 可以检查链路和协议，不能用来说明正式调度归因或物理 CAN。</li>
+<li>要下正式结论，还要有原生 Linux 或 X5 测试、环境报告和完整的输出文件。</li>
 </ul>
-<p>项目台账会持续更新在<a href="/evidence/">证据日志</a>；每条记录都会同时说明环境、可证明的内容和不能外推的部分。</p>
-<h2 id="下一次真实会话"><a href="#下一次真实会话" class="headerlink" title="下一次真实会话"></a>下一次真实会话</h2><ol>
-<li>在目标平台生成能力报告，确认 ROS 2、tracing、eBPF 与实验所需条件均可用。</li>
-<li>冻结 case、数据集角色、seed 和输出目录后启动会话，避免在结果出现后更换口径。</li>
-<li>让 <code>artifact_manifest.json</code> 在成功 case 的最后写入，并为其包含的工件保留哈希与来源。</li>
-<li>将通过、失败和中断会话分别保留；新的测量尝试使用新的会话名，不覆盖旧结果。</li>
+<p>测试情况会更新在<a href="/evidence/">证据日志</a>。</p>
+<h2 id="真机测试还缺什么"><a href="#真机测试还缺什么" class="headerlink" title="真机测试还缺什么"></a>真机测试还缺什么</h2><ol>
+<li>先确认目标平台上的 ROS 2、tracing 和 eBPF 都可用。</li>
+<li>开始前确定测试用例、输入、seed 和输出目录。</li>
+<li>成功时写入 <code>artifact_manifest.json</code>，保留输出文件的来源和哈希。</li>
+<li>通过、失败和中断的测试都保留；下一次测试用新的目录，不覆盖旧结果。</li>
 </ol>
 <p><strong>入口：</strong> <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/RoboTraceOpt">GitHub 源码与运行说明</a> · <a href="/projects/">项目总览</a> · <a href="/paths/">学习路径</a></p>
 

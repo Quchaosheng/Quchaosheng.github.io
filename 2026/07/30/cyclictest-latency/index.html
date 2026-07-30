@@ -18,14 +18,14 @@
 
 <title>cyclictest：怎样测量 Linux 实时调度延迟 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="cyclictest 是 Linux 实时测试里最常见的起点。它创建周期线程，记录计划唤醒时刻与线程真正恢复执行时刻的偏差。这个偏差覆盖了定时器到期、中断处理、调度器选择、CPU 被占用以及部分系统噪声，因此比单纯测一段用户态函数更接近“实时线程有没有按时醒来”。但它仍只是测量工具，不等于业务任务的端到端截止期证明。 设置实时优先级与 CPU → 绝对...">
+    <meta name="description" content="cyclictest 用周期线程测“该醒来的时间”和“真正开始运行的时间”相差多少。这个差值会受到定时器、中断、调度器、CPU 占用和系统噪声影响，所以能帮助判断实时线程有没有准时醒来。它测的是系统唤醒延迟，不等于业务任务已经满足端到端截止期。 设置实时优先级与 CPU → 绝对时间睡眠 → 定时器到期唤醒 → 计算实际偏差 → 长期记录最大值 它测到...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/cyclictest-latency/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="cyclictest：怎样测量 Linux 实时调度延迟 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="cyclictest 是 Linux 实时测试里最常见的起点。它创建周期线程，记录计划唤醒时刻与线程真正恢复执行时刻的偏差。这个偏差覆盖了定时器到期、中断处理、调度器选择、CPU 被占用以及部分系统噪声，因此比单纯测一段用户态函数更接近“实时线程有没有按时醒来”。但它仍只是测量工具，不等于业务任务的端到端截止期证明。 设置实时优先级与 CPU → 绝对...">
+    <meta property="og:description" content="cyclictest 用周期线程测“该醒来的时间”和“真正开始运行的时间”相差多少。这个差值会受到定时器、中断、调度器、CPU 占用和系统噪声影响，所以能帮助判断实时线程有没有准时醒来。它测的是系统唤醒延迟，不等于业务任务已经满足端到端截止期。 设置实时优先级与 CPU → 绝对时间睡眠 → 定时器到期唤醒 → 计算实际偏差 → 长期记录最大值 它测到...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/cyclictest-latency/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="cyclictest：怎样测量 Linux 实时调度延迟 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="cyclictest 是 Linux 实时测试里最常见的起点。它创建周期线程，记录计划唤醒时刻与线程真正恢复执行时刻的偏差。这个偏差覆盖了定时器到期、中断处理、调度器选择、CPU 被占用以及部分系统噪声，因此比单纯测一段用户态函数更接近“实时线程有没有按时醒来”。但它仍只是测量工具，不等于业务任务的端到端截止期证明。 设置实时优先级与 CPU → 绝对...">
+    <meta name="twitter:description" content="cyclictest 用周期线程测“该醒来的时间”和“真正开始运行的时间”相差多少。这个差值会受到定时器、中断、调度器、CPU 占用和系统噪声影响，所以能帮助判断实时线程有没有准时醒来。它测的是系统唤醒延迟，不等于业务任务已经满足端到端截止期。 设置实时优先级与 CPU → 绝对时间睡眠 → 定时器到期唤醒 → 计算实际偏差 → 长期记录最大值 它测到...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -264,7 +264,7 @@
         </header>
 
         <div class="post-content">
-            <p><code>cyclictest</code> 是 Linux 实时测试里最常见的起点。它创建周期线程，记录计划唤醒时刻与线程真正恢复执行时刻的偏差。这个偏差覆盖了定时器到期、中断处理、调度器选择、CPU 被占用以及部分系统噪声，因此比单纯测一段用户态函数更接近“实时线程有没有按时醒来”。但它仍只是测量工具，不等于业务任务的端到端截止期证明。</p>
+            <p><code>cyclictest</code> 用周期线程测“该醒来的时间”和“真正开始运行的时间”相差多少。这个差值会受到定时器、中断、调度器、CPU 占用和系统噪声影响，所以能帮助判断实时线程有没有准时醒来。它测的是系统唤醒延迟，不等于业务任务已经满足端到端截止期。</p>
 <div class="note-flow"><span>设置实时优先级与 CPU</span><i>→</i><span>绝对时间睡眠</span><i>→</i><span>定时器到期唤醒</span><i>→</i><span>计算实际偏差</span><i>→</i><span>长期记录最大值</span></div>
 
 <h2 id="它测到的数值是什么"><a href="#它测到的数值是什么" class="headerlink" title="它测到的数值是什么"></a>它测到的数值是什么</h2><p>若本次理应在 <code>T_expected</code> 醒来，实际开始执行的时刻是 <code>T_actual</code>，则可粗略写成：</p>
@@ -280,7 +280,7 @@
 <h2 id="别让空闲测试骗过你"><a href="#别让空闲测试骗过你" class="headerlink" title="别让空闲测试骗过你"></a>别让空闲测试骗过你</h2><p>一轮完整测试至少应有四组：空闲基线、CPU 压力、内存&#x2F;页回收压力、网络和磁盘 I&#x2F;O 压力；有 GPU 或相机的机器人还要加入实际推理和采集负载。每组都跑到足以覆盖定时任务、温控和后台维护周期，并保留原始直方图。</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">发现尖峰</span><br><span class="line">  -&gt; 记录发生时刻和 CPU</span><br><span class="line">  -&gt; 关联 /proc/interrupts、ftrace、rtla osnoise/timerlat</span><br><span class="line">  -&gt; 判断来自 IRQ、锁、缺页、频率、固件还是应用自身</span><br><span class="line">  -&gt; 修改一个变量后在同一负载下复测</span><br></pre></td></tr></table></figure>
 
-<p>如果 <code>cyclictest</code> 最大值下降了，业务仍可能超时，因为业务还包含传感器、队列、算法和执行器。反过来，<code>cyclictest</code> 出现尖峰也不等于业务必定失败。它的价值是提供可重复的“系统唤醒延迟”证据，并把问题缩小到可追踪的时间窗口。</p>
+<p><code>cyclictest</code> 最大值变小后，业务仍可能超时，因为传感器、队列、算法和执行器也会花时间。反过来，出现一个尖峰也不等于业务一定失败。它的作用是把系统唤醒延迟测出来，让排查有明确的时间窗口。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://git.kernel.org/pub/scm/utils/rt-tests/rt-tests.git/">rt-tests</a> · <a target="_blank" rel="noopener" href="https://manpages.debian.org/testing/rt-tests/cyclictest.8.en.html">cyclictest man page</a></p>
 
         </div>
