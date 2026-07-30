@@ -6,7 +6,7 @@ categories: [技术, Linux实时]
 tags: [cyclictest, 延迟测试, rt-tests]
 ---
 
-`cyclictest` 是 Linux 实时测试里最常见的起点。它创建周期线程，记录计划唤醒时刻与线程真正恢复执行时刻的偏差。这个偏差覆盖了定时器到期、中断处理、调度器选择、CPU 被占用以及部分系统噪声，因此比单纯测一段用户态函数更接近“实时线程有没有按时醒来”。但它仍只是测量工具，不等于业务任务的端到端截止期证明。
+`cyclictest` 用周期线程测“该醒来的时间”和“真正开始运行的时间”相差多少。这个差值会受到定时器、中断、调度器、CPU 占用和系统噪声影响，所以能帮助判断实时线程有没有准时醒来。它测的是系统唤醒延迟，不等于业务任务已经满足端到端截止期。
 
 <div class="note-flow"><span>设置实时优先级与 CPU</span><i>→</i><span>绝对时间睡眠</span><i>→</i><span>定时器到期唤醒</span><i>→</i><span>计算实际偏差</span><i>→</i><span>长期记录最大值</span></div>
 
@@ -44,6 +44,6 @@ sudo cyclictest -p 90 -t 1 -a 2 -i 1000 -D 10m -m -h 100
   -> 修改一个变量后在同一负载下复测
 ```
 
-如果 `cyclictest` 最大值下降了，业务仍可能超时，因为业务还包含传感器、队列、算法和执行器。反过来，`cyclictest` 出现尖峰也不等于业务必定失败。它的价值是提供可重复的“系统唤醒延迟”证据，并把问题缩小到可追踪的时间窗口。
+`cyclictest` 最大值变小后，业务仍可能超时，因为传感器、队列、算法和执行器也会花时间。反过来，出现一个尖峰也不等于业务一定失败。它的作用是把系统唤醒延迟测出来，让排查有明确的时间窗口。
 
 参考：[rt-tests](https://git.kernel.org/pub/scm/utils/rt-tests/rt-tests.git/) · [cyclictest man page](https://manpages.debian.org/testing/rt-tests/cyclictest.8.en.html)

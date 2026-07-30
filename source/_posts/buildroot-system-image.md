@@ -6,7 +6,7 @@ categories: [技术, 嵌入式Linux]
 tags: [Buildroot, 根文件系统, 交叉编译]
 ---
 
-嵌入式 Linux 的交付物不是一个可执行文件，而是一组彼此匹配的产物：交叉工具链、Bootloader、内核、设备树、根文件系统、库、服务和烧录布局。Buildroot 把这条链路收敛到一份配置和一套依赖图中：选择目标架构与软件包后，它下载源码、交叉编译、安装到 rootfs，并生成可烧录或可启动的镜像。真正的价值不只是“能一键编译”，而是让同一份输入能稳定复现同一类系统。
+嵌入式 Linux 交付的不只是一个可执行文件，还包括交叉工具链、Bootloader、内核、设备树、根文件系统、库、服务和烧录布局。Buildroot 用一份配置和依赖关系把它们放到同一次构建里：选好目标架构和软件包后，它会下载源码、交叉编译、安装到 rootfs，并生成镜像。这样换一台机器也能按同样的输入重建系统。
 
 <div class="note-flow"><span>选择 defconfig</span><i>→</i><span>锁定工具链与软件版本</span><i>→</i><span>构建 U-Boot/Kernel/Packages</span><i>→</i><span>生成 rootfs 与镜像</span><i>→</i><span>烧录并进行启动测试</span></div>
 
@@ -43,6 +43,6 @@ make
 
 构建完成后要验证至少四类事情：启动链能否加载正确 kernel/DTB/rootfs；用户态 ABI 是否与目标匹配；关键服务是否在预期时间启动；镜像、配置和开源许可证清单是否可以追溯。对 OTA 或量产，还要验证分区布局、回滚、掉电恢复和版本兼容。
 
-Buildroot 的强项是把“板子上手工凑出来的系统”变成声明式构建产物。越早把产品差异放进清晰的外部树和包描述，后续升级内核、工具链和业务软件就越轻松。
+Buildroot 能把手工凑出来的板端系统变成可重复构建的镜像。产品差异越早放进外部树和 package，后面升级内核、工具链和业务软件时越好维护。
 
 参考：[Buildroot Manual](https://buildroot.org/downloads/manual/manual.html) · [br2-external](https://buildroot.org/downloads/manual/manual.html#outside-br-custom)

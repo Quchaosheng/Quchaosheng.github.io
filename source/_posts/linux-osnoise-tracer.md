@@ -6,7 +6,7 @@ categories: [技术, Linux实时]
 tags: [osnoise, rtla, Ftrace]
 ---
 
-实时延迟出现尖峰时，最难回答的问题通常不是“慢了多少”，而是“这段时间谁占走了”。`osnoise` tracer 在指定 CPU 上运行采样线程，比较预期可运行的时间与线程实际获得的运行时间，并将时间缺口关联到 IRQ、softirq、NMI、调度和其他内核事件。它像一台专门测系统噪声的听诊器，适合将“偶尔抖一下”拆成可追查的干扰类型。
+实时延迟出现尖峰时，先要知道那段时间被谁占走了。`osnoise` tracer 在指定 CPU 上运行采样线程，比较它本该运行的时间和实际得到的时间，再把缺口和 IRQ、softirq、NMI、调度等内核事件对上。它适合用来拆开“偶尔抖一下”到底是哪类干扰。
 
 <div class="note-flow"><span>建立采样时间窗</span><i>→</i><span>持续读取运行时间</span><i>→</i><span>发现时间缺口</span><i>→</i><span>关联 IRQ/线程等事件</span><i>→</i><span>锁定主要噪声源</span></div>
 
@@ -36,6 +36,6 @@ ps -eLo pid,tid,psr,cls,rtprio,comm
 
 发现一个 300 微秒缺口后，先锁定它发生的时间窗口和 CPU。若同时看到某个网卡 IRQ 或 `ksoftirqd` 活跃，优先检查 IRQ affinity、队列和 NAPI；若 trace 中没有合理的内核事件，却在温度或 BIOS 事件附近反复出现，则继续怀疑 NMI、SMI 或固件。每次只调整一个因素，然后在同一负载、同一时间长度下复测。
 
-`osnoise` 不会直接替你修复系统，它提供的是归因线索。只有把结果与业务级超时、硬件中断、功耗状态和实际负载一起保存，尖峰才会从“偶然”变成可工程化处理的问题。
+`osnoise` 只告诉你线索，不会替你修好系统。把结果和业务超时、硬件中断、功耗状态、实际负载一起记录，才知道这次尖峰值不值得处理、该从哪里下手。
 
 参考：[OSNOISE Tracer](https://docs.kernel.org/trace/osnoise-tracer.html) · [rtla](https://docs.kernel.org/tools/rtla/index.html)

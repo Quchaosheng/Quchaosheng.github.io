@@ -7,8 +7,8 @@ cover: /image/projects/robotraceopt.png
 ---
 
 <div class="page-lead">
-  <p class="section-kicker">PROJECT DOSSIER</p>
-  <p>RoboTraceOpt 是一个面向 ROS 2 机器人的运行时分析项目：把应用事件、ROS 2 trace、Linux 调度证据和 CAN ACK 生命周期放进同一条可审计链路，再用诊断结果约束可尝试的配置优化动作。</p>
+  <p class="section-kicker">项目说明</p>
+  <p>RoboTraceOpt 用来查 ROS 2 机器人里的超时、抖动和 CAN ACK 问题。它把应用事件、ROS 2 trace、Linux 调度记录和 CAN ACK 的时间放到一起，方便看问题发生在哪一层。</p>
 </div>
 
 <figure class="project-hero-image"><img src="/image/projects/robotraceopt.png" alt="RoboTraceOpt GitHub 项目预览图"></figure>
@@ -16,20 +16,20 @@ cover: /image/projects/robotraceopt.png
 <div class="project-facts">
   <div><span>目标环境</span><strong>Ubuntu 22.04 · ROS 2 Humble</strong></div>
   <div><span>运行时信号</span><strong>RuntimeEvent · tracing · eBPF · CAN</strong></div>
-  <div><span>工程原则</span><strong>诊断先于调参，证据边界先于结论</strong></div>
+  <div><span>处理方式</span><strong>先定位，再调参数</strong></div>
 </div>
 
-## 它解决什么
+## 用来查什么问题
 
-机器人系统出现超时、抖动或 ACK 异常时，单看某个日志常常无法判断问题是在业务回调、DDS、调度、系统调用，还是总线一侧。RoboTraceOpt 将这些层的信号通过明确适配器和拓扑契约关联起来；对于证据冲突或不足的情况，诊断层会保留不确定性，而不是强行给出一个根因标签。
+机器人出现超时、抖动或 ACK 异常时，只看一份日志很难知道问题在业务回调、DDS、调度、系统调用还是总线。RoboTraceOpt 把这些记录按时间关联。记录对不上或不够时，它会保留“暂时无法判断”，不会硬给一个根因。
 
-<div class="note-flow"><span>RuntimeEvent<br>应用事件</span><i>→</i><span>ROS 2 / eBPF / CAN<br>跨层适配</span><i>→</i><span>类型化证据图<br>保留缺失与冲突</span><i>→</i><span>可审计诊断<br>允许弃权</span><i>→</i><span>受约束试验<br>验证与回滚</span></div>
+<div class="note-flow"><span>应用事件<br>RuntimeEvent</span><i>→</i><span>ROS 2 / eBPF / CAN<br>收集记录</span><i>→</i><span>按时间关联<br>留下来源</span><i>→</i><span>找可疑位置<br>允许未知</span><i>→</i><span>改一个设置<br>重新测试</span></div>
 
-## 从信号到动作
+## 处理时会看什么
 
-<div class="note-map"><span><b>拓扑契约</b><small>冻结工作负载允许经过的阶段，未知工作负载不会被隐式套用。</small></span><span><b>关联决策</b><small>每个系统事件必须有明确接受、拒绝、未匹配或歧义结果。</small></span><span><b>证据图</b><small>Trace、StageWindow、ROS callback、DDS、调度和 ACK 等节点保留来源。</small></span><span><b>诊断边界</b><small>冲突或缺失证据可以得到“不足以判断”，而不是伪确定结论。</small></span><span><b>动作注册表</b><small>只能尝试与诊断原因匹配的配置动作，避免无边界盲调。</small></span><span><b>候选验证</b><small>每个候选方案都要经过验证；失败时保留离线回滚决策。</small></span></div>
+<div class="note-map"><span><b>运行路径</b><small>先写清某类工作负载会经过哪些阶段。</small></span><span><b>事件匹配</b><small>每条系统事件都标记为匹配、未匹配或不确定。</small></span><span><b>关联结果</b><small>Trace、回调、DDS、调度和 ACK 都保留来源。</small></span><span><b>无法判断</b><small>记录缺失或冲突时，结果会明确写成证据不足。</small></span><span><b>可改设置</b><small>只尝试与问题有关的配置项。</small></span><span><b>重新测试</b><small>每次改动都要重跑，失败时保留回滚信息。</small></span></div>
 
-## 公开实现范围
+## 仓库里有什么
 
 | 模块 | 当前公开内容 | 作用 |
 | --- | --- | --- |
@@ -37,11 +37,11 @@ cover: /image/projects/robotraceopt.png
 | `diagnosis/` | 证据适配、关联、图构建和推断 | 将跨层信号变成可检查的关系 |
 | `optimizer/` | 动作约束、搜索、目标、验证与回滚 | 将诊断限定到可复现实验动作 |
 | `experiments/` | 故障目录、受控 runner、配对比较 | 组织 F1-F6 的开发实验流程 |
-| `scripts/` | 构建、预检、采集、smoke 与实验入口 | 让过程可复现、可审计 |
+| `scripts/` | 构建、预检、采集、smoke 与实验入口 | 运行和检查这些步骤 |
 
-## 最小可重复预检
+## 先跑一次
 
-下面的命令用于构建核心工作区并跑软件 smoke；它们不是性能结论，也不会替代正式测量会话。
+下面的命令先确认核心工作区能构建、软件 smoke 能通过。性能和调度问题还要在目标环境里单独测。
 
 ```bash
 bash scripts/build_core.sh
@@ -50,21 +50,21 @@ bash scripts/run_smoke_workload.sh all 8
 python3 -m unittest discover -s tests -q
 ```
 
-在 RDK X5 上，先运行只读能力预检，再决定哪些正式 case 可以进入原生 Linux / X5 会话。预检、dry-run、WSL 和 vcan 输出会被明确标记为开发或代理证据。
+在 RDK X5 上，先跑只读能力检查，再决定哪些测试能放到原生 Linux 或 X5 上。预检、dry-run、WSL 和 vcan 的结果只用于开发检查。
 
-## 证据边界
+## 现在能说明什么
 
-- **已公开的实现事实：** RuntimeEvent v2 插桩、`ros2_tracing`、eBPF 调度记录、SocketCAN/vcan ACK 生命周期适配、证据图和受约束搜索逻辑。
-- **开发/代理证据：** WSL dry-run、RuntimeEvent-only 与 vcan 可用于检查链路和协议，不可宣称为正式调度归因或物理 CAN 结论。
-- **正式结论所需：** 合格的原生 Linux 或 X5 测试会话、完整 artifact manifest、环境报告和冻结的实验矩阵。
+- 代码里有 RuntimeEvent v2 插桩、`ros2_tracing`、eBPF 调度记录、SocketCAN/vcan ACK 适配、关联和配置搜索逻辑。
+- WSL dry-run、RuntimeEvent-only 和 vcan 可以检查链路和协议，不能用来说明正式调度归因或物理 CAN。
+- 要下正式结论，还要有原生 Linux 或 X5 测试、环境报告和完整的输出文件。
 
-项目台账会持续更新在[证据日志](/evidence/)；每条记录都会同时说明环境、可证明的内容和不能外推的部分。
+测试情况会更新在[证据日志](/evidence/)。
 
-## 下一次真实会话
+## 真机测试还缺什么
 
-1. 在目标平台生成能力报告，确认 ROS 2、tracing、eBPF 与实验所需条件均可用。
-2. 冻结 case、数据集角色、seed 和输出目录后启动会话，避免在结果出现后更换口径。
-3. 让 `artifact_manifest.json` 在成功 case 的最后写入，并为其包含的工件保留哈希与来源。
-4. 将通过、失败和中断会话分别保留；新的测量尝试使用新的会话名，不覆盖旧结果。
+1. 先确认目标平台上的 ROS 2、tracing 和 eBPF 都可用。
+2. 开始前确定测试用例、输入、seed 和输出目录。
+3. 成功时写入 `artifact_manifest.json`，保留输出文件的来源和哈希。
+4. 通过、失败和中断的测试都保留；下一次测试用新的目录，不覆盖旧结果。
 
 **入口：** [GitHub 源码与运行说明](https://github.com/Quchaosheng/RoboTraceOpt) · [项目总览](/projects/) · [学习路径](/paths/)

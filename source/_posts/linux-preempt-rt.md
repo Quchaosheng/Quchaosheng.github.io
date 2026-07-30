@@ -6,7 +6,7 @@ categories: [技术, Linux实时]
 tags: [PREEMPT_RT, 抢占, 实时Linux]
 ---
 
-普通 Linux 擅长吞吐量和公平性，但内核中一次较长的关抢占、硬中断或自旋锁临界区，可能让刚被唤醒的高优先级任务等上很久。对音频、运动控制、工业通信这类周期任务而言，平均延迟再低也不够，真正关心的是最坏情况下“何时一定能运行”。PREEMPT_RT 的目标正是缩短这类不可抢占区，让高优先级线程即使在内核态也能更快获得 CPU。
+一个高优先级线程被唤醒后，可能还要等关抢占区、硬中断或自旋锁结束。音频、运动控制和工业通信这类周期任务不能只看平均延迟，更要看最长会等多久。PREEMPT_RT 会把许多较长的不可抢占路径缩短，让高优先级线程更早拿到 CPU。
 
 <div class="note-flow"><span>高优先级任务被唤醒</span><i>→</i><span>检查当前抢占状态</span><i>→</i><span>抢占普通线程或内核路径</span><i>→</i><span>运行实时任务</span><i>→</i><span>完成后恢复被抢占任务</span></div>
 
@@ -16,7 +16,7 @@ tags: [PREEMPT_RT, 抢占, 实时Linux]
 
 <div class="note-map"><span><b>锁</b><small>尽可能用可睡眠的 rtmutex，缩短高优先级等待</small></span><span><b>中断</b><small>将大量处理移入 IRQ 线程，减少硬中断占用</small></span><span><b>抢占</b><small>让内核路径更频繁地成为可抢占点</small></span><span><b>调度</b><small>实时线程可在更短的内核延迟后得到 CPU</small></span><span><b>仍需单独处理</b><small>raw spinlock、NMI、SMI、固件和硬件延迟</small></span><span><b>最终目标</b><small>降低并解释最坏延迟，而不是追求最高吞吐</small></span></div>
 
-这里的“尽可能”很关键。`raw_spinlock`、部分底层时钟路径、NMI/SMI 与设备固件不一定能被抢占；驱动如果关中断太久，或者平台固件突然接管 CPU，实时补丁也无法凭空消除那段时间。因此 PREEMPT_RT 是实时系统的一层基础，不是最终证明。
+这里的“尽可能”要记住。`raw_spinlock`、部分底层时钟路径、NMI/SMI 和设备固件仍可能挡住 CPU；驱动关中断太久或固件接管 CPU 时，实时补丁也帮不上忙。装了 PREEMPT_RT 后还要测，不能直接把它当成实时保证。
 
 ## 怎样判断系统是否真的跑在 RT 内核上
 

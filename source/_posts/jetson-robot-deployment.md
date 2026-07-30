@@ -6,7 +6,7 @@ categories: [技术, AI机器人]
 tags: [Jetson, JetPack, CUDA]
 ---
 
-Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器集成在一块边缘板上。JetPack 将 Linux for Tegra、CUDA、TensorRT、cuDNN 和系统组件打包起来，使相机、视觉推理与 ROS 2 能在机器人本体运行。它很适合“看懂环境”和“生成任务”，但 GPU 的高吞吐量并不自动等于电机控制回路拥有可预测的最坏时延。
+Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。
 
 <div class="note-flow"><span>选择 JetPack 与功耗模式</span><i>→</i><span>部署模型和 ROS 2 节点</span><i>→</i><span>测量 CPU/GPU/内存负载</span><i>→</i><span>分离推理与实时控制</span><i>→</i><span>在温度稳定后复测长尾</span></div>
 
@@ -49,6 +49,6 @@ Safety path: emergency stop -> power/driver inhibit, independent of GPU process
 3. 用 `tegrastats` 与 ROS 2 时间戳一起记录，观察 P95/P99，而不是只看平均 FPS。
 4. 施加内存压力、拔插相机、降低照度、制造模型超时，验证控制器是否按预期降级。
 
-只有在这些情况下仍能解释清楚系统行为，Jetson 才算从“能跑 demo”进入“能放在机器人上”。
+这些情况都跑过后，才知道这套 Jetson 配置在机器人上遇到压力时会怎样反应。
 
 参考：[NVIDIA Jetson Documentation](https://docs.nvidia.com/jetson/) · [Jetson Linux Developer Guide](https://docs.nvidia.com/jetson/archives/)

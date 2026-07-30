@@ -6,7 +6,7 @@ categories: [技术, Linux实时]
 tags: [CPU隔离, nohz_full, rcu_nocbs]
 ---
 
-将实时线程绑到一个 CPU 并不意味着这个 CPU 变安静了。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能在它上面运行。CPU 隔离是一组协同配置：把普通负载和内核杂务集中到 housekeeping CPU，把真正需要低抖动的线程、其内存与必要设备路径留在实时 CPU，并持续验证还剩下什么噪声。
+把实时线程绑到一个 CPU，不代表这个 CPU 上只有它。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能抢时间。CPU 隔离要做的是把系统杂务放到 housekeeping CPU，把关键线程和必要设备路径留给实时 CPU，再检查还有哪些干扰没移走。
 
 <div class="note-flow"><span>划分实时与 housekeeping CPU</span><i>→</i><span>迁移 IRQ 和内核线程</span><i>→</i><span>配置 nohz_full/rcu_nocbs</span><i>→</i><span>绑定实时任务</span><i>→</i><span>追踪残余干扰</span></div>
 
@@ -16,7 +16,7 @@ tags: [CPU隔离, nohz_full, rcu_nocbs]
 
 <div class="note-map"><span><b>实时 CPU</b><small>控制线程、必要驱动路径、已锁定的资源</small></span><span><b>housekeeping CPU</b><small>系统服务、日志、网络后台、RCU 与 workqueue</small></span><span><b>nohz_full</b><small>尽量减少无任务时的周期 tick 干扰</small></span><span><b>rcu_nocbs</b><small>将 RCU callback 扔给指定的非实时 CPU</small></span><span><b>IRQ 布局</b><small>把无关设备中断从实时 CPU 移走</small></span><span><b>应用亲和性</b><small>明确每个关键线程在哪个 CPU 上运行</small></span></div>
 
-一个常见的启动参数思路是让 CPU 0–1 做 housekeeping，CPU 2–3 承担实时负载，例如 `nohz_full=2-3 rcu_nocbs=2-3`。是否还需要 `isolcpus`、如何设置 IRQ 默认亲和性，取决于内核版本、cgroup 管理方式和设备拓扑；不要直接复制别人的完整命令行就上生产。
+一个常见的做法是让 CPU 0-1 做 housekeeping，CPU 2-3 承担实时负载，例如 `nohz_full=2-3 rcu_nocbs=2-3`。是否还需要 `isolcpus`、如何设置 IRQ 默认亲和性，取决于内核版本、cgroup 管理方式和设备拓扑；不要直接复制别人的完整命令行就上生产。
 
 ## 从“绑定”开始，而不是从启动参数开始
 
@@ -30,7 +30,7 @@ ps -eLo pid,tid,psr,cls,rtprio,comm | sort -k3,3n
 cat /proc/interrupts
 ```
 
-CPU 亲和性不是永久承诺。热插拔、容器 cgroup、服务重启、`irqbalance` 或启动脚本都可能改变布局。把这些检查纳入开机自检和性能回归，远比手工调通一次可靠。
+CPU 亲和性会变。热插拔、容器 cgroup、服务重启、`irqbalance` 和启动脚本都可能改掉布局。开机和回归测试时都检查一次，比手工调通一次更有用。
 
 ## 为什么隔离后还会有尖峰
 

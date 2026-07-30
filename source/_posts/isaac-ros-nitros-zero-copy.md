@@ -6,7 +6,7 @@ categories: [技术, AI机器人]
 tags: [Isaac ROS, NITROS, 零拷贝]
 ---
 
-在机器人视觉链路中，“模型只跑了 8 ms，系统却要 80 ms”很常见。原因通常不是 CUDA kernel，而是图像经过驱动、ROS 消息、颜色转换、CPU 内存和 GPU 内存时发生了多次复制与排队。Isaac ROS 的 NITROS（NVIDIA Isaac Transport for ROS）利用 ROS 2 类型适配与 GXF，让一组兼容节点协商适合硬件加速的数据格式，尽量使图像和张量在加速内存中连续流动。
+机器人视觉链路里，模型本身只跑几毫秒，结果却晚很多才出来，很常见。时间通常花在图像从驱动到 ROS 消息、颜色转换、CPU 内存和 GPU 内存之间的复制与排队上。Isaac ROS 的 NITROS 用 ROS 2 类型适配和 GXF 让兼容节点协商数据格式，尽量让图像和张量留在加速内存里继续处理。
 
 <div class="note-flow"><span>相机产生图像</span><i>→</i><span>NITROS 协商兼容格式</span><i>→</i><span>缓冲区留在加速内存</span><i>→</i><span>GPU 节点连续处理</span><i>→</i><span>只在边界转换数据</span></div>
 
@@ -39,6 +39,6 @@ perception_age = control_time - camera_frame.header.stamp
 
 ## 与你的 ROS 2 工程怎样连接
 
-把 NITROS 放在相机到感知模型的“数据平面”；任务 Guard、Action、SocketCAN 和安全检查仍属于“控制平面”。前者追求少搬运和高吞吐，后者追求可审计、可取消和有确定性边界。两类节点之间应只传递压缩后的语义结果与明确时间戳，不让 GPU 资源管理细节渗到控制器里。
+把 NITROS 放在相机到感知模型这一段。Guard、Action、SocketCAN 和安全检查仍放在任务与控制侧。两边只传结果和明确的时间戳，不把 GPU 缓冲区和资源管理细节塞进控制器。
 
 参考：[Isaac ROS Documentation](https://nvidia-isaac-ros.github.io/) · [ROS 2 Type Adaptation](https://design.ros2.org/articles/ros2_type_adaptation.html)

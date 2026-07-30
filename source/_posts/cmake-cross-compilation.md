@@ -6,7 +6,7 @@ categories: [技术, 工具链]
 tags: [CMake, 交叉编译, Toolchain]
 ---
 
-交叉编译的难点不在于把 `gcc` 换成 `aarch64-linux-gnu-gcc`，而在于让配置阶段、头文件查找、库查找、try-compile 和安装路径都始终站在“目标机”视角。CMake 的 toolchain file 就是这份目标环境声明：它告诉 CMake 目标系统、架构、编译器、sysroot 以及程序/库/头文件的查找规则。写得不完整时，最危险的结果不是立即报错，而是悄悄链接到宿主机库。
+交叉编译不只是把 `gcc` 换成 `aarch64-linux-gnu-gcc`。配置、头文件查找、库查找、try-compile 和安装路径都要按目标机来处理。CMake 的 toolchain file 会告诉它目标系统、架构、编译器、sysroot 和查找规则。文件写得不完整时，最麻烦的是它可能悄悄链接到宿主机库。
 
 <div class="note-flow"><span>读取 toolchain.cmake</span><i>→</i><span>识别目标编译器与 sysroot</span><i>→</i><span>查找目标头文件和库</span><i>→</i><span>生成构建系统</span><i>→</i><span>编译并部署到目标板</span></div>
 
@@ -46,6 +46,6 @@ readelf -d my_app | grep NEEDED
 
 ## 交叉编译的交付边界
 
-一个能编过的二进制还不等于可部署：目标 rootfs 是否有对应 C 库和动态链接器？运行时插件、配置和数据文件是否安装到正确路径？调试符号如何保留？升级 SDK 后怎样确认 ABI 没变？将这些问题写进 CMake install、打包和 CI，工具链文件才从“临时参数”变成工程契约。
+二进制能编过，还要检查目标 rootfs 有没有对应的 C 库和动态链接器，插件、配置、数据文件是否到了正确路径，升级 SDK 后 ABI 有没有变。把这些检查放进 CMake install、打包和 CI，交付时会少很多手工步骤。
 
 参考：[CMake Cross Compiling](https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html) · [CMAKE_SYSROOT](https://cmake.org/cmake/help/latest/variable/CMAKE_SYSROOT.html)

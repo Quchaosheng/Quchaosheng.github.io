@@ -6,7 +6,7 @@ categories: [技术, AI机器人]
 tags: [TensorRT, ONNX, 推理优化]
 ---
 
-训练模型在电脑上能跑，不代表它能在机器人上稳定地跑。TensorRT 会解析 ONNX 或其他模型表示，融合算子、选择 kernel 和内存布局，并针对目标 GPU 构建可执行的 engine。FP16 和 INT8 常能降低计算量与带宽，但机器人真正需要的是在持续输入、温度变化和其他节点抢资源时，仍能解释端到端延迟和漏检风险。
+训练模型在电脑上能跑，不代表它放到机器人上就稳定。TensorRT 会解析 ONNX 等模型，融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine。FP16 和 INT8 往往能减小计算量和带宽，但还要测持续输入、温度变化和其他节点抢资源时，结果会不会变慢或过期。
 
 <div class="note-flow"><span>导出 ONNX 模型</span><i>→</i><span>校验算子与精度</span><i>→</i><span>构建目标设备 engine</span><i>→</i><span>预分配并预热推理</span><i>→</i><span>测量端到端延迟与精度</span></div>
 
@@ -31,7 +31,7 @@ context->setTensorAddress("output", device_output);
 context->enqueueV3(stream);  // 与预处理、后处理使用明确的 stream 依赖
 ```
 
-这段接口只描述 TensorRT 的核心调用，实际项目还需要管理输入数据何时可读、输出何时可用，以及异常时如何丢弃过期帧。最重要的一点是：不要让控制路径等待一个已经过期的推理结果。
+这段接口只展示 TensorRT 的核心调用。实际项目还要管输入何时可读、输出何时可用，以及异常时怎样丢掉过期帧。控制侧不应等待已经过期的推理结果。
 
 ## 用端到端指标验收，而不是用 benchmark 骗自己
 
