@@ -10,6 +10,8 @@ tags: [NVIDIA, Physical AI, ROS 2]
 
 <div class="note-flow"><span>采集或生成机器人数据</span><i>→</i><span>训练感知/决策模型</span><i>→</i><span>Isaac Sim 仿真验证</span><i>→</i><span>Jetson 边缘推理</span><i>→</i><span>ROS 2 与控制器安全执行</span></div>
 
+<div class="note-map"><span><b>数据与模型</b><small>传感器数据要带时间戳、置信度与失效状态，模型不应只输出动作。</small></span><span><b>仿真与验证</b><small>先在 Isaac Sim 或等价环境验证坐标、时延和失败路径，再接真实设备。</small></span><span><b>推理与部署</b><small>TensorRT 与 Jetson 负责目标硬件上的吞吐、内存和 P99 延迟。</small></span><span><b>任务与通信</b><small>ROS 2 节点要约定消息时效、取消、超时和降级语义。</small></span><span><b>实时执行</b><small>MCU、PLC 或实时控制线程独立处理限位、看门狗和急停。</small></span><span><b>安全闭环</b><small>模型不可用、通信中断或约束失效时，系统必须进入确定的安全状态。</small></span></div>
+
 ## 先把机器人分成三层
 
 **感知与认知层**处理图像、点云、语音和语言指令，输出目标、位姿、地图或任务意图。这个层可以使用 GPU 和大模型，允许有几十到几百毫秒的延迟，但必须带时间戳、置信度和失效信号。
