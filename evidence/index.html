@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>证据日志 | Quchaosheng&#39;s Notes</title>
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/evidence">证据</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/evidence">证据</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    <article class="post-wrap page">
+        
+        <h2 class="post-title">证据日志</h2>
+        
+        <section class="post-content">
+            <div class="page-lead">
+  <p class="section-kicker">EVIDENCE LOG</p>
+  <p>这里记录项目在什么环境下验证过什么，也记录尚未验证什么。代码、仿真、虚拟总线、实体 I/O 和正式测试不是同一种证据，不能相互替代。</p>
+</div>
+
+<div class="evidence-legend"><span class="status-badge status-implementation">实现公开</span><span class="status-badge status-proxy">仿真 / 代理</span><span class="status-badge status-physical">实体 I/O</span><span class="status-badge status-pending">正式会话待补</span></div>
+
+<h2 id="记录方法"><a href="#记录方法" class="headerlink" title="记录方法"></a>记录方法</h2><div class="note-flow"><span>固定环境与版本</span><i>→</i><span>记录命令与输入</span><i>→</i><span>保存原始工件</span><i>→</i><span>标明能证明什么</span><i>→</i><span>保留失败与边界</span></div>
+
+<p>一次“跑通”不是结论。能复查的记录至少包含平台、软件版本、负载、原始输出、通过阈值和失败时的现场信息；若只有截图或口头描述，就只能把它当作线索，而不是验收证据。</p>
+<h2 id="当前项目台账"><a href="#当前项目台账" class="headerlink" title="当前项目台账"></a>当前项目台账</h2><div class="evidence-table-wrap"><table class="evidence-table"><thead><tr><th>项目</th><th>当前证据</th><th>可说明的范围</th><th>下一步</th></tr></thead><tbody><tr><td><a href="/projects/robotraceopt/">RoboTraceOpt</a></td><td><span class="status-badge status-implementation">实现公开</span><br><span class="status-badge status-proxy">开发 / 预检</span></td><td>RuntimeEvent、ROS 2 tracing、eBPF、CAN/vcan 适配与诊断/优化流程已有公开实现；WSL、dry-run、vcan 不构成正式测量结论。</td><td>在原生 Linux 或 X5 运行冻结矩阵，保存能力报告与 artifact manifest。</td></tr><tr><td><a href="https://github.com/Quchaosheng/embodied-agent-runtime" target="_blank" rel="noopener">Embodied Agent Runtime</a></td><td><span class="status-badge status-physical">X5 实体 I/O</span></td><td>X5、UVC、ArUco 与双 CANable 台架的任务链路；不外推为电机负载、硬件急停或完整闭环控制验证。</td><td>独立设计执行器、安全链路和闭环控制测试。</td></tr><tr><td><a href="https://github.com/Quchaosheng/ros2-control-vcan-motor-demo" target="_blank" rel="noopener">ros2_control vcan Motor Demo</a></td><td><span class="status-badge status-proxy">vcan 软件闭环</span></td><td>ACK、反馈、watchdog、bus-off、超时与 safe-stop 的软件路径。</td><td>如需声明真实电机能力，补充电气总线与负载条件下的独立测试。</td></tr><tr><td><a href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo" target="_blank" rel="noopener">AprilTag Docking Demo</a></td><td><span class="status-badge status-proxy">Gazebo 仿真</span></td><td>视觉观测、Guard、Nav2 Docking 与取消路径的可复现仿真。</td><td>真实传感器、定位误差、底盘制动和安全空间需单列验收。</td></tr><tr><td><a href="https://github.com/Quchaosheng/quard-star-riscv64-net" target="_blank" rel="noopener">Quard Star RISC-V64</a></td><td><span class="status-badge status-proxy">QEMU / TAP</span></td><td>七核 SMP、FreeRTOS hart、VirtIO、TCP/IP、存储与 PMP 隔离的虚拟平台验证。</td><td>硬件差异、时序和性能数据必须在目标板上重新测量。</td></tr></tbody></table></div>
+
+<h2 id="新增记录的最小模板"><a href="#新增记录的最小模板" class="headerlink" title="新增记录的最小模板"></a>新增记录的最小模板</h2><div class="note-map"><span><b>问题与阈值</b><small>测什么、允许多大抖动/错误、失败后如何处置。</small></span><span><b>环境快照</b><small>硬件、内核、固件、启动参数、工具和提交版本。</small></span><span><b>负载与命令</b><small>输入、时长、并发、seed、运行命令和输出目录。</small></span><span><b>原始工件</b><small>trace、日志、直方图、包、截图及其哈希或来源。</small></span><span><b>结论范围</b><small>本次能说明什么，哪些条件变化后不再成立。</small></span><span><b>后续动作</b><small>补测、回归、修复、回滚或明确暂不验证的原因。</small></span></div>
+
+<p>记录会随着实际实验更新；没有相应工件的项目不会用“已验证”替代“看起来合理”。</p>
+
+        </section>
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>
