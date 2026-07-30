@@ -14,7 +14,7 @@ tags: [Buildroot, 根文件系统, 交叉编译]
 
 它可以构建内部/外部工具链、U-Boot、Linux 内核、BusyBox、图形栈、应用包和各种 rootfs 格式。配置最终收敛到 `.config`，但不应直接手工维护一份巨大的 `.config`；通常从板级 defconfig 开始，使用 `savedefconfig` 保存最小差异，借助版本控制记录变更。
 
-<div class="note-map"><span><b>defconfig</b><small>最小可复现配置入口，描述目标板/产品的构建选择</small></span><span><b>toolchain</b><small>编译器、C 库、sysroot 与 ABI，决定所有用户态二进制兼容性</small></span><span><b>kernel/U-Boot</b><small>各自独立配置和源码版本，但由同一构建图协调</small></span><span><b>rootfs overlay</b><small>放目标文件、配置与脚本，不直接污染 Buildroot 源树</small></span><span><b>package</b><small>将自定义应用描述为可依赖、可安装、可重建的包</small></span><span><b>images</b><small>最终输出 dtb、kernel、rootfs、boot 镜像及清单/哈希</small></span></div>
+<figure class="note-visual"><figcaption><span>镜像图</span>Buildroot 把工具链、启动链、根文件系统和业务包放进一份可复现的构建图。</figcaption><div class="note-map"><span><b>defconfig</b><small>最小可复现配置入口，描述目标板/产品的构建选择</small></span><span><b>toolchain</b><small>编译器、C 库、sysroot 与 ABI，决定所有用户态二进制兼容性</small></span><span><b>kernel/U-Boot</b><small>各自独立配置和源码版本，但由同一构建图协调</small></span><span><b>rootfs overlay</b><small>放目标文件、配置与脚本，不直接污染 Buildroot 源树</small></span><span><b>package</b><small>将自定义应用描述为可依赖、可安装、可重建的包</small></span><span><b>images</b><small>最终输出 dtb、kernel、rootfs、boot 镜像及清单/哈希</small></span></div></figure>
 
 ## 自定义内容要放在外部树
 

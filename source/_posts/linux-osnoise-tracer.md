@@ -14,7 +14,7 @@ tags: [osnoise, rtla, Ftrace]
 
 `timerlat` 从定时器到期开始，关注 IRQ 延迟和被唤醒线程真正获得 CPU 的延迟；`osnoise` 则在一个 CPU 上持续观察“本应属于采样线程的时间为什么消失”。前者更适合解释周期唤醒尖峰，后者更适合枚举该 CPU 长期存在的各种噪声。二者通常应配合：先用 `cyclictest/timerlat` 发现 deadline 风险，再用 `osnoise` 和 ftrace 追根因。
 
-<div class="note-map"><span><b>IRQ</b><small>设备硬中断或线程化中断抢走 CPU 时间</small></span><span><b>softirq/NAPI</b><small>网络、定时器等下半部可能产生持续噪声</small></span><span><b>调度活动</b><small>无关线程迁入、抢占或内核 worker 执行</small></span><span><b>NMI/SMI</b><small>普通调度轨迹难解释时的重要嫌疑</small></span><span><b>CPU 电源状态</b><small>频率与 idle 退出延迟会改变可运行窗口</small></span><span><b>关联证据</b><small>trace、IRQ 计数、温度、负载和启动参数缺一不可</small></span></div>
+<figure class="note-visual"><figcaption><span>噪声图</span>osnoise 给出被拿走的 CPU 时间，根因仍要结合中断、调度和平台状态对齐。</figcaption><div class="note-map"><span><b>IRQ</b><small>设备硬中断或线程化中断抢走 CPU 时间</small></span><span><b>softirq/NAPI</b><small>网络、定时器等下半部可能产生持续噪声</small></span><span><b>调度活动</b><small>无关线程迁入、抢占或内核 worker 执行</small></span><span><b>NMI/SMI</b><small>普通调度轨迹难解释时的重要嫌疑</small></span><span><b>CPU 电源状态</b><small>频率与 idle 退出延迟会改变可运行窗口</small></span><span><b>关联证据</b><small>trace、IRQ 计数、温度、负载和启动参数缺一不可</small></span></div></figure>
 
 ## 先让测量条件可重复
 

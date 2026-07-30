@@ -10,6 +10,8 @@ tags: [Isaac ROS, NITROS, 零拷贝]
 
 <div class="note-flow"><span>相机产生图像</span><i>→</i><span>NITROS 协商兼容格式</span><i>→</i><span>缓冲区留在加速内存</span><i>→</i><span>GPU 节点连续处理</span><i>→</i><span>只在边界转换数据</span></div>
 
+<figure class="note-visual"><figcaption><span>数据图</span>判断少拷贝是否成立，要沿着每个缓冲区检查位置、格式、所有权和同步点。</figcaption><div class="note-map"><span><b>相机输出</b><small>先确认原始帧位于哪里、是什么格式、由谁拥有。</small></span><span><b>类型协商</b><small>NITROS 只在兼容节点之间协商，不会魔法般改变不兼容边界。</small></span><span><b>加速内存</b><small>GPU 或专用内存上的缓冲区可被后续加速节点继续使用。</small></span><span><b>格式转换</b><small>NV12、RGB、BGR 和张量布局不一致时仍需要转换或复制。</small></span><span><b>队列与同步</b><small>copy 减少后，CPU 回调、CUDA stream 和队列积压仍会造成延迟。</small></span><span><b>感知年龄</b><small>以控制时刻减去原始帧时间戳，判断结果是否仍然新鲜。</small></span></div></figure>
+
 ## 普通链路为什么容易慢
 
 一个典型的非加速链路是：相机驱动将帧写入 CPU 内存，发布 `sensor_msgs/Image`；订阅者收到消息后做颜色空间转换；随后把输入复制到 GPU；模型输出又拷回 CPU，再封装成检测消息。每一步单独看不慢，但高分辨率、多相机或同机录包时，内存带宽和回调队列会把延迟放大。

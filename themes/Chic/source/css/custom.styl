@@ -503,6 +503,26 @@
   text-align left
 
 // Compact mechanism diagrams used by the technical-note series.
+.note-visual
+  margin 1.75rem 0
+  figcaption
+    display flex
+    align-items baseline
+    gap .65rem
+    margin 0 0 .55rem
+    color $light-font-secondary-color
+    font-size .84em
+    line-height 1.55
+    span
+      flex-shrink 0
+      color #087f5b
+      font-size .82em
+      font-weight bold
+      letter-spacing .08em
+  .note-flow,
+  .note-map
+    margin .55rem 0 0
+
 .note-flow
   display flex
   align-items stretch
@@ -541,6 +561,11 @@
     border-color rgba(145,195,165,.35)
     background rgba(255,255,255,.045)
   i
+    color #91c3a5
+
+.dark-theme .note-visual figcaption
+  color $dark-font-secondary-color
+  span
     color #91c3a5
 
 // Companion diagram for component boundaries, trade-offs, and checklists.

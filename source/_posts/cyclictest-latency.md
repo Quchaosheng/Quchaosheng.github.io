@@ -20,7 +20,7 @@ latency = T_actual - T_expected
 
 最小值说明系统在顺利时的表现，平均值说明典型负载，最大值和直方图尾部则暴露最坏情况。实时工程通常优先关心后两者：一次 2 ms 尖峰就可能让 1 kHz 控制任务错过两个周期，即使平均延迟只有 10 微秒。
 
-<div class="note-map"><span><b>周期</b><small>测试线程多久被期望唤醒一次，例如 1 ms</small></span><span><b>优先级</b><small>决定测试线程与普通工作谁先得到 CPU</small></span><span><b>亲和性</b><small>决定测试在什么 CPU 上观测系统噪声</small></span><span><b>运行时长</b><small>越长越可能捕获低频固件和热相关尖峰</small></span><span><b>直方图</b><small>观察长尾分布，避免只盯一条最大值</small></span><span><b>对照负载</b><small>CPU、内存、I/O、网络同时施压才有参考价值</small></span></div>
+<figure class="note-visual"><figcaption><span>测量图</span>周期、CPU、运行时长和对照负载共同定义了一次可比较的延迟测试。</figcaption><div class="note-map"><span><b>周期</b><small>测试线程多久被期望唤醒一次，例如 1 ms</small></span><span><b>优先级</b><small>决定测试线程与普通工作谁先得到 CPU</small></span><span><b>亲和性</b><small>决定测试在什么 CPU 上观测系统噪声</small></span><span><b>运行时长</b><small>越长越可能捕获低频固件和热相关尖峰</small></span><span><b>直方图</b><small>观察长尾分布，避免只盯一条最大值</small></span><span><b>对照负载</b><small>CPU、内存、I/O、网络同时施压才有参考价值</small></span></div></figure>
 
 ## 一条可复现的起步命令
 

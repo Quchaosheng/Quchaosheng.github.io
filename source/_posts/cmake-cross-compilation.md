@@ -14,7 +14,7 @@ tags: [CMake, 交叉编译, Toolchain]
 
 目标系统是什么、CPU/ABI 是什么、C/C++ 编译器在哪里、sysroot 在哪里，以及 CMake 查找外部程序和目标库时各该去哪。宿主机上运行的工具（代码生成器、pkg-config wrapper）与目标机上的库是不同概念，不能混在同一个搜索路径里。
 
-<div class="note-map"><span><b>CMAKE_SYSTEM_NAME</b><small>声明目标系统，例如 Linux，触发交叉编译模式</small></span><span><b>CMAKE_SYSTEM_PROCESSOR</b><small>目标架构/处理器信息，供项目选择架构相关代码</small></span><span><b>编译器</b><small>CMAKE_C_COMPILER/CXX_COMPILER 指向目标工具链</small></span><span><b>sysroot</b><small>目标头文件、库和动态链接器所属的根目录</small></span><span><b>find root path</b><small>限制 find_library/find_path 不误用宿主机依赖</small></span><span><b>try-compile</b><small>交叉构建时配置测试程序不能直接在宿主机执行</small></span></div>
+<figure class="note-visual"><figcaption><span>构建图</span>toolchain file 的任务是让 CMake 始终以目标系统的视角寻找编译器、头文件和库。</figcaption><div class="note-map"><span><b>CMAKE_SYSTEM_NAME</b><small>声明目标系统，例如 Linux，触发交叉编译模式</small></span><span><b>CMAKE_SYSTEM_PROCESSOR</b><small>目标架构/处理器信息，供项目选择架构相关代码</small></span><span><b>编译器</b><small>CMAKE_C_COMPILER/CXX_COMPILER 指向目标工具链</small></span><span><b>sysroot</b><small>目标头文件、库和动态链接器所属的根目录</small></span><span><b>find root path</b><small>限制 find_library/find_path 不误用宿主机依赖</small></span><span><b>try-compile</b><small>交叉构建时配置测试程序不能直接在宿主机执行</small></span></div></figure>
 
 一个最小工具链文件可以从下面开始，再按 SDK/Buildroot 输出调整路径：
 

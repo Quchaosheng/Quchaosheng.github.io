@@ -10,6 +10,8 @@ tags: [TensorRT, ONNX, 推理优化]
 
 <div class="note-flow"><span>导出 ONNX 模型</span><i>→</i><span>校验算子与精度</span><i>→</i><span>构建目标设备 engine</span><i>→</i><span>预分配并预热推理</span><i>→</i><span>测量端到端延迟与精度</span></div>
 
+<figure class="note-visual"><figcaption><span>时延图</span>模型、engine、缓冲区和队列要一起看，单独缩短 GPU 时间不等于感知结果更及时。</figcaption><div class="note-map"><span><b>ONNX 输入契约</b><small>opset、形状、颜色、归一化和后处理必须与训练保持一致。</small></span><span><b>目标 engine</b><small>与 GPU 架构、TensorRT、CUDA 和优化 profile 一起固定版本。</small></span><span><b>预分配缓冲</b><small>启动时建立 context、stream 和输入输出内存，避免每帧动态分配。</small></span><span><b>异步执行</b><small>用明确 stream 依赖连接预处理、推理和后处理，避免隐式同步。</small></span><span><b>队列策略</b><small>持续输入时要决定丢旧帧、限队列还是让结果逐渐过期。</small></span><span><b>端到端时间</b><small>同时记录采集、入队、推理完成和消费时刻，得到真正的 frame age。</small></span></div></figure>
+
 ## 从模型文件到 engine 的四个关口
 
 **导出正确**：固定 opset、输入名称、坐标约定和前后处理。很多“推理精度下降”其实是 RGB/BGR、归一化、letterbox 或 NMS 参数和训练时不一致。

@@ -10,6 +10,8 @@ Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘�
 
 <div class="note-flow"><span>选择 JetPack 与功耗模式</span><i>→</i><span>部署模型和 ROS 2 节点</span><i>→</i><span>测量 CPU/GPU/内存负载</span><i>→</i><span>分离推理与实时控制</span><i>→</i><span>在温度稳定后复测长尾</span></div>
 
+<figure class="note-visual"><figcaption><span>资源图</span>Jetson 是感知和任务平台，实时控制与安全链路应有更确定的执行边界。</figcaption><div class="note-map"><span><b>相机与多媒体</b><small>采集、颜色转换、编码和解码会占用专用引擎与内存带宽。</small></span><span><b>GPU 推理</b><small>TensorRT、CUDA stream 和显存使用影响模型吞吐与尾延迟。</small></span><span><b>CPU 与 DDS</b><small>ROS 2 回调、序列化、规划和驱动仍会争抢 ARM CPU。</small></span><span><b>共享内存</b><small>多路相机和大模型常先受带宽与队列限制，而不是 GPU 算力。</small></span><span><b>MCU/RT 控制</b><small>电流、速度、限位和 watchdog 放在可预测、可独立失效的链路。</small></span><span><b>安全停止</b><small>急停和驱动抑制不依赖 GPU、ROS 2 或普通进程调度。</small></span></div></figure>
+
 ## Jetson 上实际要争抢哪些资源
 
 推理不只占 GPU。摄像头采集和图像颜色转换可能使用 ISP 或 VIC，视频解码会使用专用引擎，TensorRT 占 GPU 和显存带宽，ROS 2 节点、DDS 和驱动则会占用 CPU。多路相机加上大模型时，瓶颈往往从 GPU 算力变成内存带宽、CPU 回调排队或散热引起的降频。

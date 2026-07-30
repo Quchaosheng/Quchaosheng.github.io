@@ -14,7 +14,7 @@ tags: [PREEMPT_RT, 抢占, 实时Linux]
 
 它不是给应用程序加一个“实时开关”，而是重塑了内核中的若干执行上下文。大量原本会忙等的自旋锁，在能够睡眠的情形下会以 `rtmutex` 方式工作；当高优先级线程等待锁时，持锁者可以得到优先级继承。许多设备中断也会由可调度的 IRQ 线程完成后半段处理，使调度器可以决定它与实时任务谁先运行。
 
-<div class="note-map"><span><b>锁</b><small>尽可能用可睡眠的 rtmutex，缩短高优先级等待</small></span><span><b>中断</b><small>将大量处理移入 IRQ 线程，减少硬中断占用</small></span><span><b>抢占</b><small>让内核路径更频繁地成为可抢占点</small></span><span><b>调度</b><small>实时线程可在更短的内核延迟后得到 CPU</small></span><span><b>仍需单独处理</b><small>raw spinlock、NMI、SMI、固件和硬件延迟</small></span><span><b>最终目标</b><small>降低并解释最坏延迟，而不是追求最高吞吐</small></span></div>
+<figure class="note-visual"><figcaption><span>改动图</span>PREEMPT_RT 主要缩短可控制的内核阻塞路径，仍要把硬件和固件延迟单独测出来。</figcaption><div class="note-map"><span><b>锁</b><small>尽可能用可睡眠的 rtmutex，缩短高优先级等待</small></span><span><b>中断</b><small>将大量处理移入 IRQ 线程，减少硬中断占用</small></span><span><b>抢占</b><small>让内核路径更频繁地成为可抢占点</small></span><span><b>调度</b><small>实时线程可在更短的内核延迟后得到 CPU</small></span><span><b>仍需单独处理</b><small>raw spinlock、NMI、SMI、固件和硬件延迟</small></span><span><b>最终目标</b><small>降低并解释最坏延迟，而不是追求最高吞吐</small></span></div></figure>
 
 这里的“尽可能”要记住。`raw_spinlock`、部分底层时钟路径、NMI/SMI 和设备固件仍可能挡住 CPU；驱动关中断太久或固件接管 CPU 时，实时补丁也帮不上忙。装了 PREEMPT_RT 后还要测，不能直接把它当成实时保证。
 
