@@ -1,6 +1,6 @@
 ---
 title: Page Cache 预读：内核如何提前猜中下一次读取
-date: 2026-05-26 14:00:00
+date: 2026-04-02 14:00:00
 permalink: /2026/07/29/page-cache-readahead/
 categories: [技术, Linux内核]
 tags: [PageCache, 预读, 文件系统]

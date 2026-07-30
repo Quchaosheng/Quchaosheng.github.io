@@ -1,6 +1,6 @@
 ---
 title: 实时回归测试：把一次调优变成可持续的延迟基线
-date: 2026-07-22 20:00:00
+date: 2026-07-15 20:00:00
 permalink: /2026/07/30/realtime-regression-baseline/
 categories: [技术, Linux实时]
 tags: [cyclictest, 回归测试, 延迟基线]

@@ -1,6 +1,7 @@
 ---
 title: Page Cache：文件 I/O 为什么常常先经过内存
-date: 2026-05-05 20:00:00
+date: 2026-07-29 17:36:41
+source_checked_at: 2026-07-29 17:36:41
 permalink: /2026/07/29/linux-page-cache/
 categories: [技术, Linux内核]
 tags: [PageCache, 文件系统, I/O]

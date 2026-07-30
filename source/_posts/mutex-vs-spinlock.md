@@ -1,6 +1,6 @@
 ---
 title: 互斥锁与自旋锁：等待时该睡眠还是忙等
-date: 2026-04-28 14:00:00
+date: 2026-02-20 14:00:00
 permalink: /2026/07/29/mutex-vs-spinlock/
 categories: [技术, 并发]
 tags: [互斥锁, 自旋锁, 性能]

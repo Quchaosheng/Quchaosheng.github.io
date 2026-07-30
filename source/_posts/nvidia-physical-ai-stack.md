@@ -1,6 +1,6 @@
 ---
 title: NVIDIA Physical AI 技术栈：机器人从模型到执行器要经过什么
-date: 2026-07-23 14:00:00
+date: 2026-07-16 14:00:00
 permalink: /2026/07/30/nvidia-physical-ai-stack/
 categories: [技术, AI机器人]
 tags: [NVIDIA, Physical AI, ROS 2]

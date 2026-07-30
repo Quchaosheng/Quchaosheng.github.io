@@ -1,6 +1,6 @@
 ---
 title: Linux 五种 I/O 模型：阻塞、非阻塞与多路复用
-date: 2026-04-26 10:00:00
+date: 2026-02-16 10:00:00
 permalink: /2026/07/29/linux-five-io-models/
 categories: [技术, Linux网络]
 tags: [I/O模型, epoll, 网络编程]

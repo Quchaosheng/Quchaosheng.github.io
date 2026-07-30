@@ -1,6 +1,6 @@
 ---
 title: malloc 与 free：用户态分配器如何管理堆内存
-date: 2026-04-22 14:00:00
+date: 2026-02-12 14:00:00
 permalink: /2026/07/29/malloc-free-internals/
 categories: [技术, C-C++]
 tags: [malloc, free, 堆, 内存分配]

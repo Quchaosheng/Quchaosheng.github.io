@@ -1,6 +1,6 @@
 ---
 title: QEMU gdbstub：从启动第一条指令调试系统
-date: 2026-05-19 14:00:00
+date: 2026-03-20 14:00:00
 permalink: /2026/07/29/qemu-gdbstub-debugging/
 categories: [技术, 调试]
 tags: [QEMU, GDB, gdbstub]

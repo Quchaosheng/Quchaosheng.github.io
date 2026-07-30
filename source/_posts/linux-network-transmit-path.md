@@ -1,6 +1,6 @@
 ---
 title: Linux 网络发送链路：从 socket 到网卡描述符
-date: 2026-05-29 14:00:00
+date: 2026-04-07 14:00:00
 permalink: /2026/07/29/linux-network-transmit-path/
 categories: [技术, Linux网络]
 tags: [网络栈, qdisc, netdevice]

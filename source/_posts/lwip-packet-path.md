@@ -1,6 +1,6 @@
 ---
 title: lwIP 数据路径：小内存设备如何运行 TCP/IP
-date: 2026-06-16 14:00:00
+date: 2026-05-08 14:00:00
 permalink: /2026/07/29/lwip-packet-path/
 categories: [技术, 嵌入式网络]
 tags: [lwIP, TCP-IP, pbuf]

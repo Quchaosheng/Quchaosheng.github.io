@@ -1,6 +1,7 @@
 ---
 title: 无锁队列：CAS、内存序与工程选型
-date: 2026-04-24 14:00:00
+date: 2026-07-29 17:01:01
+source_checked_at: 2026-07-29 17:01:01
 permalink: /2026/07/29/lock-free-queue-selection/
 categories: [技术, C-C++]
 tags: [无锁队列, CAS, 并发, 内存序]

@@ -1,6 +1,6 @@
 ---
 title: osnoise tracer：把 Linux 实时抖动拆成可解释的噪声
-date: 2026-07-15 14:00:00
+date: 2026-07-02 14:00:00
 permalink: /2026/07/30/linux-osnoise-tracer/
 categories: [技术, Linux实时]
 tags: [osnoise, rtla, Ftrace]

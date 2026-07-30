@@ -1,6 +1,6 @@
 ---
 title: 实时任务的内存锁定：避免缺页与回收抖动
-date: 2026-07-10 14:00:00
+date: 2026-06-23 14:00:00
 permalink: /2026/07/30/realtime-memory-locking/
 categories: [技术, Linux实时]
 tags: [mlockall, 缺页, 实时内存]

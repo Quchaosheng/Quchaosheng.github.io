@@ -1,6 +1,6 @@
 ---
 title: SMI 与固件延迟：Linux 追踪不到的实时尖峰从哪里来
-date: 2026-07-18 14:00:00
+date: 2026-07-07 14:00:00
 permalink: /2026/07/30/realtime-smi-firmware-latency/
 categories: [技术, Linux实时]
 tags: [SMI, NMI, 固件, 延迟]

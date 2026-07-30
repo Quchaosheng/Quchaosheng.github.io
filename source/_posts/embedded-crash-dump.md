@@ -1,6 +1,6 @@
 ---
 title: 嵌入式崩溃转储：复位后仍能还原现场
-date: 2026-07-01 14:00:00
+date: 2026-06-05 14:00:00
 permalink: /2026/07/29/embedded-crash-dump/
 categories: [技术, 嵌入式]
 tags: [CrashDump, 故障诊断, Flash]

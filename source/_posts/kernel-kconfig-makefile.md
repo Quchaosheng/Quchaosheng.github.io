@@ -1,6 +1,6 @@
 ---
 title: Kconfig、Makefile 与 .config：驱动代码如何进入内核
-date: 2026-06-06 14:00:00
+date: 2026-04-22 14:00:00
 permalink: /2026/07/29/kernel-kconfig-makefile/
 categories: [技术, Linux内核]
 tags: [Kconfig, Makefile, 内核构建]

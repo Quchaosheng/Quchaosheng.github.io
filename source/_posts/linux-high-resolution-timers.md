@@ -1,6 +1,6 @@
 ---
 title: Linux 高精度定时器：实时任务为何不再依赖系统节拍
-date: 2026-07-14 14:00:00
+date: 2026-06-30 14:00:00
 permalink: /2026/07/30/linux-high-resolution-timers/
 categories: [技术, Linux实时]
 tags: [hrtimer, 高精度定时器, clockevent]

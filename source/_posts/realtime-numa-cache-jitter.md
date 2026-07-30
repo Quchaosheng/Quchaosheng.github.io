@@ -1,6 +1,6 @@
 ---
 title: NUMA 与共享缓存：实时线程为何会被别的 CPU 干扰
-date: 2026-07-21 14:00:00
+date: 2026-07-10 14:00:00
 permalink: /2026/07/30/realtime-numa-cache-jitter/
 categories: [技术, Linux实时]
 tags: [NUMA, LLC, 内存带宽, 实时Linux]

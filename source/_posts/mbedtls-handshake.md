@@ -1,6 +1,6 @@
 ---
 title: mbedTLS：嵌入式 TLS 握手与证书校验
-date: 2026-06-25 14:00:00
+date: 2026-05-26 14:00:00
 permalink: /2026/07/29/mbedtls-handshake/
 categories: [技术, 嵌入式网络]
 tags: [mbedTLS, TLS, 证书]

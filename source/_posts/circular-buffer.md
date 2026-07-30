@@ -1,6 +1,7 @@
 ---
 title: 环形缓冲区：固定容量队列的基础结构
-date: 2026-05-12 14:00:00
+date: 2026-07-29 17:36:41
+source_checked_at: 2026-07-29 17:36:41
 permalink: /2026/07/29/circular-buffer/
 categories: [技术, C-C++]
 tags: [环形缓冲区, 队列, 网络编程]

@@ -1,6 +1,6 @@
 ---
 title: TCP 重传：可靠传输如何发现并修复丢包
-date: 2026-04-14 14:00:00
+date: 2026-02-05 14:00:00
 permalink: /2026/07/29/tcp-retransmission/
 categories: [技术, Linux网络]
 tags: [TCP, 重传, 拥塞控制]

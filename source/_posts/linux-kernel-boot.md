@@ -1,6 +1,6 @@
 ---
 title: Linux 内核启动：从固件到第一个用户进程
-date: 2026-05-05 10:00:00
+date: 2026-03-02 10:00:00
 permalink: /2026/07/29/linux-kernel-boot/
 categories: [技术, Linux内核]
 tags: [内核启动, Bootloader, init]

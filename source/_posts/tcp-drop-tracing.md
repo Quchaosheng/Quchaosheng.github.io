@@ -1,6 +1,6 @@
 ---
 title: TCP 丢包追踪：用 kprobe 与 tracepoint 串起证据链
-date: 2026-06-07 14:00:00
+date: 2026-04-23 14:00:00
 permalink: /2026/07/29/tcp-drop-tracing/
 categories: [技术, Linux网络]
 tags: [丢包, kprobe, tracepoint]

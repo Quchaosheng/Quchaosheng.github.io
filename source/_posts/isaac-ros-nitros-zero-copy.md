@@ -1,6 +1,6 @@
 ---
 title: Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU
-date: 2026-07-25 14:00:00
+date: 2026-07-20 14:00:00
 permalink: /2026/07/30/isaac-ros-nitros-zero-copy/
 categories: [技术, AI机器人]
 tags: [Isaac ROS, NITROS, 零拷贝]

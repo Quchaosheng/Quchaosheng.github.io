@@ -1,6 +1,6 @@
 ---
 title: SCHED_DEADLINE：用运行预算和截止期调度周期任务
-date: 2026-07-19 14:00:00
+date: 2026-07-08 14:00:00
 permalink: /2026/07/30/sched-deadline-cbs/
 categories: [技术, Linux实时]
 tags: [SCHED_DEADLINE, EDF, CBS]

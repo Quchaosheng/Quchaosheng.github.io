@@ -1,6 +1,6 @@
 ---
 title: 软件定时器：用一个硬件时基管理多个超时
-date: 2026-06-28 14:00:00
+date: 2026-06-02 14:00:00
 permalink: /2026/07/29/embedded-software-timer/
 categories: [技术, 嵌入式]
 tags: [软件定时器, Tick, 调度]

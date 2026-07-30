@@ -1,6 +1,6 @@
 ---
 title: 信号量：用许可数量协调并发资源
-date: 2026-04-29 14:00:00
+date: 2026-02-23 14:00:00
 permalink: /2026/07/29/cpp-semaphore/
 categories: [技术, 并发]
 tags: [信号量, C++20, 同步]

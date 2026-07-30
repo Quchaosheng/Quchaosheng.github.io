@@ -1,6 +1,7 @@
 ---
 title: MMU：虚拟地址如何找到物理内存
-date: 2026-04-03 14:00:00
+date: 2026-07-29 16:09:18
+source_checked_at: 2026-07-29 16:09:18
 permalink: /2026/07/29/linux-mmu-address-translation/
 categories: [技术, Linux内核]
 tags: [MMU, 页表, TLB, 内存管理]

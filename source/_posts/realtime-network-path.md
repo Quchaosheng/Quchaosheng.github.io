@@ -1,6 +1,6 @@
 ---
 title: Linux 实时网络路径：从网卡中断到应用线程
-date: 2026-07-22 10:00:00
+date: 2026-07-14 10:00:00
 permalink: /2026/07/30/realtime-network-path/
 categories: [技术, Linux实时]
 tags: [NAPI, IRQ亲和性, 实时网络]

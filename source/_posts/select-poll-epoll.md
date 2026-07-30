@@ -1,6 +1,6 @@
 ---
 title: select、poll 与 epoll：多路复用如何扩展
-date: 2026-05-10 14:00:00
+date: 2026-03-06 14:00:00
 permalink: /2026/07/29/select-poll-epoll/
 categories: [技术, Linux网络]
 tags: [select, poll, epoll, Reactor]

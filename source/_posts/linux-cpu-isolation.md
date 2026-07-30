@@ -1,6 +1,6 @@
 ---
 title: CPU 隔离：为实时任务留出安静的核心
-date: 2026-07-09 14:00:00
+date: 2026-06-19 14:00:00
 permalink: /2026/07/30/linux-cpu-isolation/
 categories: [技术, Linux实时]
 tags: [CPU隔离, nohz_full, rcu_nocbs]

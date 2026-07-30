@@ -1,6 +1,7 @@
 ---
 title: Linux 内存泄漏排查：先分清是哪一种内存增长
-date: 2026-04-23 14:00:00
+date: 2026-07-29 16:09:18
+source_checked_at: 2026-07-29 16:09:18
 permalink: /2026/07/29/linux-memory-leak-diagnosis/
 categories: [技术, 调试]
 tags: [内存泄漏, RSS, Valgrind, Sanitizer]

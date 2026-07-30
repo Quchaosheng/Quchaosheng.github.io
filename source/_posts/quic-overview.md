@@ -1,6 +1,7 @@
 ---
 title: QUIC：在 UDP 之上重建可靠传输
-date: 2026-05-11 14:00:00
+date: 2026-07-29 17:36:41
+source_checked_at: 2026-07-29 17:36:41
 permalink: /2026/07/29/quic-overview/
 categories: [技术, Linux网络]
 tags: [QUIC, HTTP3, UDP]

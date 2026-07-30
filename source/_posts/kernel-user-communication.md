@@ -1,6 +1,6 @@
 ---
 title: 内核与用户空间通信：按语义选择接口
-date: 2026-06-03 14:00:00
+date: 2026-04-16 14:00:00
 permalink: /2026/07/29/kernel-user-communication/
 categories: [技术, Linux内核]
 tags: [Netlink, ioctl, mmap]

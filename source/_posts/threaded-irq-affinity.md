@@ -1,6 +1,6 @@
 ---
 title: 线程化中断与 IRQ 亲和性：控制实时任务的硬件干扰
-date: 2026-07-08 14:00:00
+date: 2026-06-18 14:00:00
 permalink: /2026/07/30/threaded-irq-affinity/
 categories: [技术, Linux实时]
 tags: [线程化中断, IRQ亲和性, PREEMPT_RT]

@@ -1,6 +1,6 @@
 ---
 title: NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层
-date: 2026-07-30 14:00:00
+date: 2026-07-28 14:00:00
 permalink: /2026/07/30/nvidia-groot-robot-foundation-model/
 categories: [技术, AI机器人]
 tags: [GR00T, VLA, 具身智能]

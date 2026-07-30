@@ -1,6 +1,6 @@
 ---
 title: RISC-V cpuidle：空闲 CPU 如何降低功耗
-date: 2026-05-17 14:00:00
+date: 2026-03-17 14:00:00
 permalink: /2026/07/29/riscv-cpuidle/
 categories: [技术, RISC-V]
 tags: [cpuidle, 功耗, 调度]

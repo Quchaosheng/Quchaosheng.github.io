@@ -1,6 +1,6 @@
 ---
 title: 进程睡眠与唤醒：等待队列避免忙等
-date: 2026-05-07 14:00:00
+date: 2026-03-04 14:00:00
 permalink: /2026/07/29/linux-sleep-wakeup/
 categories: [技术, Linux内核]
 tags: [等待队列, 睡眠, 唤醒]

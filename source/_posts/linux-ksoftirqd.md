@@ -1,6 +1,6 @@
 ---
 title: ksoftirqd：软中断为何会转入内核线程
-date: 2026-06-02 14:00:00
+date: 2026-04-15 14:00:00
 permalink: /2026/07/29/linux-ksoftirqd/
 categories: [技术, Linux内核]
 tags: [软中断, ksoftirqd, 网络]

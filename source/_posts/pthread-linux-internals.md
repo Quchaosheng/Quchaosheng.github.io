@@ -1,6 +1,6 @@
 ---
 title: pthread 底层：线程创建、同步与退出
-date: 2026-04-12 14:00:00
+date: 2026-02-04 14:00:00
 permalink: /2026/07/29/pthread-linux-internals/
 categories: [技术, C-C++]
 tags: [pthread, 线程, futex]

@@ -1,6 +1,6 @@
 ---
 title: DMA：设备怎样绕过 CPU 搬运大块数据
-date: 2026-05-06 14:00:00
+date: 2026-03-03 14:00:00
 permalink: /2026/07/29/linux-dma/
 categories: [技术, 嵌入式Linux]
 tags: [DMA, 设备驱动, 缓存一致性]

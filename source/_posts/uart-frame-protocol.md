@@ -1,6 +1,6 @@
 ---
 title: 串口帧协议：解决粘包、丢字节与错误恢复
-date: 2026-06-26 20:00:00
+date: 2026-05-28 20:00:00
 permalink: /2026/07/29/uart-frame-protocol/
 categories: [技术, 嵌入式]
 tags: [UART, 帧协议, CRC]

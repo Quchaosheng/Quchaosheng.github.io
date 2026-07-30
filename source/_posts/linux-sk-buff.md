@@ -1,6 +1,6 @@
 ---
 title: sk_buff：Linux 网络包在内核中的旅行容器
-date: 2026-04-10 14:00:00
+date: 2026-02-02 14:00:00
 permalink: /2026/07/29/linux-sk-buff/
 categories: [技术, Linux内核]
 tags: [sk_buff, 网络栈, Linux]
