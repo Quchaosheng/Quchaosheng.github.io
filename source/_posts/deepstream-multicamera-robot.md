@@ -10,6 +10,8 @@ tags: [DeepStream, GStreamer, 多相机]
 
 <div class="note-flow"><span>多路相机采集</span><i>→</i><span>硬件解码与预处理</span><i>→</i><span>组批进入 TensorRT</span><i>→</i><span>目标跟踪与元数据</span><i>→</i><span>ROS 2 节点消费结果</span></div>
 
+<figure class="note-visual"><figcaption><span>时延图</span>每个队列都可能让帧变旧，最终应以规划器消费时的感知年龄衡量。</figcaption><div class="note-map"><span><b>采集时间戳</b><small>记录相机曝光时刻，不能在 ROS 2 发布时用 now() 替代</small></span><span><b>解码与预处理</b><small>检查硬件路径、格式转换和不必要的内存复制</small></span><span><b>streammux</b><small>batch 大小和等待超时共同影响吞吐与排队时间</small></span><span><b>TensorRT</b><small>区分模型执行时间、上下文预热和输入队列等待</small></span><span><b>跟踪与桥接</b><small>保留帧号、原始时间戳和明确的失效状态</small></span><span><b>规划器消费</b><small>用 consume_time 减 capture_time 得到真正的感知年龄</small></span></div></figure>
+
 ## DeepStream 管线里有哪些关键部件
 
 在典型 GStreamer 图中，source 负责输入，解码器将压缩视频变成帧，`nvstreammux` 汇聚多路帧，`nvinfer` 执行 TensorRT 推理，`nvtracker` 在帧间保持目标 ID，后续组件再做显示、编码或消息输出。每个组件都可能有自己的队列和缓存策略。

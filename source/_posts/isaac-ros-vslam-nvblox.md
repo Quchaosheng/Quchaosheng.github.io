@@ -10,6 +10,8 @@ tags: [Visual SLAM, nvblox, Isaac ROS]
 
 <div class="note-flow"><span>同步相机与 IMU</span><i>→</i><span>Visual SLAM 估计位姿</span><i>→</i><span>深度数据按位姿融合</span><i>→</i><span>生成三维地图/距离场</span><i>→</i><span>导航规划并反馈新观测</span></div>
 
+<figure class="note-visual"><figcaption><span>坐标图</span>定位、建图和导航共享一条时间与 TF 链，任一环错位都会污染后续结果。</figcaption><div class="note-map"><span><b>camera_link</b><small>相机外参与采集时间决定视觉观测从哪里产生</small></span><span><b>base_link</b><small>机器人机体基准，传感器静态变换应可独立校验</small></span><span><b>odom</b><small>保持局部连续，允许长期漂移，供短时控制使用</small></span><span><b>map</b><small>提供全局一致坐标，重定位时可相对 odom 修正</small></span><span><b>TSDF/ESDF</b><small>按对应时刻位姿融合深度，再计算表面或障碍距离</small></span><span><b>导航代价图</b><small>检查地图年龄、清除语义和安全膨胀后再规划</small></span></div></figure>
+
 ## 先分清四个坐标系
 
 在 ROS 2 机器人里，`base_link` 通常表示机体，`camera_link` 表示相机，`odom` 提供连续但会漂移的局部里程计坐标，`map` 则用于长期一致的全局地图。Visual SLAM、轮速计和导航模块发布或消费的变换必须形成一棵没有环的 TF 树。

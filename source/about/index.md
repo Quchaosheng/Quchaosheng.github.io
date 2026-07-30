@@ -4,8 +4,22 @@ date: 2026-07-14 10:00:00
 layout: page
 ---
 
-这里记录 Linux Kernel、ROS 2、嵌入式系统以及个人项目的学习与实践。
+这里保存我在 Linux 内核、实时系统、ROS 2、嵌入式开发和机器人方向的学习笔记。文章更偏向工程问题：机制怎样工作，如何在机器上验证，结论适用到哪里。
 
-- GitHub：[Quchaosheng](https://github.com/Quchaosheng)
-- 网站：[quchaosheng.github.io](https://quchaosheng.github.io/)
+## 从哪里开始
+
+- [学习路线](/paths/)：把分散主题串成可以顺序阅读的路径。
+- [文章分类](/category/)：按 Linux 内核、实时系统、嵌入式和机器人等主题查找。
+- [项目记录](/projects/)：查看代码、系统结构、验证方法和当前进展。
+- [站内搜索](/search/)：按命令、函数名或问题关键词检索。
+
+## 内容说明
+
+笔记日期是整理日期。引用外部文章时会保留来源，并尽量用官方文档、上游代码或可运行命令交叉检查。公众号等二手资料只作为线索，不复制原文，也不把未验证的说法写成确定结论。
+
+文章会随实践继续修订，但已有页面的永久链接保持稳定。代码和命令仍需在目标版本、硬件与负载上复测。
+
+GitHub：[Quchaosheng](https://github.com/Quchaosheng)
+
+网站：[quchaosheng.github.io](https://quchaosheng.github.io/)
 

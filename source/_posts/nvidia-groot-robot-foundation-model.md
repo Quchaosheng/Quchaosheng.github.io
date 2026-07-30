@@ -10,6 +10,8 @@ GR00T 代表视觉-语言-动作（VLA）模型进入机器人任务的一条路
 
 <div class="note-flow"><span>接收视觉与语言指令</span><i>→</i><span>模型生成任务/动作候选</span><i>→</i><span>运行时校验场景与约束</span><i>→</i><span>控制器执行有限动作</span><i>→</i><span>反馈结果或安全停止</span></div>
 
+<figure class="note-visual"><figcaption><span>边界图</span>模型负责提出候选，确定性的校验、规划和控制层决定动作能否落到硬件。</figcaption><div class="note-map"><span><b>多模态输入</b><small>图像、语言和机器人状态都要带版本、坐标与新鲜度</small></span><span><b>VLA 候选</b><small>输出有限动作 schema，并保留置信度与超时状态</small></span><span><b>任务守卫</b><small>检查对象、场景、状态机权限和输入是否过期</small></span><span><b>运动规划</b><small>验证可达性、碰撞、速度和工作空间约束</small></span><span><b>底层控制</b><small>独立执行限位、watchdog、力矩限制与急停</small></span><span><b>结果记录</b><small>保存输入、候选、拒绝原因和执行结果供回放</small></span></div></figure>
+
 ## VLA 模型适合做什么，不适合做什么
 
 它适合处理高层的、语义模糊的任务，例如把“整理桌面上的工具”分解为识别、选择、抓取和放置，或根据视觉观察给出下一个操作候选。它不适合独自承担电流环、碰撞检测、关节限位、急停或毫秒级同步控制；这些必须仍由经过验证的控制器、安全传感器和状态机完成。

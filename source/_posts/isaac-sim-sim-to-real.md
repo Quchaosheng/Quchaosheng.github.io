@@ -10,6 +10,8 @@ Isaac Sim 不是一个只用来看机器人动画的 3D 工具。它基于 USD �
 
 <div class="note-flow"><span>建立机器人与传感器模型</span><i>→</i><span>标定物理和噪声参数</span><i>→</i><span>随机化场景与扰动</span><i>→</i><span>批量训练和回归</span><i>→</i><span>实机小范围验证再迭代</span></div>
 
+<figure class="note-visual"><figcaption><span>验证图</span>仿真覆盖已知误差，实机暴露新误差，两边通过同一指标和版本记录闭环。</figcaption><div class="note-map"><span><b>机器人资产</b><small>固定几何、关节、质量、惯量和执行器限制</small></span><span><b>传感器模型</b><small>加入标定误差、噪声、时延、曝光和失效条件</small></span><span><b>场景扰动</b><small>范围来自实测差异，不把随机化当作随意改参数</small></span><span><b>回归指标</b><small>同时记录成功率、碰撞、轨迹误差和尾延迟</small></span><span><b>小范围实机</b><small>先限速、限区域验证，再逐步放开任务边界</small></span><span><b>失败回灌</b><small>把真实失败条件转为新场景、数据或安全约束</small></span></div></figure>
+
 ## 一个可用的仿真场景应包含什么
 
 第一层是**几何和坐标系**：URDF/机器人资产中的关节轴、限位、质量、惯量、相机内外参都要与真实设备一致。坐标轴方向错 90 度、相机安装高度错 3 cm，往往足以让看似正常的导航或抓取在实机上失败。
