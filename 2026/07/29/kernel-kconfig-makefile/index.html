@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Kconfig、Makefile 与 .config：驱动代码如何进入内核 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="给内核添加一份 .c 文件并不会让它自动参与构建。Kconfig 负责描述功能选项、依赖、帮助文本和可见性；配置工具据此生成 .config 与自动生成头文件；Kbuild Makefile 再依据 CONFIG_* 的值选择将对象编入内核、构建为模块或完全跳过。三层必须同时接通，才能解释“menuconfig 里能看到但代码没编”“模块没有生成”“符...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/kernel-kconfig-makefile/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kconfig、Makefile 与 .config：驱动代码如何进入内核 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="给内核添加一份 .c 文件并不会让它自动参与构建。Kconfig 负责描述功能选项、依赖、帮助文本和可见性；配置工具据此生成 .config 与自动生成头文件；Kbuild Makefile 再依据 CONFIG_* 的值选择将对象编入内核、构建为模块或完全跳过。三层必须同时接通，才能解释“menuconfig 里能看到但代码没编”“模块没有生成”“符...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/kernel-kconfig-makefile/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Kconfig、Makefile 与 .config：驱动代码如何进入内核">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Kconfig、Makefile 与 .config：驱动代码如何进入内核 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="给内核添加一份 .c 文件并不会让它自动参与构建。Kconfig 负责描述功能选项、依赖、帮助文本和可见性；配置工具据此生成 .config 与自动生成头文件；Kbuild Makefile 再依据 CONFIG_* 的值选择将对象编入内核、构建为模块或完全跳过。三层必须同时接通，才能解释“menuconfig 里能看到但代码没编”“模块没有生成”“符...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

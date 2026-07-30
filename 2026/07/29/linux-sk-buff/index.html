@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>sk_buff：Linux 网络包在内核中的旅行容器 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="struct sk_buff ，通常简称 skb，是 Linux 网络栈用来描述一个包及其元数据的核心对象。它不只是“装数据的数组”：其中包含数据区边界、协议头偏移、设备、路由、校验和、时间戳、socket 所有权和引用计数等信息。理解 skb 的关键不是背字段，而是理解数据本体、元数据、所有权和协议层如何在不必要复制的前提下向前推进。 网卡 DMA...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-sk-buff/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="sk_buff：Linux 网络包在内核中的旅行容器 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="struct sk_buff ，通常简称 skb，是 Linux 网络栈用来描述一个包及其元数据的核心对象。它不只是“装数据的数组”：其中包含数据区边界、协议头偏移、设备、路由、校验和、时间戳、socket 所有权和引用计数等信息。理解 skb 的关键不是背字段，而是理解数据本体、元数据、所有权和协议层如何在不必要复制的前提下向前推进。 网卡 DMA...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-sk-buff/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="sk_buff：Linux 网络包在内核中的旅行容器">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="sk_buff：Linux 网络包在内核中的旅行容器 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="struct sk_buff ，通常简称 skb，是 Linux 网络栈用来描述一个包及其元数据的核心对象。它不只是“装数据的数组”：其中包含数据区边界、协议头偏移、设备、路由、校验和、时间戳、socket 所有权和引用计数等信息。理解 skb 的关键不是背字段，而是理解数据本体、元数据、所有权和协议层如何在不必要复制的前提下向前推进。 网卡 DMA...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

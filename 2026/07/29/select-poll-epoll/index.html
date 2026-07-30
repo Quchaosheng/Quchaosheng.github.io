@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>select、poll 与 epoll：多路复用如何扩展 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="网络服务器往往需要同时等待大量 socket、定时器、管道或 eventfd，而不是为每个 fd 创建一个阻塞线程。 select 、 poll 与 epoll 都实现“等待多个 fd 是否就绪”，区别在于关注集合如何传给内核、就绪集合怎样返回、每轮需要扫描多少对象。理解它们的重点不只是复杂度，更是就绪通知、非阻塞 I&amp;#x2F;O、连接生命周期和背压...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/select-poll-epoll/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="select、poll 与 epoll：多路复用如何扩展 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="网络服务器往往需要同时等待大量 socket、定时器、管道或 eventfd，而不是为每个 fd 创建一个阻塞线程。 select 、 poll 与 epoll 都实现“等待多个 fd 是否就绪”，区别在于关注集合如何传给内核、就绪集合怎样返回、每轮需要扫描多少对象。理解它们的重点不只是复杂度，更是就绪通知、非阻塞 I&amp;#x2F;O、连接生命周期和背压...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/select-poll-epoll/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="select、poll 与 epoll：多路复用如何扩展">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="select、poll 与 epoll：多路复用如何扩展 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="网络服务器往往需要同时等待大量 socket、定时器、管道或 eventfd，而不是为每个 fd 创建一个阻塞线程。 select 、 poll 与 epoll 都实现“等待多个 fd 是否就绪”，区别在于关注集合如何传给内核、就绪集合怎样返回、每轮需要扫描多少对象。理解它们的重点不只是复杂度，更是就绪通知、非阻塞 I&amp;#x2F;O、连接生命周期和背压...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>C++20 协程：把异步流程写成顺序代码 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="C++20 协程不是轻量线程，也不会因为函数里写了 co_await 就自动并行。它是编译器把一个可暂停函数改写为状态机的语言机制：局部状态被保存在协程帧中，函数可在等待点挂起，等某个 awaiter 或执行器决定恢复后从原处继续。协程最大的价值是把“发起异步操作 → 等待完成 → 继续处理”的回调链写成顺序代码；真正在哪个线程执行、如何取消、何时销毁...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/cpp20-coroutines/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C++20 协程：把异步流程写成顺序代码 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="C++20 协程不是轻量线程，也不会因为函数里写了 co_await 就自动并行。它是编译器把一个可暂停函数改写为状态机的语言机制：局部状态被保存在协程帧中，函数可在等待点挂起，等某个 awaiter 或执行器决定恢复后从原处继续。协程最大的价值是把“发起异步操作 → 等待完成 → 继续处理”的回调链写成顺序代码；真正在哪个线程执行、如何取消、何时销毁...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/cpp20-coroutines/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="C++20 协程：把异步流程写成顺序代码">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="C++20 协程：把异步流程写成顺序代码 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="C++20 协程不是轻量线程，也不会因为函数里写了 co_await 就自动并行。它是编译器把一个可暂停函数改写为状态机的语言机制：局部状态被保存在协程帧中，函数可在等待点挂起，等某个 awaiter 或执行器决定恢复后从原处继续。协程最大的价值是把“发起异步操作 → 等待完成 → 继续处理”的回调链写成顺序代码；真正在哪个线程执行、如何取消、何时销毁...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

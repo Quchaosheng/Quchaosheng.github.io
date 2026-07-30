@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>TSN：以太网怎样提供确定性时延 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="传统以太网的核心优点是共享与尽力而为：大包可以占用链路，突发流量可以在交换机队列里等待。TSN（Time-Sensitive Networking）并不是把以太网换成另一种网络，而是在标准以太网上叠加共同时间、流量分类、整形、门控和可靠性机制，使关键流有预先安排的发送窗口和可计算的端到端时延。 PTP 同步全网时间 → 识别关键业务流 → 配置队列与...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/tsn-deterministic-network/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TSN：以太网怎样提供确定性时延 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="传统以太网的核心优点是共享与尽力而为：大包可以占用链路，突发流量可以在交换机队列里等待。TSN（Time-Sensitive Networking）并不是把以太网换成另一种网络，而是在标准以太网上叠加共同时间、流量分类、整形、门控和可靠性机制，使关键流有预先安排的发送窗口和可计算的端到端时延。 PTP 同步全网时间 → 识别关键业务流 → 配置队列与...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/tsn-deterministic-network/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="TSN：以太网怎样提供确定性时延">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TSN：以太网怎样提供确定性时延 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="传统以太网的核心优点是共享与尽力而为：大包可以占用链路，突发流量可以在交换机队列里等待。TSN（Time-Sensitive Networking）并不是把以太网换成另一种网络，而是在标准以太网上叠加共同时间、流量分类、整形、门控和可靠性机制，使关键流有预先安排的发送窗口和可计算的端到端时延。 PTP 同步全网时间 → 识别关键业务流 → 配置队列与...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

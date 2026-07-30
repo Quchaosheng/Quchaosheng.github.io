@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>CMake 交叉编译：工具链文件决定目标环境 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="交叉编译的难点不在于把 gcc 换成 aarch64-linux-gnu-gcc ，而在于让配置阶段、头文件查找、库查找、try-compile 和安装路径都始终站在“目标机”视角。CMake 的 toolchain file 就是这份目标环境声明：它告诉 CMake 目标系统、架构、编译器、sysroot 以及程序&amp;#x2F;库&amp;#x2F;头文件的查...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/cmake-cross-compilation/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CMake 交叉编译：工具链文件决定目标环境 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="交叉编译的难点不在于把 gcc 换成 aarch64-linux-gnu-gcc ，而在于让配置阶段、头文件查找、库查找、try-compile 和安装路径都始终站在“目标机”视角。CMake 的 toolchain file 就是这份目标环境声明：它告诉 CMake 目标系统、架构、编译器、sysroot 以及程序&amp;#x2F;库&amp;#x2F;头文件的查...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/cmake-cross-compilation/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="CMake 交叉编译：工具链文件决定目标环境">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CMake 交叉编译：工具链文件决定目标环境 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="交叉编译的难点不在于把 gcc 换成 aarch64-linux-gnu-gcc ，而在于让配置阶段、头文件查找、库查找、try-compile 和安装路径都始终站在“目标机”视角。CMake 的 toolchain file 就是这份目标环境声明：它告诉 CMake 目标系统、架构、编译器、sysroot 以及程序&amp;#x2F;库&amp;#x2F;头文件的查...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

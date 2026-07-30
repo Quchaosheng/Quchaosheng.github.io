@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>DeepStream 多相机机器人：视频流怎样批量进入 AI 管线 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="当机器人同时挂着前视、侧视、深度或鱼眼相机时，逐路手写“解码、缩放、推理、跟踪、发布 ROS 2 消息”很快会变成难以维护的管线。DeepStream 基于 GStreamer 组织这些阶段，可将硬件解码、GPU 预处理、TensorRT 推理、跟踪和元数据传递串起来。它擅长多流吞吐，但机器人更在意每条视频从采集到被决策模块消费时已经“老了多久”。 多...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/deepstream-multicamera-robot/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DeepStream 多相机机器人：视频流怎样批量进入 AI 管线 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="当机器人同时挂着前视、侧视、深度或鱼眼相机时，逐路手写“解码、缩放、推理、跟踪、发布 ROS 2 消息”很快会变成难以维护的管线。DeepStream 基于 GStreamer 组织这些阶段，可将硬件解码、GPU 预处理、TensorRT 推理、跟踪和元数据传递串起来。它擅长多流吞吐，但机器人更在意每条视频从采集到被决策模块消费时已经“老了多久”。 多...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/deepstream-multicamera-robot/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="DeepStream 多相机机器人：视频流怎样批量进入 AI 管线">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DeepStream 多相机机器人：视频流怎样批量进入 AI 管线 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="当机器人同时挂着前视、侧视、深度或鱼眼相机时，逐路手写“解码、缩放、推理、跟踪、发布 ROS 2 消息”很快会变成难以维护的管线。DeepStream 基于 GStreamer 组织这些阶段，可将硬件解码、GPU 预处理、TensorRT 推理、跟踪和元数据传递串起来。它擅长多流吞吐，但机器人更在意每条视频从采集到被决策模块消费时已经“老了多久”。 多...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

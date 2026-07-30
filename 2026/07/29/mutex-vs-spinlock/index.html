@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>互斥锁与自旋锁：等待时该睡眠还是忙等 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="锁竞争发生时，系统有两种基本选择：继续占 CPU 反复检查锁是否释放，或把线程挂起，让出 CPU 等待唤醒。自旋锁选择前者，换取极低的交接延迟；互斥锁通常选择后者，减少浪费却引入调度与唤醒开销。正确选择不取决于“自旋总是快”或“睡眠总是省”，而取决于临界区长度、持锁者是否正在运行、当前上下文能否睡眠以及竞争强度。 尝试获取锁 → 短临界区且不可睡眠 →...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/mutex-vs-spinlock/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="互斥锁与自旋锁：等待时该睡眠还是忙等 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="锁竞争发生时，系统有两种基本选择：继续占 CPU 反复检查锁是否释放，或把线程挂起，让出 CPU 等待唤醒。自旋锁选择前者，换取极低的交接延迟；互斥锁通常选择后者，减少浪费却引入调度与唤醒开销。正确选择不取决于“自旋总是快”或“睡眠总是省”，而取决于临界区长度、持锁者是否正在运行、当前上下文能否睡眠以及竞争强度。 尝试获取锁 → 短临界区且不可睡眠 →...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/mutex-vs-spinlock/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="互斥锁与自旋锁：等待时该睡眠还是忙等">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="互斥锁与自旋锁：等待时该睡眠还是忙等 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="锁竞争发生时，系统有两种基本选择：继续占 CPU 反复检查锁是否释放，或把线程挂起，让出 CPU 等待唤醒。自旋锁选择前者，换取极低的交接延迟；互斥锁通常选择后者，减少浪费却引入调度与唤醒开销。正确选择不取决于“自旋总是快”或“睡眠总是省”，而取决于临界区长度、持锁者是否正在运行、当前上下文能否睡眠以及竞争强度。 尝试获取锁 → 短临界区且不可睡眠 →...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

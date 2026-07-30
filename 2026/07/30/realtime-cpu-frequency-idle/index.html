@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>CPU 频率与空闲态：实时延迟中容易忽略的硬件变量 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="实时线程按时被唤醒，只代表它开始有机会运行；它之后多久完成还取决于当时 CPU 的频率、缓存与电源状态。动态调频会改变每条指令的执行时间，深度 idle&amp;#x2F;C-state 则要付出退出延迟。它们能显著节能，却会引入与负载、温度、固件决策相关的长尾，所以一个空闲时非常漂亮的实时测试，在热稳定或低负载唤醒后可能突然变差。 CPU 负载下降 → 降低...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/realtime-cpu-frequency-idle/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CPU 频率与空闲态：实时延迟中容易忽略的硬件变量 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="实时线程按时被唤醒，只代表它开始有机会运行；它之后多久完成还取决于当时 CPU 的频率、缓存与电源状态。动态调频会改变每条指令的执行时间，深度 idle&amp;#x2F;C-state 则要付出退出延迟。它们能显著节能，却会引入与负载、温度、固件决策相关的长尾，所以一个空闲时非常漂亮的实时测试，在热稳定或低负载唤醒后可能突然变差。 CPU 负载下降 → 降低...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/realtime-cpu-frequency-idle/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="CPU 频率与空闲态：实时延迟中容易忽略的硬件变量">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CPU 频率与空闲态：实时延迟中容易忽略的硬件变量 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="实时线程按时被唤醒，只代表它开始有机会运行；它之后多久完成还取决于当时 CPU 的频率、缓存与电源状态。动态调频会改变每条指令的执行时间，深度 idle&amp;#x2F;C-state 则要付出退出延迟。它们能显著节能，却会引入与负载、温度、固件决策相关的长尾，所以一个空闲时非常漂亮的实时测试，在热稳定或低负载唤醒后可能突然变差。 CPU 负载下降 → 降低...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

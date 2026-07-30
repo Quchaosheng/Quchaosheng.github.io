@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>GDB 崩溃调试：从信号到调用栈 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="崩溃调试的目标不是盯着最后一行代码，而是还原“异常信号、出错线程、调用路径、关键变量和内存状态”这条证据链。 排查路径 开启 core dump 并保留与二进制匹配的调试符号。使用 gdb program core 后先看信号与全部线程，再定位故障栈帧，检查参数、局部变量、寄存器和相关内存。 程序收到致命信号 → 内核生成 core → 加载二进制与符...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/gdb-crash-debugging/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GDB 崩溃调试：从信号到调用栈 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="崩溃调试的目标不是盯着最后一行代码，而是还原“异常信号、出错线程、调用路径、关键变量和内存状态”这条证据链。 排查路径 开启 core dump 并保留与二进制匹配的调试符号。使用 gdb program core 后先看信号与全部线程，再定位故障栈帧，检查参数、局部变量、寄存器和相关内存。 程序收到致命信号 → 内核生成 core → 加载二进制与符...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/gdb-crash-debugging/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="GDB 崩溃调试：从信号到调用栈">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="GDB 崩溃调试：从信号到调用栈 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="崩溃调试的目标不是盯着最后一行代码，而是还原“异常信号、出错线程、调用路径、关键变量和内存状态”这条证据链。 排查路径 开启 core dump 并保留与二进制匹配的调试符号。使用 gdb program core 后先看信号与全部线程，再定位故障栈帧，检查参数、局部变量、寄存器和相关内存。 程序收到致命信号 → 内核生成 core → 加载二进制与符...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

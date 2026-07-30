@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 五种 I/O 模型：阻塞、非阻塞与多路复用 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="讨论 I&amp;#x2F;O 模型时最容易混淆两件事： 数据何时就绪 ，以及 数据由谁搬运到应用缓冲区 。阻塞、非阻塞、I&amp;#x2F;O 多路复用、信号驱动和异步 I&amp;#x2F;O 的主要差别就在这里。API 名称不决定模型，例如 read() 既可能阻塞，也可能在 nonblocking fd 上立即返回 EAGAIN ；epoll 解决的是“很多 fd...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-five-io-models/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 五种 I/O 模型：阻塞、非阻塞与多路复用 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="讨论 I&amp;#x2F;O 模型时最容易混淆两件事： 数据何时就绪 ，以及 数据由谁搬运到应用缓冲区 。阻塞、非阻塞、I&amp;#x2F;O 多路复用、信号驱动和异步 I&amp;#x2F;O 的主要差别就在这里。API 名称不决定模型，例如 read() 既可能阻塞，也可能在 nonblocking fd 上立即返回 EAGAIN ；epoll 解决的是“很多 fd...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-five-io-models/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 五种 I/O 模型：阻塞、非阻塞与多路复用">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 五种 I/O 模型：阻塞、非阻塞与多路复用 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="讨论 I&amp;#x2F;O 模型时最容易混淆两件事： 数据何时就绪 ，以及 数据由谁搬运到应用缓冲区 。阻塞、非阻塞、I&amp;#x2F;O 多路复用、信号驱动和异步 I&amp;#x2F;O 的主要差别就在这里。API 名称不决定模型，例如 read() 既可能阻塞，也可能在 nonblocking fd 上立即返回 EAGAIN ；epoll 解决的是“很多 fd...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

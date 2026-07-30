@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Tasklet 与工作队列：中断下半部怎样选 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="设备中断到来时，CPU 处在最不适合做复杂工作的上下文：不能随意睡眠，长时间占用会阻塞其他中断和实时任务。下半部机制的目的就是把“必须立刻完成的设备确认”与“可以稍后处理的数据、状态机和 I&amp;#x2F;O”分开。现代内核驱动通常优先考虑线程化 IRQ 或工作队列；tasklet 属于历史上常见的 softirq 下半部机制，新代码一般应避免再引入它。...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/tasklet-workqueue/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tasklet 与工作队列：中断下半部怎样选 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="设备中断到来时，CPU 处在最不适合做复杂工作的上下文：不能随意睡眠，长时间占用会阻塞其他中断和实时任务。下半部机制的目的就是把“必须立刻完成的设备确认”与“可以稍后处理的数据、状态机和 I&amp;#x2F;O”分开。现代内核驱动通常优先考虑线程化 IRQ 或工作队列；tasklet 属于历史上常见的 softirq 下半部机制，新代码一般应避免再引入它。...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/tasklet-workqueue/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Tasklet 与工作队列：中断下半部怎样选">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tasklet 与工作队列：中断下半部怎样选 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="设备中断到来时，CPU 处在最不适合做复杂工作的上下文：不能随意睡眠，长时间占用会阻塞其他中断和实时任务。下半部机制的目的就是把“必须立刻完成的设备确认”与“可以稍后处理的数据、状态机和 I&amp;#x2F;O”分开。现代内核驱动通常优先考虑线程化 IRQ 或工作队列；tasklet 属于历史上常见的 softirq 下半部机制，新代码一般应避免再引入它。...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

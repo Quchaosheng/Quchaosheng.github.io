@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>看门狗：让系统从不可恢复故障中自动重启 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="看门狗是独立计时器，软件必须在系统健康时定期喂狗；超时则复位。正确设计应由健康监控任务汇总各关键任务心跳，而不是每个循环盲目喂狗。 各任务上报心跳 → 监控任务检查完整性 → 健康则喂狗 → 异常则停止喂狗 → 复位并记录原因 启动后尽早启用硬件看门狗，重启前保存最小故障上下文，并防止连续重启循环。参考： EmbedSummary">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-watchdog/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="看门狗：让系统从不可恢复故障中自动重启 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="看门狗是独立计时器，软件必须在系统健康时定期喂狗；超时则复位。正确设计应由健康监控任务汇总各关键任务心跳，而不是每个循环盲目喂狗。 各任务上报心跳 → 监控任务检查完整性 → 健康则喂狗 → 异常则停止喂狗 → 复位并记录原因 启动后尽早启用硬件看门狗，重启前保存最小故障上下文，并防止连续重启循环。参考： EmbedSummary">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-watchdog/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="看门狗：让系统从不可恢复故障中自动重启">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="看门狗：让系统从不可恢复故障中自动重启 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="看门狗是独立计时器，软件必须在系统健康时定期喂狗；超时则复位。正确设计应由健康监控任务汇总各关键任务心跳，而不是每个循环盲目喂狗。 各任务上报心跳 → 监控任务检查完整性 → 健康则喂狗 → 异常则停止喂狗 → 复位并记录原因 启动后尽早启用硬件看门狗，重启前保存最小故障上下文，并防止连续重启循环。参考： EmbedSummary">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

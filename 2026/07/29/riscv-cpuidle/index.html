@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>RISC-V cpuidle：空闲 CPU 如何降低功耗 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="cpuidle 根据预计空闲时间在多个低功耗状态间选择。状态越深，节能越多，但进入、退出延迟与恢复成本也越高。 调度器发现 CPU 空闲 → Governor 预测空闲时长 → 选择满足延迟约束的状态 → WFI 或 SBI suspend → 中断唤醒并统计驻留时间 驱动描述各 idle state 的 exit latency、target res...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/riscv-cpuidle/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RISC-V cpuidle：空闲 CPU 如何降低功耗 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="cpuidle 根据预计空闲时间在多个低功耗状态间选择。状态越深，节能越多，但进入、退出延迟与恢复成本也越高。 调度器发现 CPU 空闲 → Governor 预测空闲时长 → 选择满足延迟约束的状态 → WFI 或 SBI suspend → 中断唤醒并统计驻留时间 驱动描述各 idle state 的 exit latency、target res...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/riscv-cpuidle/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="RISC-V cpuidle：空闲 CPU 如何降低功耗">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RISC-V cpuidle：空闲 CPU 如何降低功耗 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="cpuidle 根据预计空闲时间在多个低功耗状态间选择。状态越深，节能越多，但进入、退出延迟与恢复成本也越高。 调度器发现 CPU 空闲 → Governor 预测空闲时长 → 选择满足延迟约束的状态 → WFI 或 SBI suspend → 中断唤醒并统计驻留时间 驱动描述各 idle state 的 exit latency、target res...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

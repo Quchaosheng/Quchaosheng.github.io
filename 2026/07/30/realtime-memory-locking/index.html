@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>实时任务的内存锁定：避免缺页与回收抖动 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="实时线程最怕的不是“内存不够快”，而是关键路径第一次碰到一页尚未真正就绪的内存。一次缺页可能触发页表遍历、物理页分配、零页填充、文件页读取，极端情况下还会进入回收或写回；写时复制、首次增长的线程栈和运行中 malloc 也会带来类似的不可预测工作。它们在平均性能测试中很少出现，却足以制造一次很长的延迟尖峰。 启动时分配全部缓冲区 → mlockall...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/realtime-memory-locking/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="实时任务的内存锁定：避免缺页与回收抖动 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="实时线程最怕的不是“内存不够快”，而是关键路径第一次碰到一页尚未真正就绪的内存。一次缺页可能触发页表遍历、物理页分配、零页填充、文件页读取，极端情况下还会进入回收或写回；写时复制、首次增长的线程栈和运行中 malloc 也会带来类似的不可预测工作。它们在平均性能测试中很少出现，却足以制造一次很长的延迟尖峰。 启动时分配全部缓冲区 → mlockall...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/realtime-memory-locking/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="实时任务的内存锁定：避免缺页与回收抖动">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="实时任务的内存锁定：避免缺页与回收抖动 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="实时线程最怕的不是“内存不够快”，而是关键路径第一次碰到一页尚未真正就绪的内存。一次缺页可能触发页表遍历、物理页分配、零页填充、文件页读取，极端情况下还会进入回收或写回；写时复制、首次增长的线程栈和运行中 malloc 也会带来类似的不可预测工作。它们在平均性能测试中很少出现，却足以制造一次很长的延迟尖峰。 启动时分配全部缓冲区 → mlockall...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>spinlock、rwlock 与 seqlock：内核锁的读写取舍 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="内核锁的选择不能只看“读多还是写多”。更先要问的是：当前上下文能不能睡眠？临界区会持续多久？读者能否接受重试？数据里有没有指针或需要跨字段保持一致的对象？同一套数据在进程、中断和 softirq 上下文中被访问吗？这些答案决定了锁语义，之后才是性能取舍。 判断上下文能否睡眠 → 评估读写比例与临界区长度 → 选择 spin/rw/seq → 配合 IR...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/kernel-spin-rw-seqlock/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spinlock、rwlock 与 seqlock：内核锁的读写取舍 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="内核锁的选择不能只看“读多还是写多”。更先要问的是：当前上下文能不能睡眠？临界区会持续多久？读者能否接受重试？数据里有没有指针或需要跨字段保持一致的对象？同一套数据在进程、中断和 softirq 上下文中被访问吗？这些答案决定了锁语义，之后才是性能取舍。 判断上下文能否睡眠 → 评估读写比例与临界区长度 → 选择 spin/rw/seq → 配合 IR...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/kernel-spin-rw-seqlock/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="spinlock、rwlock 与 seqlock：内核锁的读写取舍">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="spinlock、rwlock 与 seqlock：内核锁的读写取舍 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="内核锁的选择不能只看“读多还是写多”。更先要问的是：当前上下文能不能睡眠？临界区会持续多久？读者能否接受重试？数据里有没有指针或需要跨字段保持一致的对象？同一套数据在进程、中断和 softirq 上下文中被访问吗？这些答案决定了锁语义，之后才是性能取舍。 判断上下文能否睡眠 → 评估读写比例与临界区长度 → 选择 spin/rw/seq → 配合 IR...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

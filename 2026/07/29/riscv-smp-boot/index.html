@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>RISC-V SMP 启动：多个 hart 如何加入 Linux | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="SMP 启动先由 boot hart 完成内存、页表和调度基础初始化，再通过 SBI HSM 或平台机制启动 secondary hart。次级 hart 建立自己的栈、页表与 per-CPU 状态后进入 idle。 Boot hart 初始化内核 → 解析 CPU 拓扑 → SBI hart_start → Secondary 建立 per-CPU...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/riscv-smp-boot/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RISC-V SMP 启动：多个 hart 如何加入 Linux | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="SMP 启动先由 boot hart 完成内存、页表和调度基础初始化，再通过 SBI HSM 或平台机制启动 secondary hart。次级 hart 建立自己的栈、页表与 per-CPU 状态后进入 idle。 Boot hart 初始化内核 → 解析 CPU 拓扑 → SBI hart_start → Secondary 建立 per-CPU...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/riscv-smp-boot/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="RISC-V SMP 启动：多个 hart 如何加入 Linux">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RISC-V SMP 启动：多个 hart 如何加入 Linux | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="SMP 启动先由 boot hart 完成内存、页表和调度基础初始化，再通过 SBI HSM 或平台机制启动 secondary hart。次级 hart 建立自己的栈、页表与 per-CPU 状态后进入 idle。 Boot hart 初始化内核 → 解析 CPU 拓扑 → SBI hart_start → Secondary 建立 per-CPU...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

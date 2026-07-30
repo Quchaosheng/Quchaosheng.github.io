@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>MMU：虚拟地址如何找到物理内存 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="CPU 执行程序时产生虚拟地址，MMU 根据页表把它翻译为物理地址。虚拟内存让每个进程拥有独立地址空间，也使权限隔离、按需分页和内存映射成为可能。 地址翻译 MMU 先查 TLB；命中时直接得到物理页框，未命中时遍历多级页表。页表项还保存读写、用户态、执行权限以及页面是否存在等状态。 CPU 产生虚拟地址 → 查询 TLB → 遍历多级页表 → 组合物...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-mmu-address-translation/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MMU：虚拟地址如何找到物理内存 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="CPU 执行程序时产生虚拟地址，MMU 根据页表把它翻译为物理地址。虚拟内存让每个进程拥有独立地址空间，也使权限隔离、按需分页和内存映射成为可能。 地址翻译 MMU 先查 TLB；命中时直接得到物理页框，未命中时遍历多级页表。页表项还保存读写、用户态、执行权限以及页面是否存在等状态。 CPU 产生虚拟地址 → 查询 TLB → 遍历多级页表 → 组合物...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-mmu-address-translation/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="MMU：虚拟地址如何找到物理内存">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MMU：虚拟地址如何找到物理内存 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="CPU 执行程序时产生虚拟地址，MMU 根据页表把它翻译为物理地址。虚拟内存让每个进程拥有独立地址空间，也使权限隔离、按需分页和内存映射成为可能。 地址翻译 MMU 先查 TLB；命中时直接得到物理页框，未命中时遍历多级页表。页表项还保存读写、用户态、执行权限以及页面是否存在等状态。 CPU 产生虚拟地址 → 查询 TLB → 遍历多级页表 → 组合物...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>RISC-V KVM：Host、Guest 与两阶段地址翻译 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="KVM 让 Linux 内核提供虚拟 CPU、内存映射和中断注入，用户态 VMM 负责设备模型与虚拟机生命周期。RISC-V H 扩展提供 VS&amp;#x2F;VU 模式和两阶段地址翻译。 用户态 VMM 创建 VM/vCPU → KVM_RUN 进入 Guest → Guest 执行或产生 trap → KVM 处理或退出用户态 → 注入结果并继续 Gu...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/riscv-kvm-virtualization/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RISC-V KVM：Host、Guest 与两阶段地址翻译 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="KVM 让 Linux 内核提供虚拟 CPU、内存映射和中断注入，用户态 VMM 负责设备模型与虚拟机生命周期。RISC-V H 扩展提供 VS&amp;#x2F;VU 模式和两阶段地址翻译。 用户态 VMM 创建 VM/vCPU → KVM_RUN 进入 Guest → Guest 执行或产生 trap → KVM 处理或退出用户态 → 注入结果并继续 Gu...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/riscv-kvm-virtualization/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="RISC-V KVM：Host、Guest 与两阶段地址翻译">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RISC-V KVM：Host、Guest 与两阶段地址翻译 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="KVM 让 Linux 内核提供虚拟 CPU、内存映射和中断注入，用户态 VMM 负责设备模型与虚拟机生命周期。RISC-V H 扩展提供 VS&amp;#x2F;VU 模式和两阶段地址翻译。 用户态 VMM 创建 VM/vCPU → KVM_RUN 进入 Guest → Guest 执行或产生 trap → KVM 处理或退出用户态 → 注入结果并继续 Gu...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

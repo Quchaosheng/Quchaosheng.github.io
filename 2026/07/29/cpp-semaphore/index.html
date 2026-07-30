@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>信号量：用许可数量协调并发资源 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="信号量表示“当前有多少份可用许可”。 acquire() 在许可大于零时原子地取走一个，否则等待； release() 归还一个或多个许可并唤醒等待者。它非常适合限制有限资源，例如数据库连接、GPU 推理槽位、固定缓冲区、并发下载数，也可表达生产者&amp;#x2F;消费者中“已有数据项”的数量。它与 mutex 都会让线程等待，但关注的对象不同。 请求资源...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/cpp-semaphore/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="信号量：用许可数量协调并发资源 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="信号量表示“当前有多少份可用许可”。 acquire() 在许可大于零时原子地取走一个，否则等待； release() 归还一个或多个许可并唤醒等待者。它非常适合限制有限资源，例如数据库连接、GPU 推理槽位、固定缓冲区、并发下载数，也可表达生产者&amp;#x2F;消费者中“已有数据项”的数量。它与 mutex 都会让线程等待，但关注的对象不同。 请求资源...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/cpp-semaphore/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="信号量：用许可数量协调并发资源">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="信号量：用许可数量协调并发资源 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="信号量表示“当前有多少份可用许可”。 acquire() 在许可大于零时原子地取走一个，否则等待； release() 归还一个或多个许可并唤醒等待者。它非常适合限制有限资源，例如数据库连接、GPU 推理槽位、固定缓冲区、并发下载数，也可表达生产者&amp;#x2F;消费者中“已有数据项”的数量。它与 mutex 都会让线程等待，但关注的对象不同。 请求资源...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

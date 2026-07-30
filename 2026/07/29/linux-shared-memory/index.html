@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 共享内存：少复制不等于零成本 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="共享内存让多个进程把同一组物理页映射到各自虚拟地址空间。数据无需经过内核中转缓冲区反复复制，因此适合传输大块数据，但同步、所有权和生命周期必须由应用设计。 建立与通信 进程通过 POSIX shared memory、System V 接口或共享文件获得同一后备对象，再分别 mmap 。页表建立后，双方读写的是相同物理页；锁、信号量或无锁队列负责协调访...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-shared-memory/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 共享内存：少复制不等于零成本 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="共享内存让多个进程把同一组物理页映射到各自虚拟地址空间。数据无需经过内核中转缓冲区反复复制，因此适合传输大块数据，但同步、所有权和生命周期必须由应用设计。 建立与通信 进程通过 POSIX shared memory、System V 接口或共享文件获得同一后备对象，再分别 mmap 。页表建立后，双方读写的是相同物理页；锁、信号量或无锁队列负责协调访...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-shared-memory/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 共享内存：少复制不等于零成本">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 共享内存：少复制不等于零成本 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="共享内存让多个进程把同一组物理页映射到各自虚拟地址空间。数据无需经过内核中转缓冲区反复复制，因此适合传输大块数据，但同步、所有权和生命周期必须由应用设计。 建立与通信 进程通过 POSIX shared memory、System V 接口或共享文件获得同一后备对象，再分别 mmap 。页表建立后，双方读写的是相同物理页；锁、信号量或无锁队列负责协调访...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

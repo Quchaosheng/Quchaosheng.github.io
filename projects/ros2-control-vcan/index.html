@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>ros2_control vcan Motor Demo | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="基于 SocketCAN 与双虚拟电机的 ros2_control 差速驱动、安全停止和故障注入演示。">
+
+<link rel="canonical" href="https://quchaosheng.github.io/projects/ros2-control-vcan/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ros2_control vcan Motor Demo | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="基于 SocketCAN 与双虚拟电机的 ros2_control 差速驱动、安全停止和故障注入演示。">
+
+<meta property="og:url" content="https://quchaosheng.github.io/projects/ros2-control-vcan/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/vcan-diffbot.png">
+    <meta property="og:image:alt" content="ros2_control vcan Motor Demo">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ros2_control vcan Motor Demo | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="基于 SocketCAN 与双虚拟电机的 ros2_control 差速驱动、安全停止和故障注入演示。">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/vcan-diffbot.png">
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/evidence">证据</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/evidence">证据</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    <article class="post-wrap page">
+        
+        <h2 class="post-title">ros2_control vcan Motor Demo</h2>
+        
+        <section class="post-content">
+            <div class="page-lead"><p class="section-kicker">PROJECT DOSSIER</p><p>这是一个 ROS 2 Humble 差速驱动演示：`ros2_control` 硬件接口通过 SocketCAN 管理两只虚拟电机，覆盖命令、编码器反馈、ACK、watchdog、故障注入和 safe-stop，而不是只展示一条正常的 `cmd_vel` 路径。</p></div>
+
+<figure class="project-hero-image"><img src="/image/projects/vcan-diffbot.png" alt="ros2_control vcan 差速驱动和 CAN 安全遥测演示"></figure>
+
+<div class="project-facts"><div><span>目标环境</span><strong>Ubuntu 22.04 · ROS 2 Humble · C++17</strong></div><div><span>控制链</span><strong>cmd_vel · ros2_control · SocketCAN · vcan</strong></div><div><span>安全动作</span><strong>ACK / feedback timeout · disabled zero command</strong></div></div>
+
+<h2 id="一条完整的虚拟驱动路径"><a href="#一条完整的虚拟驱动路径" class="headerlink" title="一条完整的虚拟驱动路径"></a>一条完整的虚拟驱动路径</h2><div class="note-flow"><span>速度指令<br>cmd_vel</span><i>→</i><span>diff_drive_controller</span><i>→</i><span>CanMotorHardware<br>SystemInterface</span><i>→</i><span>SocketCAN<br>vcan0</span><i>→</i><span>双虚拟电机<br>ACK + encoder</span></div>
+
+<p>两个端点直接使用 <code>ros2_socketcan</code> 的 C++ 收发 API，不用 ROS topic 伪装 CAN 总线。命令会带 sequence、enable 位和 watchdog 时间；硬件侧持续检查 ACK 与反馈年龄，异常时走同一条安全停止路径。</p>
+<h2 id="关键机制"><a href="#关键机制" class="headerlink" title="关键机制"></a>关键机制</h2><div class="note-map"><span><b>SystemInterface</b><small>将 ros2_control 的 command/state interface 映射到 CAN 命令和编码器反馈。</small></span><span><b>ACK 跟踪</b><small>只接受匹配 sequence 的 ACK；拒绝、意外或缺失 ACK 会触发故障。</small></span><span><b>双电机一致性</b><small>任一侧反馈丢失都使整条驱动链进入 safe-stop，而非继续单轮运行。</small></span><span><b>电机 watchdog</b><small>命令帧携带 watchdog 周期，虚拟电机在命令失联时自行停下。</small></span><span><b>故障注入</b><small>丢帧、延迟、畸形帧和 CAN error frame 可按确定性规则复现。</small></span><span><b>诊断</b><small>总线状态、ACK 队列、反馈年龄和停止原因发布在 diagnostics 中。</small></span></div>
+
+<h2 id="最小可重复演示"><a href="#最小可重复演示" class="headerlink" title="最小可重复演示"></a>最小可重复演示</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">source</span> /opt/ros/humble/setup.bash</span><br><span class="line">colcon build --packages-select vcan_diffbot_demo</span><br><span class="line"><span class="built_in">source</span> install/setup.bash</span><br><span class="line">bash src/vcan_diffbot_demo/scripts/setup_vcan.sh</span><br><span class="line">ros2 launch vcan_diffbot_demo demo.launch.py</span><br></pre></td></tr></table></figure>
+
+<p>另开终端发布速度命令，并同时查看控制器、<code>/joint_states</code>、<code>/diagnostics</code> 和 <code>candump -L vcan0</code>。检查的重点不是“轮子看起来在动”，而是异常条件下两侧是否都变为 disabled zero command。</p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><ul>
+<li><strong>可复现的软件证据：</strong> virtual motor、vcan、ACK、反馈、watchdog、bus-off、取消和 safe-stop 的控制&#x2F;协议路径。</li>
+<li><strong>物理 CAN 接口：</strong> 可以改用 <code>can0</code> 并关闭 virtual motor，但真实控制器必须实现同一套 ID 与字节布局。</li>
+<li><strong>不能外推：</strong> vcan 不提供电气总线、实际电机负载、执行器惯性、供电问题或硬件急停的证据。</li>
+</ul>
+<p>任何接入真实 CAN 的后续实验都应先分开验证线缆、终端电阻、bitrate、控制器协议和无负载安全动作，再讨论运动能力。</p>
+<p><strong>入口：</strong> <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/ros2-control-vcan-motor-demo">GitHub 源码与演示</a> · <a href="/evidence/">证据日志</a> · <a href="/evidence/template/">实验记录模板</a></p>
+
+        </section>
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

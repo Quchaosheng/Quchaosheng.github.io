@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 内核启动：从固件到第一个用户进程 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="Linux 内核启动不是一条黑盒“跳进去就好了”的路径，而是一系列职责交接：固件&amp;#x2F;ROM 将控制权给 Bootloader；Bootloader 把内核镜像、设备树和可选 initramfs 放到内存；架构入口建立最小执行环境；内核解压、初始化内存管理、中断、调度、驱动与 VFS；最后挂载真正 rootfs 并执行 PID 1。任何一层传递的...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-kernel-boot/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 内核启动：从固件到第一个用户进程 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="Linux 内核启动不是一条黑盒“跳进去就好了”的路径，而是一系列职责交接：固件&amp;#x2F;ROM 将控制权给 Bootloader；Bootloader 把内核镜像、设备树和可选 initramfs 放到内存；架构入口建立最小执行环境；内核解压、初始化内存管理、中断、调度、驱动与 VFS；最后挂载真正 rootfs 并执行 PID 1。任何一层传递的...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-kernel-boot/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 内核启动：从固件到第一个用户进程">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 内核启动：从固件到第一个用户进程 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="Linux 内核启动不是一条黑盒“跳进去就好了”的路径，而是一系列职责交接：固件&amp;#x2F;ROM 将控制权给 Bootloader；Bootloader 把内核镜像、设备树和可选 initramfs 放到内存；架构入口建立最小执行环境；内核解压、初始化内存管理、中断、调度、驱动与 VFS；最后挂载真正 rootfs 并执行 PID 1。任何一层传递的...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 实时系统落地检查清单 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="实时化不是“装一个 PREEMPT_RT 内核，再把线程优先级调到 99”。一个可交付的实时系统必须能回答：哪个任务多久运行一次、最晚何时完成、在什么工况下仍然成立、失败时做什么、由什么数据证明。只有把需求、平台、软件、观测和验收连起来，调优才不会沦为一次偶然的 benchmark。 定义 deadline 与最坏延迟 → 配置 PREEMPT_RT...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/realtime-linux-checklist/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 实时系统落地检查清单 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="实时化不是“装一个 PREEMPT_RT 内核，再把线程优先级调到 99”。一个可交付的实时系统必须能回答：哪个任务多久运行一次、最晚何时完成、在什么工况下仍然成立、失败时做什么、由什么数据证明。只有把需求、平台、软件、观测和验收连起来，调优才不会沦为一次偶然的 benchmark。 定义 deadline 与最坏延迟 → 配置 PREEMPT_RT...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/realtime-linux-checklist/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 实时系统落地检查清单">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 实时系统落地检查清单 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="实时化不是“装一个 PREEMPT_RT 内核，再把线程优先级调到 99”。一个可交付的实时系统必须能回答：哪个任务多久运行一次、最晚何时完成、在什么工况下仍然成立、失败时做什么、由什么数据证明。只有把需求、平台、软件、观测和验收连起来，调优才不会沦为一次偶然的 benchmark。 定义 deadline 与最坏延迟 → 配置 PREEMPT_RT...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

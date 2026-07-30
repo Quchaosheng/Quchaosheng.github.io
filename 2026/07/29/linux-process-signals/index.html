@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 信号：异步事件如何送达进程 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="信号是内核向进程或线程报告异步事件的轻量机制，例如终端中断、子进程退出、非法内存访问和定时器到期。 产生信号 → 加入 pending 集合 → 检查屏蔽字 → 执行默认动作或处理器 → 恢复执行 传统信号同类可能合并，实时信号可排队。处理函数中只能调用异步信号安全函数；复杂逻辑应通过自管道、eventfd 或标志位转交正常执行流。 sigaction...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-process-signals/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 信号：异步事件如何送达进程 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="信号是内核向进程或线程报告异步事件的轻量机制，例如终端中断、子进程退出、非法内存访问和定时器到期。 产生信号 → 加入 pending 集合 → 检查屏蔽字 → 执行默认动作或处理器 → 恢复执行 传统信号同类可能合并，实时信号可排队。处理函数中只能调用异步信号安全函数；复杂逻辑应通过自管道、eventfd 或标志位转交正常执行流。 sigaction...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-process-signals/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 信号：异步事件如何送达进程">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 信号：异步事件如何送达进程 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="信号是内核向进程或线程报告异步事件的轻量机制，例如终端中断、子进程退出、非法内存访问和定时器到期。 产生信号 → 加入 pending 集合 → 检查屏蔽字 → 执行默认动作或处理器 → 恢复执行 传统信号同类可能合并，实时信号可排队。处理函数中只能调用异步信号安全函数；复杂逻辑应通过自管道、eventfd 或标志位转交正常执行流。 sigaction...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

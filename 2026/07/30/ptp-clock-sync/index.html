@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>PTP 时间同步：让分布式设备共享微秒级时间 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="分布式实时系统不只需要每台设备“走得很准”，还需要所有设备对“现在几点”有相同理解。相机曝光、伺服控制、TSN 门控和多传感器融合都依赖共同时间轴。PTP（IEEE 1588）通过同步与延迟测量消息估计从时钟相对主时钟的偏差；若网卡支持硬件时间戳，收发时刻会在 MAC&amp;#x2F;PHY 附近记录，能避开操作系统调度与协议栈抖动。 选择 Grandmas...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/ptp-clock-sync/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PTP 时间同步：让分布式设备共享微秒级时间 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="分布式实时系统不只需要每台设备“走得很准”，还需要所有设备对“现在几点”有相同理解。相机曝光、伺服控制、TSN 门控和多传感器融合都依赖共同时间轴。PTP（IEEE 1588）通过同步与延迟测量消息估计从时钟相对主时钟的偏差；若网卡支持硬件时间戳，收发时刻会在 MAC&amp;#x2F;PHY 附近记录，能避开操作系统调度与协议栈抖动。 选择 Grandmas...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/ptp-clock-sync/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="PTP 时间同步：让分布式设备共享微秒级时间">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="PTP 时间同步：让分布式设备共享微秒级时间 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="分布式实时系统不只需要每台设备“走得很准”，还需要所有设备对“现在几点”有相同理解。相机曝光、伺服控制、TSN 门控和多传感器融合都依赖共同时间轴。PTP（IEEE 1588）通过同步与延迟测量消息估计从时钟相对主时钟的偏差；若网卡支持硬件时间戳，收发时刻会在 MAC&amp;#x2F;PHY 附近记录，能避开操作系统调度与协议栈抖动。 选择 Grandmas...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

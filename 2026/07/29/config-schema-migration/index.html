@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>设备参数版本迁移：固件升级后怎样保住旧配置 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="持久化配置应包含 magic、结构版本、长度和校验。新固件加载旧版本时逐级迁移到新结构，再以掉电安全方式写回。 读取配置头 → 校验 magic/长度/CRC → 识别 schema 版本 → 逐级迁移并补默认值 → 原子保存新版本 不要直接把 C 结构体裸写 Flash，填充、字节序和字段变化都会破坏兼容。参考： EasyFlash">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/config-schema-migration/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="设备参数版本迁移：固件升级后怎样保住旧配置 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="持久化配置应包含 magic、结构版本、长度和校验。新固件加载旧版本时逐级迁移到新结构，再以掉电安全方式写回。 读取配置头 → 校验 magic/长度/CRC → 识别 schema 版本 → 逐级迁移并补默认值 → 原子保存新版本 不要直接把 C 结构体裸写 Flash，填充、字节序和字段变化都会破坏兼容。参考： EasyFlash">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/config-schema-migration/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="设备参数版本迁移：固件升级后怎样保住旧配置">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="设备参数版本迁移：固件升级后怎样保住旧配置 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="持久化配置应包含 magic、结构版本、长度和校验。新固件加载旧版本时逐级迁移到新结构，再以掉电安全方式写回。 读取配置头 → 校验 magic/长度/CRC → 识别 schema 版本 → 逐级迁移并补默认值 → 原子保存新版本 不要直接把 C 结构体裸写 Flash，填充、字节序和字段变化都会破坏兼容。参考： EasyFlash">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

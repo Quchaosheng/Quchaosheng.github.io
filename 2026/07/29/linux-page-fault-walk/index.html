@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>缺页异常与页表遍历：一次内存访问的补救过程 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="缺页异常不一定是错误。它表示 MMU 无法按当前页表完成访问，可能因为页面尚未分配、文件页尚未载入、COW 写入，或访问权限确实非法。 内核处理路径 CPU 保存现场进入异常处理，内核先找到对应 VMA，检查地址与权限，再根据 VMA 类型分配匿名页、读取文件页或执行 COW。无法修复时，用户进程通常收到 SIGSEGV 或 SIGBUS 。 TLB...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-page-fault-walk/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="缺页异常与页表遍历：一次内存访问的补救过程 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="缺页异常不一定是错误。它表示 MMU 无法按当前页表完成访问，可能因为页面尚未分配、文件页尚未载入、COW 写入，或访问权限确实非法。 内核处理路径 CPU 保存现场进入异常处理，内核先找到对应 VMA，检查地址与权限，再根据 VMA 类型分配匿名页、读取文件页或执行 COW。无法修复时，用户进程通常收到 SIGSEGV 或 SIGBUS 。 TLB...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-page-fault-walk/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="缺页异常与页表遍历：一次内存访问的补救过程">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="缺页异常与页表遍历：一次内存访问的补救过程 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="缺页异常不一定是错误。它表示 MMU 无法按当前页表完成访问，可能因为页面尚未分配、文件页尚未载入、COW 写入，或访问权限确实非法。 内核处理路径 CPU 保存现场进入异常处理，内核先找到对应 VMA，检查地址与权限，再根据 VMA 类型分配匿名页、读取文件页或执行 COW。无法修复时，用户进程通常收到 SIGSEGV 或 SIGBUS 。 TLB...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

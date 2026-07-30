@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>USB 设备枚举：主机如何识别一个新设备 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="USB 由主机控制总线。设备接入后，主机复位端口、读取设备描述符、分配地址，再读取配置与接口描述符并选择驱动。 检测接入 → 端口复位 → EP0 读取描述符 → SET_ADDRESS → SET_CONFIGURATION 并启用端点 枚举失败优先检查供电、D+&amp;#x2F;D-、时钟精度、EP0 最大包和描述符长度。参考： DAPLink">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-usb/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="USB 设备枚举：主机如何识别一个新设备 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="USB 由主机控制总线。设备接入后，主机复位端口、读取设备描述符、分配地址，再读取配置与接口描述符并选择驱动。 检测接入 → 端口复位 → EP0 读取描述符 → SET_ADDRESS → SET_CONFIGURATION 并启用端点 枚举失败优先检查供电、D+&amp;#x2F;D-、时钟精度、EP0 最大包和描述符长度。参考： DAPLink">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-usb/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="USB 设备枚举：主机如何识别一个新设备">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="USB 设备枚举：主机如何识别一个新设备 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="USB 由主机控制总线。设备接入后，主机复位端口、读取设备描述符、分配地址，再读取配置与接口描述符并选择驱动。 检测接入 → 端口复位 → EP0 读取描述符 → SET_ADDRESS → SET_CONFIGURATION 并启用端点 枚举失败优先检查供电、D+&amp;#x2F;D-、时钟精度、EP0 最大包和描述符长度。参考： DAPLink">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

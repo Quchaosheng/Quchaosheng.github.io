@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>设备树调试：从 compatible 到驱动 probe | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="设备树解决的是“这块不可自动枚举的硬件如何被内核认识”。它描述寄存器地址、中断、时钟、复位、GPIO、DMA、供电和设备间引用；内核根据节点创建设备，再用 compatible 匹配驱动并执行 probe。设备树调试最常见的陷阱是只改了源码 DTS，却没有确认编译出的 DTB、Bootloader 实际加载的 DTB 和运行时内核看到的树是同一份。 D...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/device-tree-debugging/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="设备树调试：从 compatible 到驱动 probe | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="设备树解决的是“这块不可自动枚举的硬件如何被内核认识”。它描述寄存器地址、中断、时钟、复位、GPIO、DMA、供电和设备间引用；内核根据节点创建设备，再用 compatible 匹配驱动并执行 probe。设备树调试最常见的陷阱是只改了源码 DTS，却没有确认编译出的 DTB、Bootloader 实际加载的 DTB 和运行时内核看到的树是同一份。 D...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/device-tree-debugging/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="设备树调试：从 compatible 到驱动 probe">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="设备树调试：从 compatible 到驱动 probe | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="设备树解决的是“这块不可自动枚举的硬件如何被内核认识”。它描述寄存器地址、中断、时钟、复位、GPIO、DMA、供电和设备间引用；内核根据节点创建设备，再用 compatible 匹配驱动并执行 probe。设备树调试最常见的陷阱是只改了源码 DTS，却没有确认编译出的 DTB、Bootloader 实际加载的 DTB 和运行时内核看到的树是同一份。 D...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

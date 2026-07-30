@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>TCP 重传：可靠传输如何发现并修复丢包 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="TCP 的可靠性不是“发一遍没到就再发一遍”这么简单。发送端为每段数据分配序列号并保留未确认数据；接收端通过累计 ACK 和 SACK 告诉发送端哪些字节已到达、哪里存在缺口；发送端依据 RTT 估计、重复 ACK、SACK 和记分板判断是否丢包，并在合适的时机重传。重传既恢复可靠性，也会触发拥塞控制，因此它会直接改变吞吐、延迟和连接状态。 发送带序列...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/tcp-retransmission/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TCP 重传：可靠传输如何发现并修复丢包 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="TCP 的可靠性不是“发一遍没到就再发一遍”这么简单。发送端为每段数据分配序列号并保留未确认数据；接收端通过累计 ACK 和 SACK 告诉发送端哪些字节已到达、哪里存在缺口；发送端依据 RTT 估计、重复 ACK、SACK 和记分板判断是否丢包，并在合适的时机重传。重传既恢复可靠性，也会触发拥塞控制，因此它会直接改变吞吐、延迟和连接状态。 发送带序列...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/tcp-retransmission/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="TCP 重传：可靠传输如何发现并修复丢包">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TCP 重传：可靠传输如何发现并修复丢包 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="TCP 的可靠性不是“发一遍没到就再发一遍”这么简单。发送端为每段数据分配序列号并保留未确认数据；接收端通过累计 ACK 和 SACK 告诉发送端哪些字节已到达、哪里存在缺口；发送端依据 RTT 估计、重复 ACK、SACK 和记分板判断是否丢包，并在合适的时机重传。重传既恢复可靠性，也会触发拥塞控制，因此它会直接改变吞吐、延迟和连接状态。 发送带序列...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

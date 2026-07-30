@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>RISC-V Non-MMU Linux：没有虚拟内存怎样运行应用 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="Non-MMU Linux 面向没有地址转换单元的处理器。内核与应用直接使用物理地址，无法获得常规进程的地址空间隔离、按需分页和写时复制。 Bootloader 装载内核 → 建立物理内存分区 → 加载 flat/FDPIC 应用 → 直接在物理地址执行 → 系统调用进入内核 因为不能依赖 COW， fork 很受限制，通常使用 vfork + exe...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/riscv-nommu-linux/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RISC-V Non-MMU Linux：没有虚拟内存怎样运行应用 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="Non-MMU Linux 面向没有地址转换单元的处理器。内核与应用直接使用物理地址，无法获得常规进程的地址空间隔离、按需分页和写时复制。 Bootloader 装载内核 → 建立物理内存分区 → 加载 flat/FDPIC 应用 → 直接在物理地址执行 → 系统调用进入内核 因为不能依赖 COW， fork 很受限制，通常使用 vfork + exe...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/riscv-nommu-linux/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="RISC-V Non-MMU Linux：没有虚拟内存怎样运行应用">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RISC-V Non-MMU Linux：没有虚拟内存怎样运行应用 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="Non-MMU Linux 面向没有地址转换单元的处理器。内核与应用直接使用物理地址，无法获得常规进程的地址空间隔离、按需分页和写时复制。 Bootloader 装载内核 → 建立物理内存分区 → 加载 flat/FDPIC 应用 → 直接在物理地址执行 → 系统调用进入内核 因为不能依赖 COW， fork 很受限制，通常使用 vfork + exe...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>嵌入式 Flash 存储：擦写约束、掉电安全与磨损均衡 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="Flash 写入前需要擦除，擦除粒度大且寿命有限。可靠参数存储应采用追加记录、版本号、校验和与双区切换，避免掉电留下半条有效数据。 生成新配置记录 → 写入数据与校验 → 原子提交有效标志 → 启动时扫描最新版本 → 后台回收旧扇区 参考： EasyFlash">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-flash-storage/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="嵌入式 Flash 存储：擦写约束、掉电安全与磨损均衡 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="Flash 写入前需要擦除，擦除粒度大且寿命有限。可靠参数存储应采用追加记录、版本号、校验和与双区切换，避免掉电留下半条有效数据。 生成新配置记录 → 写入数据与校验 → 原子提交有效标志 → 启动时扫描最新版本 → 后台回收旧扇区 参考： EasyFlash">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-flash-storage/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="嵌入式 Flash 存储：擦写约束、掉电安全与磨损均衡">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="嵌入式 Flash 存储：擦写约束、掉电安全与磨损均衡 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="Flash 写入前需要擦除，擦除粒度大且寿命有限。可靠参数存储应采用追加记录、版本号、校验和与双区切换，避免掉电留下半条有效数据。 生成新配置记录 → 写入数据与校验 → 原子提交有效标志 → 启动时扫描最新版本 → 后台回收旧扇区 参考： EasyFlash">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>TCP 丢包追踪：用 kprobe 与 tracepoint 串起证据链 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="“TCP 重传变多”只说明发送方没有按预期收到确认，不说明包究竟在哪一层丢了。包可能在网卡 RX&amp;#x2F;TX ring、驱动、softnet backlog、协议栈校验、socket 队列、应用处理或链路对端消失。有效排障的顺序是先用计数器缩小层级，再用 tracepoint 或 kprobe 捕获少量、可关联的证据，最后将五元组、时间、CPU 和...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/tcp-drop-tracing/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TCP 丢包追踪：用 kprobe 与 tracepoint 串起证据链 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="“TCP 重传变多”只说明发送方没有按预期收到确认，不说明包究竟在哪一层丢了。包可能在网卡 RX&amp;#x2F;TX ring、驱动、softnet backlog、协议栈校验、socket 队列、应用处理或链路对端消失。有效排障的顺序是先用计数器缩小层级，再用 tracepoint 或 kprobe 捕获少量、可关联的证据，最后将五元组、时间、CPU 和...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/tcp-drop-tracing/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="TCP 丢包追踪：用 kprobe 与 tracepoint 串起证据链">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TCP 丢包追踪：用 kprobe 与 tracepoint 串起证据链 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="“TCP 重传变多”只说明发送方没有按预期收到确认，不说明包究竟在哪一层丢了。包可能在网卡 RX&amp;#x2F;TX ring、驱动、softnet backlog、协议栈校验、socket 队列、应用处理或链路对端消失。有效排障的顺序是先用计数器缩小层级，再用 tracepoint 或 kprobe 捕获少量、可关联的证据，最后将五元组、时间、CPU 和...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

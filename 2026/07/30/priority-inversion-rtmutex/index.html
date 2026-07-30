@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>优先级反转与 rtmutex：低优先级任务为什么会挡住实时任务 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="优先级反转不是“低优先级线程运行得比高优先级线程久”这么简单。真正的问题是：低优先级线程持有一个高优先级线程必须获得的锁；高优先级线程因此阻塞；另一个中优先级线程却不断抢占持锁者。最高优先级任务最终被一个与它无关的中优先级任务间接挡住，阻塞时间也变得难以预估。 低优先级线程持锁 → 高优先级线程阻塞 → rtmutex 传播高优先级 → 持锁者被加速运...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/priority-inversion-rtmutex/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="优先级反转与 rtmutex：低优先级任务为什么会挡住实时任务 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="优先级反转不是“低优先级线程运行得比高优先级线程久”这么简单。真正的问题是：低优先级线程持有一个高优先级线程必须获得的锁；高优先级线程因此阻塞；另一个中优先级线程却不断抢占持锁者。最高优先级任务最终被一个与它无关的中优先级任务间接挡住，阻塞时间也变得难以预估。 低优先级线程持锁 → 高优先级线程阻塞 → rtmutex 传播高优先级 → 持锁者被加速运...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/priority-inversion-rtmutex/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="优先级反转与 rtmutex：低优先级任务为什么会挡住实时任务">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="优先级反转与 rtmutex：低优先级任务为什么会挡住实时任务 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="优先级反转不是“低优先级线程运行得比高优先级线程久”这么简单。真正的问题是：低优先级线程持有一个高优先级线程必须获得的锁；高优先级线程因此阻塞；另一个中优先级线程却不断抢占持锁者。最高优先级任务最终被一个与它无关的中优先级任务间接挡住，阻塞时间也变得难以预估。 低优先级线程持锁 → 高优先级线程阻塞 → rtmutex 传播高优先级 → 持锁者被加速运...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

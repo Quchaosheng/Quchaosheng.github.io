@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 实时网络路径：从网卡中断到应用线程 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="应用线程收到一个网络包之前，数据通常已经走过网卡 DMA、RX queue、中断、NAPI、协议栈、socket 队列和一次线程唤醒。任何一段的 CPU 迁移、队列积压、软中断预算、内存分配或锁竞争，都可能让端到端延迟比“网卡中断很快”大得多。实时网络优化因此不是把应用优先级调高，而是让整条路径的队列、CPU 和时间戳都可见。 网卡收到数据包 → IR...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/realtime-network-path/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 实时网络路径：从网卡中断到应用线程 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="应用线程收到一个网络包之前，数据通常已经走过网卡 DMA、RX queue、中断、NAPI、协议栈、socket 队列和一次线程唤醒。任何一段的 CPU 迁移、队列积压、软中断预算、内存分配或锁竞争，都可能让端到端延迟比“网卡中断很快”大得多。实时网络优化因此不是把应用优先级调高，而是让整条路径的队列、CPU 和时间戳都可见。 网卡收到数据包 → IR...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/realtime-network-path/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 实时网络路径：从网卡中断到应用线程">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 实时网络路径：从网卡中断到应用线程 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="应用线程收到一个网络包之前，数据通常已经走过网卡 DMA、RX queue、中断、NAPI、协议栈、socket 队列和一次线程唤醒。任何一段的 CPU 迁移、队列积压、软中断预算、内存分配或锁竞争，都可能让端到端延迟比“网卡中断很快”大得多。实时网络优化因此不是把应用优先级调高，而是让整条路径的队列、CPU 和时间戳都可见。 网卡收到数据包 → IR...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

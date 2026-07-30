@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>VFS 路径查找：目录字符串如何定位 inode | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 path/inode dentry 表示“名称到 inode”的关联，负 dentry 还能缓存不存...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/vfs-path-lookup/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="VFS 路径查找：目录字符串如何定位 inode | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 path/inode dentry 表示“名称到 inode”的关联，负 dentry 还能缓存不存...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/vfs-path-lookup/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="VFS 路径查找：目录字符串如何定位 inode">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VFS 路径查找：目录字符串如何定位 inode | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 path/inode dentry 表示“名称到 inode”的关联，负 dentry 还能缓存不存...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

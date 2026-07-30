@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>容器里的实时任务：cgroup、权限和 CPU 配额如何共同生效 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="容器把进程、文件系统和资源视图隔开，却不提供一套新的实时内核。容器中的线程仍由宿主机同一个调度器、同一组 IRQ、同一块缓存和同一套功耗策略管理。因此“进容器后 chrt 成功了”只证明进程拿到了调度权限，不证明它已经获得稳定的 CPU、内存或设备时延。 授予最小调度权限 → 配置 cpuset 与内存节点 → 核对 CPU/RT 预算 → 迁移宿主...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/realtime-cgroup-containers/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="容器里的实时任务：cgroup、权限和 CPU 配额如何共同生效 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="容器把进程、文件系统和资源视图隔开，却不提供一套新的实时内核。容器中的线程仍由宿主机同一个调度器、同一组 IRQ、同一块缓存和同一套功耗策略管理。因此“进容器后 chrt 成功了”只证明进程拿到了调度权限，不证明它已经获得稳定的 CPU、内存或设备时延。 授予最小调度权限 → 配置 cpuset 与内存节点 → 核对 CPU/RT 预算 → 迁移宿主...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/realtime-cgroup-containers/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="容器里的实时任务：cgroup、权限和 CPU 配额如何共同生效">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="容器里的实时任务：cgroup、权限和 CPU 配额如何共同生效 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="容器把进程、文件系统和资源视图隔开，却不提供一套新的实时内核。容器中的线程仍由宿主机同一个调度器、同一组 IRQ、同一块缓存和同一套功耗策略管理。因此“进容器后 chrt 成功了”只证明进程拿到了调度权限，不证明它已经获得稳定的 CPU、内存或设备时延。 授予最小调度权限 → 配置 cpuset 与内存节点 → 核对 CPU/RT 预算 → 迁移宿主...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

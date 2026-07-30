@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>Quard Star RISC-V64 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="面向自定义 QEMU quard-star 机器的 RISC-V64 SMP 内核、FreeRTOS trusted hart、VirtIO 与 PMP 隔离项目。">
+
+<link rel="canonical" href="https://quchaosheng.github.io/projects/quard-star-riscv64/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Quard Star RISC-V64 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="面向自定义 QEMU quard-star 机器的 RISC-V64 SMP 内核、FreeRTOS trusted hart、VirtIO 与 PMP 隔离项目。">
+
+<meta property="og:url" content="https://quchaosheng.github.io/projects/quard-star-riscv64/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/quard-qemu.png">
+    <meta property="og:image:alt" content="Quard Star RISC-V64">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Quard Star RISC-V64 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="面向自定义 QEMU quard-star 机器的 RISC-V64 SMP 内核、FreeRTOS trusted hart、VirtIO 与 PMP 隔离项目。">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/quard-qemu.png">
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/evidence">证据</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/evidence">证据</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    <article class="post-wrap page">
+        
+        <h2 class="post-title">Quard Star RISC-V64</h2>
+        
+        <section class="post-content">
+            <div class="page-lead"><p class="section-kicker">PROJECT DOSSIER</p><p>Quard Star RISC-V64 是一个教育性的 RISC-V64 SMP 操作系统项目：七个普通 hart 运行自主实现的 C 内核，一个独立 FreeRTOS hart 运行在受限域中；系统通过 OpenSBI 域、VirtIO、FatFs、TCP/IP 和 PMP 规则组织启动、网络、存储与隔离。</p></div>
+
+<figure class="project-hero-image"><img src="/image/projects/quard-qemu.png" alt="Quard Star RISC-V64 的 QEMU 验收演示"></figure>
+
+<div class="project-facts"><div><span>目标机器</span><strong>QEMU quard-star · 8 RISC-V64 harts</strong></div><div><span>域划分</span><strong>7-hart SMP kernel · 1 FreeRTOS trusted hart</strong></div><div><span>验收环境</span><strong>QEMU · TAP · 本地确定性协议对端</strong></div></div>
+
+<h2 id="启动与隔离结构"><a href="#启动与隔离结构" class="headerlink" title="启动与隔离结构"></a>启动与隔离结构</h2><div class="note-flow"><span>QEMU reset<br>8 harts</span><i>→</i><span>OpenSBI<br>domain + PMP</span><i>→</i><span>普通内核<br>harts 0-6</span><i>→</i><span>FreeRTOS<br>trusted hart 7</span><i>→</i><span>VirtIO / TAP<br>本地验收</span></div>
+
+<p>hart 7 不加入普通内核的 allocator、scheduler、locks、interrupt routing 或 network stack。普通域和 trusted 域通过 OpenSBI domain 与 PMP 获得不同的内存&#x2F;设备视图；测试重点是双向拒绝访问和 trusted scheduler 的稳定标记，而不是只展示系统启动。</p>
+<h2 id="已实现的系统范围"><a href="#已实现的系统范围" class="headerlink" title="已实现的系统范围"></a>已实现的系统范围</h2><div class="note-map"><span><b>普通内核</b><small>Sv39、每 hart 状态、调度、迁移、trap、timer、syscall 与同步原语。</small></span><span><b>启动与隔离</b><small>OpenSBI HSM、TIME、IPI、domain 配置与 PMP 边界。</small></span><span><b>存储</b><small>共享 VirtIO MMIO/virtqueue、block、FatFs 与带 generation 的文件句柄。</small></span><span><b>网络</b><small>VirtIO net、ARP、IPv4、ICMP、UDP、TCP、loopback 与 sockets。</small></span><span><b>可信运行时</b><small>hart 7 的 FreeRTOS S-mode scheduler、trusted RAM、UART2 与 SBI timer tick。</small></span><span><b>验收工件</b><small>serial markers、QEMU/TAP smoke、host test、日志与性能报告。</small></span></div>
+
+<h2 id="最小验收命令"><a href="#最小验收命令" class="headerlink" title="最小验收命令"></a>最小验收命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> --recurse-submodules \</span><br><span class="line">  https://github.com/Quchaosheng/quard-star-riscv64-net.git</span><br><span class="line"><span class="built_in">cd</span> quard-star-riscv64-net</span><br><span class="line">make check-env</span><br><span class="line">make deps</span><br><span class="line">make test-host</span><br><span class="line">make m8-build</span><br><span class="line"><span class="built_in">sudo</span> -v</span><br><span class="line">make m8-smoke</span><br></pre></td></tr></table></figure>
+
+<p>成功路径会把 <code>kernel.log</code>、<code>trusted.log</code>、<code>qemu.log</code>、<code>qemu.err</code> 与 <code>m5-peer.stats</code> 保存到 <code>out/m8</code>。通过标记是 <code>QS:TEST_PASS:m8-smoke</code>；任何 <code>QS:TEST_FAIL</code> 都优先于后续输出。</p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><ul>
+<li><strong>可复现证据：</strong> QEMU&#x2F;TAP 环境中的 SMP、存储、网络、应用协议、trusted scheduling 和 PMP 双向拒绝访问。</li>
+<li><strong>回放证据：</strong> 仓库中的 QEMU demo 由通过的 M8 工件渲染，并带来源日志和媒体哈希说明。</li>
+<li><strong>不能外推：</strong> 当前安全、时序与性能结论适用于 QEMU 模型；真实板卡的中断、内存、设备、固件和性能特征需要重新测量。</li>
+</ul>
+<p>因此，这个项目适合作为系统结构和可审计 QEMU 验收的证据，不应被描述为真实 RISC-V 硬件的性能或安全认证。</p>
+<p><strong>入口：</strong> <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/quard-star-riscv64-net">GitHub 源码、验收工件与文档</a> · <a href="/evidence/">证据日志</a> · <a href="/evidence/template/">实验记录模板</a></p>
+
+        </section>
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

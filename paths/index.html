@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>学习路径 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="LEARNING PATHS 文章很多时，最容易丢的是先后关系。这里按工程问题而非标签排列：先建立模型，再做测量，最后把结论放回实际系统。 PATH 01 · REAL-TIME LINUX Linux 实时性：从可抢占到可验收 目标不是把线程优先级调高，而是知道延迟由谁占走、如何复测，以及什么条件下能把结果称为通过。 理解抢占边界 → 隔离 CPU...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/paths/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="website">
+<meta property="og:title" content="学习路径 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="LEARNING PATHS 文章很多时，最容易丢的是先后关系。这里按工程问题而非标签排列：先建立模型，再做测量，最后把结论放回实际系统。 PATH 01 · REAL-TIME LINUX Linux 实时性：从可抢占到可验收 目标不是把线程优先级调高，而是知道延迟由谁占走、如何复测，以及什么条件下能把结果称为通过。 理解抢占边界 → 隔离 CPU...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/paths/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="学习路径">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="学习路径 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="LEARNING PATHS 文章很多时，最容易丢的是先后关系。这里按工程问题而非标签排列：先建立模型，再做测量，最后把结论放回实际系统。 PATH 01 · REAL-TIME LINUX Linux 实时性：从可抢占到可验收 目标不是把线程优先级调高，而是知道延迟由谁占走、如何复测，以及什么条件下能把结果称为通过。 理解抢占边界 → 隔离 CPU...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 
@@ -161,7 +182,7 @@
 
 <section class="learning-path"><p class="section-kicker">PATH 03 · EMBEDDED DELIVERY</p><h2>嵌入式系统：从构建产物到故障恢复</h2><p class="path-summary">可交付的嵌入式系统不是一段能编译的程序，而是一套能交叉构建、通信、升级、故障恢复并持续复现的产物。</p><div class="note-flow"><span>声明目标工具链</span><i>→</i><span>生成系统镜像</span><i>→</i><span>选择任务模型</span><i>→</i><span>建立总线协议</span><i>→</i><span>设计恢复路径</span></div><ol class="path-steps"><li><a href="/2026/07/29/cmake-cross-compilation/">CMake 交叉编译：工具链文件决定目标环境</a><span>避免配置阶段悄悄混入宿主机库。</span></li><li><a href="/2026/07/29/buildroot-system-image/">Buildroot：生成可复现的嵌入式 Linux 系统镜像</a><span>把工具链、boot、内核、rootfs 和服务收敛为产物。</span></li><li><a href="/2026/07/29/embedded-rtos-selection/">嵌入式 RTOS 选型：不要只比较功能列表</a><span>从实时性、生态、内存、调试与团队约束取舍。</span></li><li><a href="/2026/07/29/embedded-can/">CAN 总线：仲裁、错误处理与可靠通信</a><span>理解优先级、错误状态和总线恢复。</span></li><li><a href="/2026/07/29/embedded-watchdog/">看门狗：让系统从不可恢复故障中自动重启</a><span>让健康监督而非盲目喂狗决定是否复位。</span></li></ol></section>
 
-<p>路径之外的资料入口见<a href="/reading/">精选阅读</a>；需要按主题自由浏览时可回到<a href="/technology/">技术地图</a>。</p>
+<p>路径之外的资料入口见<a href="/reading/">精选阅读</a>；想先掌握最常用的十篇内容，可进入<a href="/guides/">核心文章</a>；需要按主题自由浏览时可回到<a href="/technology/">技术地图</a>。</p>
 
         </section>
     </article>

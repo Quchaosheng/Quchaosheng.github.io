@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Cortex-M 故障回溯：从 HardFault 找到出错代码 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="异常入口会把部分寄存器压栈。故障处理程序读取栈帧、SCB 故障状态寄存器和链接地址，再结合 ELF 符号恢复调用路径。 CPU 进入 HardFault → 识别 MSP/PSP 栈帧 → 保存寄存器和故障状态 → 地址映射到符号 → 复现并修复根因 参考： CmBacktrace">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/cortex-m-fault-backtrace/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Cortex-M 故障回溯：从 HardFault 找到出错代码 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="异常入口会把部分寄存器压栈。故障处理程序读取栈帧、SCB 故障状态寄存器和链接地址，再结合 ELF 符号恢复调用路径。 CPU 进入 HardFault → 识别 MSP/PSP 栈帧 → 保存寄存器和故障状态 → 地址映射到符号 → 复现并修复根因 参考： CmBacktrace">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/cortex-m-fault-backtrace/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Cortex-M 故障回溯：从 HardFault 找到出错代码">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Cortex-M 故障回溯：从 HardFault 找到出错代码 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="异常入口会把部分寄存器压栈。故障处理程序读取栈帧、SCB 故障状态寄存器和链接地址，再结合 ELF 符号恢复调用路径。 CPU 进入 HardFault → 识别 MSP/PSP 栈帧 → 保存寄存器和故障状态 → 地址映射到符号 → 复现并修复根因 参考： CmBacktrace">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>线程化中断与 IRQ 亲和性：控制实时任务的硬件干扰 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="中断是实时系统里最常见的“突然插队者”。网卡收包、存储完成、USB 设备活动都可能让 CPU 立即进入硬中断上下文；如果处理过多工作，实时线程即使优先级很高也只能等待。线程化中断的思路是把硬中断顶半部压缩到最小确认工作，其余部分交给可调度的 IRQ 线程，这样调度器、优先级和 CPU 亲和性才能参与控制。 设备触发硬中断 → 顶半部确认并唤醒 IRQ...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/threaded-irq-affinity/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="线程化中断与 IRQ 亲和性：控制实时任务的硬件干扰 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="中断是实时系统里最常见的“突然插队者”。网卡收包、存储完成、USB 设备活动都可能让 CPU 立即进入硬中断上下文；如果处理过多工作，实时线程即使优先级很高也只能等待。线程化中断的思路是把硬中断顶半部压缩到最小确认工作，其余部分交给可调度的 IRQ 线程，这样调度器、优先级和 CPU 亲和性才能参与控制。 设备触发硬中断 → 顶半部确认并唤醒 IRQ...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/threaded-irq-affinity/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="线程化中断与 IRQ 亲和性：控制实时任务的硬件干扰">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="线程化中断与 IRQ 亲和性：控制实时任务的硬件干扰 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="中断是实时系统里最常见的“突然插队者”。网卡收包、存储完成、USB 设备活动都可能让 CPU 立即进入硬中断上下文；如果处理过多工作，实时线程即使优先级很高也只能等待。线程化中断的思路是把硬中断顶半部压缩到最小确认工作，其余部分交给可调度的 IRQ 线程，这样调度器、优先级和 CPU 亲和性才能参与控制。 设备触发硬中断 → 顶半部确认并唤醒 IRQ...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

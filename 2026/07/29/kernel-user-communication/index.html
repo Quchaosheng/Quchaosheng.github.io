@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>内核与用户空间通信：按语义选择接口 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="驱动写出一个“能把数据给用户态”的接口并不难，难的是十年后仍能维护。内核与用户空间的边界本质上是一份 ABI 契约：什么数据稳定、谁拥有缓冲区、怎样处理版本演进、是否需要异步事件、错误和并发如何表达。先从语义出发选接口，比从“哪个 API 写起来快”出发可靠得多。 明确配置/状态/数据/事件语义 → 选择稳定接口 → 校验用户输入 → 传输或映射数据...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/kernel-user-communication/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="内核与用户空间通信：按语义选择接口 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="驱动写出一个“能把数据给用户态”的接口并不难，难的是十年后仍能维护。内核与用户空间的边界本质上是一份 ABI 契约：什么数据稳定、谁拥有缓冲区、怎样处理版本演进、是否需要异步事件、错误和并发如何表达。先从语义出发选接口，比从“哪个 API 写起来快”出发可靠得多。 明确配置/状态/数据/事件语义 → 选择稳定接口 → 校验用户输入 → 传输或映射数据...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/kernel-user-communication/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="内核与用户空间通信：按语义选择接口">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="内核与用户空间通信：按语义选择接口 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="驱动写出一个“能把数据给用户态”的接口并不难，难的是十年后仍能维护。内核与用户空间的边界本质上是一份 ABI 契约：什么数据稳定、谁拥有缓冲区、怎样处理版本演进、是否需要异步事件、错误和并发如何表达。先从语义出发选接口，比从“哪个 API 写起来快”出发可靠得多。 明确配置/状态/数据/事件语义 → 选择稳定接口 → 校验用户输入 → 传输或映射数据...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

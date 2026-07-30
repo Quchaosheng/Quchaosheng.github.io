@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Page Cache：文件 I/O 为什么常常先经过内存 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="Page Cache 缓存文件内容页面。读文件时优先命中缓存；写文件时通常先写脏页，再由回写机制异步落盘，从而合并 I&amp;#x2F;O 并提升吞吐。 read/write 系统调用 → 查询 Page Cache → 命中直接访问 → 未命中读取磁盘 → 脏页后台回写 buffer cache 是历史概念；现代 Linux 大量文件缓存统一由 page...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-page-cache/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Page Cache：文件 I/O 为什么常常先经过内存 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="Page Cache 缓存文件内容页面。读文件时优先命中缓存；写文件时通常先写脏页，再由回写机制异步落盘，从而合并 I&amp;#x2F;O 并提升吞吐。 read/write 系统调用 → 查询 Page Cache → 命中直接访问 → 未命中读取磁盘 → 脏页后台回写 buffer cache 是历史概念；现代 Linux 大量文件缓存统一由 page...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-page-cache/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Page Cache：文件 I/O 为什么常常先经过内存">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Page Cache：文件 I/O 为什么常常先经过内存 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="Page Cache 缓存文件内容页面。读文件时优先命中缓存；写文件时通常先写脏页，再由回写机制异步落盘，从而合并 I&amp;#x2F;O 并提升吞吐。 read/write 系统调用 → 查询 Page Cache → 命中直接访问 → 未命中读取磁盘 → 脏页后台回写 buffer cache 是历史概念；现代 Linux 大量文件缓存统一由 page...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>malloc 与 free：用户态分配器如何管理堆内存 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="malloc() 通常不会为每一次请求都进入内核。用户态分配器先在已经拥有的堆区、arena、线程缓存和空闲链表中寻找合适大小的块，只有库存不足或请求很大时才通过 brk 、 mmap 等向内核扩展虚拟内存。 free(ptr) 之所以不需要用户再传大小，是因为分配器在块附近或独立元数据中记录了大小、状态和所属结构；这也解释了为什么越界写常常让程序在很...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/malloc-free-internals/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="malloc 与 free：用户态分配器如何管理堆内存 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="malloc() 通常不会为每一次请求都进入内核。用户态分配器先在已经拥有的堆区、arena、线程缓存和空闲链表中寻找合适大小的块，只有库存不足或请求很大时才通过 brk 、 mmap 等向内核扩展虚拟内存。 free(ptr) 之所以不需要用户再传大小，是因为分配器在块附近或独立元数据中记录了大小、状态和所属结构；这也解释了为什么越界写常常让程序在很...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/malloc-free-internals/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="malloc 与 free：用户态分配器如何管理堆内存">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="malloc 与 free：用户态分配器如何管理堆内存 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="malloc() 通常不会为每一次请求都进入内核。用户态分配器先在已经拥有的堆区、arena、线程缓存和空闲链表中寻找合适大小的块，只有库存不足或请求很大时才通过 brk 、 mmap 等向内核扩展虚拟内存。 free(ptr) 之所以不需要用户再传大小，是因为分配器在块附近或独立元数据中记录了大小、状态和所属结构；这也解释了为什么越界写常常让程序在很...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

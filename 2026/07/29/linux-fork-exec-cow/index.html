@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>fork、exec 与 COW：进程是怎样创建的 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="fork() 创建当前进程的逻辑副本， exec() 用新程序替换当前进程映像。为了避免 fork 时复制全部物理内存，Linux 使用写时复制（COW）：父子进程先共享只读页面，真正写入时才复制。 创建流程 内核复制进程描述信息和页表引用，并把共享页设置为不可写。任一方写入会触发保护性缺页异常，内核分配新页、复制内容并更新写入方页表。 父进程调用 f...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-fork-exec-cow/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="fork、exec 与 COW：进程是怎样创建的 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="fork() 创建当前进程的逻辑副本， exec() 用新程序替换当前进程映像。为了避免 fork 时复制全部物理内存，Linux 使用写时复制（COW）：父子进程先共享只读页面，真正写入时才复制。 创建流程 内核复制进程描述信息和页表引用，并把共享页设置为不可写。任一方写入会触发保护性缺页异常，内核分配新页、复制内容并更新写入方页表。 父进程调用 f...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-fork-exec-cow/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="fork、exec 与 COW：进程是怎样创建的">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="fork、exec 与 COW：进程是怎样创建的 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="fork() 创建当前进程的逻辑副本， exec() 用新程序替换当前进程映像。为了避免 fork 时复制全部物理内存，Linux 使用写时复制（COW）：父子进程先共享只读页面，真正写入时才复制。 创建流程 内核复制进程描述信息和页表引用，并把共享页设置为不可写。任一方写入会触发保护性缺页异常，内核分配新页、复制内容并更新写入方页表。 父进程调用 f...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

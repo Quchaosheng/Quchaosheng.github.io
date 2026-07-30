@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>RISC-V 休眠与恢复：把运行现场写入交换区 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="休眠将内存快照写入持久存储后关机，下次启动时加载镜像并恢复 CPU 与设备状态。它不同于 suspend-to-RAM，后者仍依赖内存供电。 冻结任务与设备 → 创建内存快照 → 写入 swap 并关机 → 重新启动并识别镜像 → 恢复页面、CPU 与设备 恢复内核先正常启动到安全阶段，再覆盖大部分内存并跳回保存的执行点。架构代码必须保存不可由普通内存...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/riscv-hibernation/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RISC-V 休眠与恢复：把运行现场写入交换区 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="休眠将内存快照写入持久存储后关机，下次启动时加载镜像并恢复 CPU 与设备状态。它不同于 suspend-to-RAM，后者仍依赖内存供电。 冻结任务与设备 → 创建内存快照 → 写入 swap 并关机 → 重新启动并识别镜像 → 恢复页面、CPU 与设备 恢复内核先正常启动到安全阶段，再覆盖大部分内存并跳回保存的执行点。架构代码必须保存不可由普通内存...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/riscv-hibernation/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="RISC-V 休眠与恢复：把运行现场写入交换区">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RISC-V 休眠与恢复：把运行现场写入交换区 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="休眠将内存快照写入持久存储后关机，下次启动时加载镜像并恢复 CPU 与设备状态。它不同于 suspend-to-RAM，后者仍依赖内存供电。 冻结任务与设备 → 创建内存快照 → 写入 swap 并关机 → 重新启动并识别镜像 → 恢复页面、CPU 与设备 恢复内核先正常启动到安全阶段，再覆盖大部分内存并跳回保存的执行点。架构代码必须保存不可由普通内存...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

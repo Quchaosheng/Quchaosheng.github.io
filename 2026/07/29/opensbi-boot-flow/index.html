@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>OpenSBI 启动流程：从 M 模式进入操作系统 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="OpenSBI 通常运行在 RISC-V M 模式，为 S 模式操作系统提供定时器、IPI、复位和 hart 管理等 SBI 服务，并完成进入内核前的最低层初始化。 固件入口与重定位 → 选出 coldboot hart → 初始化平台与 SBI 子系统 → 唤醒其他 hart → 切换到 S 模式内核入口 coldboot hart 执行全局初始化，...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/opensbi-boot-flow/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OpenSBI 启动流程：从 M 模式进入操作系统 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="OpenSBI 通常运行在 RISC-V M 模式，为 S 模式操作系统提供定时器、IPI、复位和 hart 管理等 SBI 服务，并完成进入内核前的最低层初始化。 固件入口与重定位 → 选出 coldboot hart → 初始化平台与 SBI 子系统 → 唤醒其他 hart → 切换到 S 模式内核入口 coldboot hart 执行全局初始化，...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/opensbi-boot-flow/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="OpenSBI 启动流程：从 M 模式进入操作系统">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OpenSBI 启动流程：从 M 模式进入操作系统 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="OpenSBI 通常运行在 RISC-V M 模式，为 S 模式操作系统提供定时器、IPI、复位和 hart 管理等 SBI 服务，并完成进入内核前的最低层初始化。 固件入口与重定位 → 选出 coldboot hart → 初始化平台与 SBI 子系统 → 唤醒其他 hart → 切换到 S 模式内核入口 coldboot hart 执行全局初始化，...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

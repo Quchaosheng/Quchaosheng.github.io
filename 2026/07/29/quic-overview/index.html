@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>QUIC：在 UDP 之上重建可靠传输 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="QUIC 在 UDP 上实现加密、可靠传输、拥塞控制和多路复用，是 HTTP&amp;#x2F;3 的传输基础。它把连接状态放在用户态协议实现中，便于演进。 UDP 收发数据报 → QUIC 加密包与帧 → 独立 Stream 重组 → ACK/丢包检测 → 拥塞控制与重传 QUIC 的流独立减少 TCP 层队头阻塞；连接 ID 支持网络地址变化后的迁移；TL...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/quic-overview/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="QUIC：在 UDP 之上重建可靠传输 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="QUIC 在 UDP 上实现加密、可靠传输、拥塞控制和多路复用，是 HTTP&amp;#x2F;3 的传输基础。它把连接状态放在用户态协议实现中，便于演进。 UDP 收发数据报 → QUIC 加密包与帧 → 独立 Stream 重组 → ACK/丢包检测 → 拥塞控制与重传 QUIC 的流独立减少 TCP 层队头阻塞；连接 ID 支持网络地址变化后的迁移；TL...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/quic-overview/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="QUIC：在 UDP 之上重建可靠传输">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="QUIC：在 UDP 之上重建可靠传输 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="QUIC 在 UDP 上实现加密、可靠传输、拥塞控制和多路复用，是 HTTP&amp;#x2F;3 的传输基础。它把连接状态放在用户态协议实现中，便于演进。 UDP 收发数据报 → QUIC 加密包与帧 → 独立 Stream 重组 → ACK/丢包检测 → 拥塞控制与重传 QUIC 的流独立减少 TCP 层队头阻塞；连接 ID 支持网络地址变化后的迁移；TL...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

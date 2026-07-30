@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>QEMU gdbstub：从启动第一条指令调试系统 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="QEMU 内置 gdbstub，可暂停虚拟 CPU 并通过远程协议让 GDB 查看寄存器、内存、断点和单步执行，适合调试固件、Bootloader 与早期内核。 QEMU 使用 -S -s 启动 → GDB 加载带符号映像 → target remote 连接 → 设置断点并继续 → 检查寄存器、页表和调用栈 必须让符号文件、加载地址和实际映像匹配；启...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/qemu-gdbstub-debugging/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="QEMU gdbstub：从启动第一条指令调试系统 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="QEMU 内置 gdbstub，可暂停虚拟 CPU 并通过远程协议让 GDB 查看寄存器、内存、断点和单步执行，适合调试固件、Bootloader 与早期内核。 QEMU 使用 -S -s 启动 → GDB 加载带符号映像 → target remote 连接 → 设置断点并继续 → 检查寄存器、页表和调用栈 必须让符号文件、加载地址和实际映像匹配；启...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/qemu-gdbstub-debugging/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="QEMU gdbstub：从启动第一条指令调试系统">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="QEMU gdbstub：从启动第一条指令调试系统 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="QEMU 内置 gdbstub，可暂停虚拟 CPU 并通过远程协议让 GDB 查看寄存器、内存、断点和单步执行，适合调试固件、Bootloader 与早期内核。 QEMU 使用 -S -s 启动 → GDB 加载带符号映像 → target remote 连接 → 设置断点并继续 → 检查寄存器、页表和调用栈 必须让符号文件、加载地址和实际映像匹配；启...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

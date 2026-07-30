@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>PREEMPT_RT：Linux 怎样变成可抢占的实时内核 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="普通 Linux 擅长吞吐量和公平性，但内核中一次较长的关抢占、硬中断或自旋锁临界区，可能让刚被唤醒的高优先级任务等上很久。对音频、运动控制、工业通信这类周期任务而言，平均延迟再低也不够，真正关心的是最坏情况下“何时一定能运行”。PREEMPT_RT 的目标正是缩短这类不可抢占区，让高优先级线程即使在内核态也能更快获得 CPU。 高优先级任务被唤醒 →...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/linux-preempt-rt/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PREEMPT_RT：Linux 怎样变成可抢占的实时内核 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="普通 Linux 擅长吞吐量和公平性，但内核中一次较长的关抢占、硬中断或自旋锁临界区，可能让刚被唤醒的高优先级任务等上很久。对音频、运动控制、工业通信这类周期任务而言，平均延迟再低也不够，真正关心的是最坏情况下“何时一定能运行”。PREEMPT_RT 的目标正是缩短这类不可抢占区，让高优先级线程即使在内核态也能更快获得 CPU。 高优先级任务被唤醒 →...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/linux-preempt-rt/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="PREEMPT_RT：Linux 怎样变成可抢占的实时内核">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="PREEMPT_RT：Linux 怎样变成可抢占的实时内核 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="普通 Linux 擅长吞吐量和公平性，但内核中一次较长的关抢占、硬中断或自旋锁临界区，可能让刚被唤醒的高优先级任务等上很久。对音频、运动控制、工业通信这类周期任务而言，平均延迟再低也不够，真正关心的是最坏情况下“何时一定能运行”。PREEMPT_RT 的目标正是缩短这类不可抢占区，让高优先级线程即使在内核态也能更快获得 CPU。 高优先级任务被唤醒 →...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

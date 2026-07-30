@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>fasync 与 SIGIO：Linux 信号驱动异步通知 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="fasync 允许设备状态变化时由驱动向订阅进程发送 SIGIO 。它适合事件频率不高、只需通知“可以读写”的场景；大量事件通常更适合 poll&amp;#x2F;epoll 或专用事件队列。 建立通知 用户空间设置文件描述符所有者并启用 O_ASYNC ，VFS 调用驱动的 fasync 回调维护订阅者列表。设备事件到来时，驱动调用 kill_fasync(...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-fasync-sigio/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="fasync 与 SIGIO：Linux 信号驱动异步通知 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="fasync 允许设备状态变化时由驱动向订阅进程发送 SIGIO 。它适合事件频率不高、只需通知“可以读写”的场景；大量事件通常更适合 poll&amp;#x2F;epoll 或专用事件队列。 建立通知 用户空间设置文件描述符所有者并启用 O_ASYNC ，VFS 调用驱动的 fasync 回调维护订阅者列表。设备事件到来时，驱动调用 kill_fasync(...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-fasync-sigio/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="fasync 与 SIGIO：Linux 信号驱动异步通知">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="fasync 与 SIGIO：Linux 信号驱动异步通知 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="fasync 允许设备状态变化时由驱动向订阅进程发送 SIGIO 。它适合事件频率不高、只需通知“可以读写”的场景；大量事件通常更适合 poll&amp;#x2F;epoll 或专用事件队列。 建立通知 用户空间设置文件描述符所有者并启用 O_ASYNC ，VFS 调用驱动的 fasync 回调维护订阅者列表。设备事件到来时，驱动调用 kill_fasync(...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

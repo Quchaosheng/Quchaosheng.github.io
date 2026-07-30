@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>U-Boot 启动流程：从上电到跳入 Linux | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="嵌入式板子上电后，最先运行的不是 Linux，而是芯片 ROM 中固定的启动代码。ROM 从预设介质读取第一阶段程序；受片上 SRAM 容量限制，这一阶段常是 SPL&amp;#x2F;TPL，负责最小引脚、时钟和 DRAM 初始化；随后加载完整 U-Boot。U-Boot 再根据环境、bootflow 或脚本找到内核、DTB、initramfs&amp;#x2F;根...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/uboot-boot-flow/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="U-Boot 启动流程：从上电到跳入 Linux | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="嵌入式板子上电后，最先运行的不是 Linux，而是芯片 ROM 中固定的启动代码。ROM 从预设介质读取第一阶段程序；受片上 SRAM 容量限制，这一阶段常是 SPL&amp;#x2F;TPL，负责最小引脚、时钟和 DRAM 初始化；随后加载完整 U-Boot。U-Boot 再根据环境、bootflow 或脚本找到内核、DTB、initramfs&amp;#x2F;根...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/uboot-boot-flow/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="U-Boot 启动流程：从上电到跳入 Linux">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="U-Boot 启动流程：从上电到跳入 Linux | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="嵌入式板子上电后，最先运行的不是 Linux，而是芯片 ROM 中固定的启动代码。ROM 从预设介质读取第一阶段程序；受片上 SRAM 容量限制，这一阶段常是 SPL&amp;#x2F;TPL，负责最小引脚、时钟和 DRAM 初始化；随后加载完整 U-Boot。U-Boot 再根据环境、bootflow 或脚本找到内核、DTB、initramfs&amp;#x2F;根...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

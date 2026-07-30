@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>软件定时器：用一个硬件时基管理多个超时 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="软件定时器把多个到期时间组织在有序表、最小堆或时间轮中，由统一时基推进并执行到期回调。 注册超时与回调 → 插入定时器结构 → Tick/硬件比较到期 → 取出到期项 → 任务上下文执行回调 中断中只标记到期，耗时回调放到任务中；还要处理计数器回绕和取消竞态。参考： MultiTimer">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-software-timer/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="软件定时器：用一个硬件时基管理多个超时 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="软件定时器把多个到期时间组织在有序表、最小堆或时间轮中，由统一时基推进并执行到期回调。 注册超时与回调 → 插入定时器结构 → Tick/硬件比较到期 → 取出到期项 → 任务上下文执行回调 中断中只标记到期，耗时回调放到任务中；还要处理计数器回绕和取消竞态。参考： MultiTimer">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-software-timer/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="软件定时器：用一个硬件时基管理多个超时">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="软件定时器：用一个硬件时基管理多个超时 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="软件定时器把多个到期时间组织在有序表、最小堆或时间轮中，由统一时基推进并执行到期回调。 注册超时与回调 → 插入定时器结构 → Tick/硬件比较到期 → 取出到期项 → 任务上下文执行回调 中断中只标记到期，耗时回调放到任务中；还要处理计数器回绕和取消竞态。参考： MultiTimer">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

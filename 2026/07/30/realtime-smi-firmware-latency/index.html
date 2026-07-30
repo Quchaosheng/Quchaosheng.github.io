@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>SMI 与固件延迟：Linux 追踪不到的实时尖峰从哪里来 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="有一种实时尖峰特别让人困惑： cyclictest 明确记录到几百微秒甚至毫秒级延迟，ftrace 时间线上却没有足够长的 IRQ、锁或调度事件。对于 x86 平台，系统管理中断（SMI）会让 CPU 进入 System Management Mode 执行固件代码；普通操作系统不能抢占它，也通常看不到里面的调用栈。热管理、BIOS 服务、硬件纠错与平...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/realtime-smi-firmware-latency/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SMI 与固件延迟：Linux 追踪不到的实时尖峰从哪里来 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="有一种实时尖峰特别让人困惑： cyclictest 明确记录到几百微秒甚至毫秒级延迟，ftrace 时间线上却没有足够长的 IRQ、锁或调度事件。对于 x86 平台，系统管理中断（SMI）会让 CPU 进入 System Management Mode 执行固件代码；普通操作系统不能抢占它，也通常看不到里面的调用栈。热管理、BIOS 服务、硬件纠错与平...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/realtime-smi-firmware-latency/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="SMI 与固件延迟：Linux 追踪不到的实时尖峰从哪里来">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SMI 与固件延迟：Linux 追踪不到的实时尖峰从哪里来 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="有一种实时尖峰特别让人困惑： cyclictest 明确记录到几百微秒甚至毫秒级延迟，ftrace 时间线上却没有足够长的 IRQ、锁或调度事件。对于 x86 平台，系统管理中断（SMI）会让 CPU 进入 System Management Mode 执行固件代码；普通操作系统不能抢占它，也通常看不到里面的调用栈。热管理、BIOS 服务、硬件纠错与平...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

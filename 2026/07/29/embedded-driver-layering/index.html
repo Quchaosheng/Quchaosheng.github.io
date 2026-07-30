@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>嵌入式驱动分层：BSP、HAL 与设备服务 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="驱动分层把寄存器与板级资源放在 BSP&amp;#x2F;HAL，把器件协议封装为设备驱动，再向业务提供稳定服务接口，从而隔离芯片和板卡变化。 寄存器与引脚 BSP → 统一 HAL 接口 → 器件协议驱动 → 设备服务与缓存 → 业务逻辑 接口应表达能力和错误语义，不要把供应商句柄渗透到业务层。参考： AMetal">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-driver-layering/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="嵌入式驱动分层：BSP、HAL 与设备服务 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="驱动分层把寄存器与板级资源放在 BSP&amp;#x2F;HAL，把器件协议封装为设备驱动，再向业务提供稳定服务接口，从而隔离芯片和板卡变化。 寄存器与引脚 BSP → 统一 HAL 接口 → 器件协议驱动 → 设备服务与缓存 → 业务逻辑 接口应表达能力和错误语义，不要把供应商句柄渗透到业务层。参考： AMetal">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-driver-layering/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="嵌入式驱动分层：BSP、HAL 与设备服务">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="嵌入式驱动分层：BSP、HAL 与设备服务 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="驱动分层把寄存器与板级资源放在 BSP&amp;#x2F;HAL，把器件协议封装为设备驱动，再向业务提供稳定服务接口，从而隔离芯片和板卡变化。 寄存器与引脚 BSP → 统一 HAL 接口 → 器件协议驱动 → 设备服务与缓存 → 业务逻辑 接口应表达能力和错误语义，不要把供应商句柄渗透到业务层。参考： AMetal">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

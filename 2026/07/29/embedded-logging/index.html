@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>嵌入式日志系统：在可观测性与实时性之间取舍 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="日志要提供等级、模块、时间戳和输出后端，同时避免在中断或实时路径中格式化和阻塞发送。常用方案是快速写入环形缓冲区，再由后台任务输出到串口、Flash 或网络。 业务产生结构化日志 → 按等级过滤 → 写入内存缓冲区 → 后台批量输出 → 主机解析与检索 参考： EasyLogger">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-logging/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="嵌入式日志系统：在可观测性与实时性之间取舍 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="日志要提供等级、模块、时间戳和输出后端，同时避免在中断或实时路径中格式化和阻塞发送。常用方案是快速写入环形缓冲区，再由后台任务输出到串口、Flash 或网络。 业务产生结构化日志 → 按等级过滤 → 写入内存缓冲区 → 后台批量输出 → 主机解析与检索 参考： EasyLogger">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-logging/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="嵌入式日志系统：在可观测性与实时性之间取舍">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="嵌入式日志系统：在可观测性与实时性之间取舍 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="日志要提供等级、模块、时间戳和输出后端，同时避免在中断或实时路径中格式化和阻塞发送。常用方案是快速写入环形缓冲区，再由后台任务输出到串口、Flash 或网络。 业务产生结构化日志 → 按等级过滤 → 写入内存缓冲区 → 后台批量输出 → 主机解析与检索 参考： EasyLogger">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

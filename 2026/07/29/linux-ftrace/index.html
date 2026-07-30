@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Ftrace：Linux 内核函数跟踪是怎样工作的 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="当问题发生在内核路径里，普通日志常常太慢、太少或改变时序。Ftrace 是 Linux 内置的跟踪框架，可记录函数调用、调度、IRQ、软中断以及大量 tracepoint 事件。它依托 per-CPU ring buffer 收集数据，能够在较低侵入下回答“哪个 CPU 在什么时候做了什么”；但跟踪本身也会产生开销，所以最重要的技巧不是开更多事件，而是...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-ftrace/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ftrace：Linux 内核函数跟踪是怎样工作的 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="当问题发生在内核路径里，普通日志常常太慢、太少或改变时序。Ftrace 是 Linux 内置的跟踪框架，可记录函数调用、调度、IRQ、软中断以及大量 tracepoint 事件。它依托 per-CPU ring buffer 收集数据，能够在较低侵入下回答“哪个 CPU 在什么时候做了什么”；但跟踪本身也会产生开销，所以最重要的技巧不是开更多事件，而是...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-ftrace/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Ftrace：Linux 内核函数跟踪是怎样工作的">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Ftrace：Linux 内核函数跟踪是怎样工作的 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="当问题发生在内核路径里，普通日志常常太慢、太少或改变时序。Ftrace 是 Linux 内置的跟踪框架，可记录函数调用、调度、IRQ、软中断以及大量 tracepoint 事件。它依托 per-CPU ring buffer 收集数据，能够在较低侵入下回答“哪个 CPU 在什么时候做了什么”；但跟踪本身也会产生开销，所以最重要的技巧不是开更多事件，而是...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

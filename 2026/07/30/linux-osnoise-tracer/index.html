@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>osnoise tracer：把 Linux 实时抖动拆成可解释的噪声 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="实时延迟出现尖峰时，最难回答的问题通常不是“慢了多少”，而是“这段时间谁占走了”。 osnoise tracer 在指定 CPU 上运行采样线程，比较预期可运行的时间与线程实际获得的运行时间，并将时间缺口关联到 IRQ、softirq、NMI、调度和其他内核事件。它像一台专门测系统噪声的听诊器，适合将“偶尔抖一下”拆成可追查的干扰类型。 建立采样时间窗...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/linux-osnoise-tracer/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="osnoise tracer：把 Linux 实时抖动拆成可解释的噪声 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="实时延迟出现尖峰时，最难回答的问题通常不是“慢了多少”，而是“这段时间谁占走了”。 osnoise tracer 在指定 CPU 上运行采样线程，比较预期可运行的时间与线程实际获得的运行时间，并将时间缺口关联到 IRQ、softirq、NMI、调度和其他内核事件。它像一台专门测系统噪声的听诊器，适合将“偶尔抖一下”拆成可追查的干扰类型。 建立采样时间窗...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/linux-osnoise-tracer/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="osnoise tracer：把 Linux 实时抖动拆成可解释的噪声">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="osnoise tracer：把 Linux 实时抖动拆成可解释的噪声 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="实时延迟出现尖峰时，最难回答的问题通常不是“慢了多少”，而是“这段时间谁占走了”。 osnoise tracer 在指定 CPU 上运行采样线程，比较预期可运行的时间与线程实际获得的运行时间，并将时间缺口关联到 IRQ、softirq、NMI、调度和其他内核事件。它像一台专门测系统噪声的听诊器，适合将“偶尔抖一下”拆成可追查的干扰类型。 建立采样时间窗...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

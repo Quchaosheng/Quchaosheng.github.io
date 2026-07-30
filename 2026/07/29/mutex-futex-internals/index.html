@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>mutex 底层：无竞争走原子操作，有竞争才用 futex | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="现代用户态 mutex 之所以在无竞争时很快，是因为它通常根本不进入内核：线程用 CAS 等原子操作修改一个锁字，成功就进入临界区。只有发现锁已经被占用、继续自旋不划算时，线程库才调用 futex 的 WAIT 操作，让内核按这个用户态地址把线程挂起；解锁方在检测到有等待者时再调用 WAKE。futex 不是“内核里的互斥锁对象”，而是让内核帮助等待和...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/mutex-futex-internals/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="mutex 底层：无竞争走原子操作，有竞争才用 futex | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="现代用户态 mutex 之所以在无竞争时很快，是因为它通常根本不进入内核：线程用 CAS 等原子操作修改一个锁字，成功就进入临界区。只有发现锁已经被占用、继续自旋不划算时，线程库才调用 futex 的 WAIT 操作，让内核按这个用户态地址把线程挂起；解锁方在检测到有等待者时再调用 WAKE。futex 不是“内核里的互斥锁对象”，而是让内核帮助等待和...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/mutex-futex-internals/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="mutex 底层：无竞争走原子操作，有竞争才用 futex">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="mutex 底层：无竞争走原子操作，有竞争才用 futex | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="现代用户态 mutex 之所以在无竞争时很快，是因为它通常根本不进入内核：线程用 CAS 等原子操作修改一个锁字，成功就进入临界区。只有发现锁已经被占用、继续自旋不划算时，线程库才调用 futex 的 WAIT 操作，让内核按这个用户态地址把线程挂起；解锁方在检测到有等待者时再调用 WAKE。futex 不是“内核里的互斥锁对象”，而是让内核帮助等待和...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

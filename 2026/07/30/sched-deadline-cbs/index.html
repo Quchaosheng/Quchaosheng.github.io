@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>SCHED_DEADLINE：用运行预算和截止期调度周期任务 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="当一个任务可以明确说出“我每 10 ms 来一次、最坏需要 1 ms CPU、最晚 8 ms 必须完成”时， SCHED_DEADLINE 往往比手工安排一堆 FIFO 优先级更贴近问题本身。它采用最早截止期优先（EDF）选择任务，并使用 Constant Bandwidth Server（CBS）为每个任务分配运行预算。这样某个任务突然超量执行时，不...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/sched-deadline-cbs/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SCHED_DEADLINE：用运行预算和截止期调度周期任务 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="当一个任务可以明确说出“我每 10 ms 来一次、最坏需要 1 ms CPU、最晚 8 ms 必须完成”时， SCHED_DEADLINE 往往比手工安排一堆 FIFO 优先级更贴近问题本身。它采用最早截止期优先（EDF）选择任务，并使用 Constant Bandwidth Server（CBS）为每个任务分配运行预算。这样某个任务突然超量执行时，不...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/sched-deadline-cbs/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="SCHED_DEADLINE：用运行预算和截止期调度周期任务">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SCHED_DEADLINE：用运行预算和截止期调度周期任务 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="当一个任务可以明确说出“我每 10 ms 来一次、最坏需要 1 ms CPU、最晚 8 ms 必须完成”时， SCHED_DEADLINE 往往比手工安排一堆 FIFO 优先级更贴近问题本身。它采用最早截止期优先（EDF）选择任务，并使用 Constant Bandwidth Server（CBS）为每个任务分配运行预算。这样某个任务突然超量执行时，不...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

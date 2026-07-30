@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>DMA：设备怎样绕过 CPU 搬运大块数据 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="DMA 让设备直接读写内存，CPU 只负责准备缓冲区、填写描述符、启动传输并处理完成事件。它能显著减少逐字节 copy 的 CPU 消耗，但也带来三个必须明确的概念：CPU 虚拟地址、物理地址与设备看到的 DMA 地址不一定相同；CPU cache 与设备 DMA 是否一致取决于平台；缓冲区在设备和 CPU 之间交接时必须有清晰所有权与生命周期。 驱动...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-dma/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DMA：设备怎样绕过 CPU 搬运大块数据 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="DMA 让设备直接读写内存，CPU 只负责准备缓冲区、填写描述符、启动传输并处理完成事件。它能显著减少逐字节 copy 的 CPU 消耗，但也带来三个必须明确的概念：CPU 虚拟地址、物理地址与设备看到的 DMA 地址不一定相同；CPU cache 与设备 DMA 是否一致取决于平台；缓冲区在设备和 CPU 之间交接时必须有清晰所有权与生命周期。 驱动...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-dma/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="DMA：设备怎样绕过 CPU 搬运大块数据">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DMA：设备怎样绕过 CPU 搬运大块数据 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="DMA 让设备直接读写内存，CPU 只负责准备缓冲区、填写描述符、启动传输并处理完成事件。它能显著减少逐字节 copy 的 CPU 消耗，但也带来三个必须明确的概念：CPU 虚拟地址、物理地址与设备看到的 DMA 地址不一定相同；CPU cache 与设备 DMA 是否一致取决于平台；缓冲区在设备和 CPU 之间交接时必须有清晰所有权与生命周期。 驱动...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

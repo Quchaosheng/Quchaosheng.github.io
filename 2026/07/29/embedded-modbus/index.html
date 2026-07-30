@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Modbus RTU：帧边界、CRC 与寄存器模型 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="Modbus RTU 在 RS-485 上采用主从请求响应。帧由地址、功能码、数据和 CRC16 组成，帧间隔依赖至少 3.5 个字符时间。 主站发送请求 → 从站校验地址与 CRC → 执行寄存器操作 → 返回响应或异常码 → 主站超时重试 工程中要统一寄存器地址偏移、字节序和浮点布局，并控制 RS-485 收发方向切换。参考： EmbedSummary">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-modbus/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Modbus RTU：帧边界、CRC 与寄存器模型 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="Modbus RTU 在 RS-485 上采用主从请求响应。帧由地址、功能码、数据和 CRC16 组成，帧间隔依赖至少 3.5 个字符时间。 主站发送请求 → 从站校验地址与 CRC → 执行寄存器操作 → 返回响应或异常码 → 主站超时重试 工程中要统一寄存器地址偏移、字节序和浮点布局，并控制 RS-485 收发方向切换。参考： EmbedSummary">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-modbus/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Modbus RTU：帧边界、CRC 与寄存器模型">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Modbus RTU：帧边界、CRC 与寄存器模型 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="Modbus RTU 在 RS-485 上采用主从请求响应。帧由地址、功能码、数据和 CRC16 组成，帧间隔依赖至少 3.5 个字符时间。 主站发送请求 → 从站校验地址与 CRC → 执行寄存器操作 → 返回响应或异常码 → 主站超时重试 工程中要统一寄存器地址偏移、字节序和浮点布局，并控制 RS-485 收发方向切换。参考： EmbedSummary">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 
