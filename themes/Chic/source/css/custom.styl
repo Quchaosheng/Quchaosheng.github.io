@@ -323,6 +323,46 @@
   i
     color #91c3a5
 
+// Companion diagram for component boundaries, trade-offs, and checklists.
+.note-map
+  display grid
+  grid-template-columns repeat(3, minmax(0, 1fr))
+  gap .65rem
+  margin 1.5rem 0
+  padding 1rem
+  border-top 3px solid #78a58d
+  background rgba(120,165,141,.06)
+  span
+    display flex
+    min-height 5.3rem
+    box-sizing border-box
+    flex-direction column
+    justify-content center
+    padding .8rem .9rem
+    border 1px solid rgba(92,141,113,.28)
+    border-radius 4px
+    background rgba(255,255,255,.72)
+    line-height 1.45
+  b
+    margin-bottom .3rem
+    color #087f5b
+    font-size .9em
+  small
+    color $light-font-secondary-color
+    font-size .78em
+    line-height 1.5
+
+.dark-theme .note-map
+  border-color #91c3a5
+  background rgba(145,195,165,.08)
+  span
+    border-color rgba(145,195,165,.35)
+    background rgba(255,255,255,.045)
+  b
+    color #91c3a5
+  small
+    color $dark-font-secondary-color
+
 .dark-theme
   .archive-intro
     border-color $dark-border-color
@@ -367,6 +407,8 @@
     i
       justify-content center
       transform rotate(90deg)
+  .note-map
+    grid-template-columns 1fr
 
 .copy-code-button
   position absolute
