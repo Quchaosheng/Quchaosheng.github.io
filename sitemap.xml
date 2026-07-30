@@ -21,7 +21,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/circular-buffer/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-05-12</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/cmake-cross-compilation/</loc>
@@ -49,7 +49,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/cpu-memory-hierarchy/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-17</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/device-tree-debugging/</loc>
@@ -133,7 +133,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/gdb-crash-debugging/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-13</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/gro-rps-rfs/</loc>
@@ -153,11 +153,11 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-07</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-cfs-vruntime/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-06</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-cma/</loc>
@@ -169,7 +169,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-device-model/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-17</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-dma/</loc>
@@ -177,11 +177,11 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-eevdf-scheduler/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-06</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-fasync-sigio/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-21</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-five-io-models/</loc>
@@ -189,7 +189,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-fork-exec-cow/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-07</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-ftrace/</loc>
@@ -197,7 +197,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-io-uring/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-09</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-kernel-boot/</loc>
@@ -213,11 +213,11 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-memory-leak-diagnosis/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-23</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-mmu-address-translation/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-03</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-napi-receive/</loc>
@@ -229,31 +229,31 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-numa-memory-access/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-02</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-page-cache/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-05-05</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-page-fault-walk/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-08</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-pipe/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-05-01</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-process-signals/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-05-04</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-procfs/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-05-08</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-rcu/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-09</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-rtla-timerlat/</loc>
@@ -261,7 +261,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-shared-memory/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-16</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/linux-sk-buff/</loc>
@@ -285,7 +285,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/lock-free-queue-selection/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-24</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/lvgl-rendering/</loc>
@@ -345,7 +345,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/quic-overview/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-05-11</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/realtime-linux-latency/</loc>
@@ -361,7 +361,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/riscv-interrupt/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-20</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/riscv-kvm-virtualization/</loc>
@@ -425,7 +425,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/29/why-stack-allocation-is-faster-than-heap/</loc>
-    <lastmod>2026-07-29</lastmod>
+    <lastmod>2026-04-01</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/07/30/cyclictest-latency/</loc>
