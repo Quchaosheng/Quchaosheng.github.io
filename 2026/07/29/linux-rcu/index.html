@@ -18,14 +18,14 @@
 
 <title>RCU：读多写少场景下的并发设计 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="RCU（Read-Copy-Update）让读者在极低同步成本下访问共享数据。写者不原地破坏旧版本，而是创建新版本、发布新指针，并等待所有旧读者离开后再回收旧对象。 更新流程 读侧进入 RCU 临界区并解引用指针；写侧复制并修改对象，再原子发布。经过 grace period 后，可确认此前的读侧临界区都已结束，旧对象才安全释放。 读者读取旧指针 →...">
+    <meta name="description" content="用发布、宽限期和延迟回收解释 RCU，区分读侧保护、对象生命周期与写者之间的同步。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-rcu/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="RCU：读多写少场景下的并发设计 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="RCU（Read-Copy-Update）让读者在极低同步成本下访问共享数据。写者不原地破坏旧版本，而是创建新版本、发布新指针，并等待所有旧读者离开后再回收旧对象。 更新流程 读侧进入 RCU 临界区并解引用指针；写侧复制并修改对象，再原子发布。经过 grace period 后，可确认此前的读侧临界区都已结束，旧对象才安全释放。 读者读取旧指针 →...">
+    <meta property="og:description" content="用发布、宽限期和延迟回收解释 RCU，区分读侧保护、对象生命周期与写者之间的同步。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-rcu/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="RCU：读多写少场景下的并发设计 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="RCU（Read-Copy-Update）让读者在极低同步成本下访问共享数据。写者不原地破坏旧版本，而是创建新版本、发布新指针，并等待所有旧读者离开后再回收旧对象。 更新流程 读侧进入 RCU 临界区并解引用指针；写侧复制并修改对象，再原子发布。经过 grace period 后，可确认此前的读侧临界区都已结束，旧对象才安全释放。 读者读取旧指针 →...">
+    <meta name="twitter:description" content="用发布、宽限期和延迟回收解释 RCU，区分读侧保护、对象生命周期与写者之间的同步。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -172,9 +172,9 @@
     <div class="tocbot-list">
     </div>
     <div class="tocbot-list-menu">
-        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
-        <a onclick="go_top()">Back to top</a>
-        <a onclick="go_bottom()">Go to bottom</a>
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
     </div>
 </div>
 
@@ -212,7 +212,7 @@
         tocbot.refresh(obj_merge(tocbot_default_config, {
             collapseDepth: expanded ? 1 : DEPTH_MAX
         }));
-        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+        b.innerText = expanded ? '展开全部' : '收起目录';
     }
 
     function go_top() {
@@ -232,6 +232,7 @@
         return target;
     }
 </script>
+
     
 
     
@@ -241,7 +242,7 @@
             
                 <div class="post-meta">
                     
-                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
                     
 
                     
@@ -251,7 +252,7 @@
                     
                     
                         <span class="post-category">
-                    Category:
+                    分类：
                             
                                 <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
                             
@@ -264,16 +265,32 @@
         </header>
 
         <div class="post-content">
-            <p>RCU（Read-Copy-Update）让读者在极低同步成本下访问共享数据。写者不原地破坏旧版本，而是创建新版本、发布新指针，并等待所有旧读者离开后再回收旧对象。</p>
-<h2 id="更新流程"><a href="#更新流程" class="headerlink" title="更新流程"></a>更新流程</h2><p>读侧进入 RCU 临界区并解引用指针；写侧复制并修改对象，再原子发布。经过 grace period 后，可确认此前的读侧临界区都已结束，旧对象才安全释放。</p>
+            <p>RCU（Read-Copy-Update）适合“读取极频繁、更新相对少”的共享数据。它把问题拆成两部分：读者怎样看到一个完整版本，以及旧版本什么时候可以释放。读侧通常不需要争用同一把锁；写侧准备新状态并发布指针，随后把旧对象的回收推迟到宽限期之后。</p>
+<h2 id="三件事不能混在一起"><a href="#三件事不能混在一起" class="headerlink" title="三件事不能混在一起"></a>三件事不能混在一起</h2><ol>
+<li><strong>发布可见性</strong>：写者先初始化对象，再用 <code>rcu_assign_pointer()</code> 发布；读者用 <code>rcu_dereference()</code> 取得受保护的指针。</li>
+<li><strong>读侧生命周期</strong>：读者在 <code>rcu_read_lock()</code> 与 <code>rcu_read_unlock()</code> 之间使用对象，不能把裸指针带出保护范围后继续访问。</li>
+<li><strong>延迟回收</strong>：<code>synchronize_rcu()</code> 或 <code>call_rcu()</code> 等待&#x2F;安排宽限期后处理旧对象。宽限期只保证旧读者已经离开，不自动解决写者之间的竞争。</li>
+</ol>
 <div class="note-flow"><span>读者读取旧指针</span><i>→</i><span>写者复制并修改</span><i>→</i><span>原子发布新指针</span><i>→</i><span>等待宽限期</span><i>→</i><span>回收旧对象</span></div>
 
-<h2 id="记忆要点"><a href="#记忆要点" class="headerlink" title="记忆要点"></a>记忆要点</h2><ul>
-<li>RCU 优化读路径，代价是写逻辑和回收机制更复杂。</li>
-<li><code>rcu_read_lock()</code> 不等同于普通互斥锁。</li>
-<li><code>synchronize_rcu()</code> 等待的是旧读者结束，不是等待所有 CPU 空闲。</li>
+<div class="note-map"><span><b>读侧临界区</b><small>保护对象仍可访问，不是普通互斥锁</small></span><span><b>发布</b><small>保证读者不会看到未初始化完成的版本</small></span><span><b>宽限期</b><small>开始等待前的读者都已离开</small></span><span><b>回调</b><small>call_rcu 异步安排旧对象回收</small></span><span><b>写者锁</b><small>多个写者仍可能需要 mutex/spinlock</small></span><span><b>RCU 变体</b><small>可睡眠条件与 quiescent state 规则不同</small></span></div>
+
+<h2 id="一个典型骨架"><a href="#一个典型骨架" class="headerlink" title="一个典型骨架"></a>一个典型骨架</h2><p>下面只展示生命周期关系，错误处理和并发写者保护仍需按对象设计：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">rcu_read_lock();</span><br><span class="line">p = rcu_dereference(global_ptr);</span><br><span class="line"><span class="keyword">if</span> (p)</span><br><span class="line">    consume(p);</span><br><span class="line">rcu_read_unlock();</span><br><span class="line"></span><br><span class="line">new = clone_and_update(old);</span><br><span class="line">rcu_assign_pointer(global_ptr, new);</span><br><span class="line">synchronize_rcu();</span><br><span class="line">kfree(old);</span><br></pre></td></tr></table></figure>
+
+<p>如果更新路径不能阻塞，可以把最后两步改为 <code>call_rcu()</code>，由回调在宽限期后释放。频繁更新时，还要控制待回收对象积压，不能把“异步释放”理解成“没有内存压力”。</p>
+<h2 id="如何观察与排错"><a href="#如何观察与排错" class="headerlink" title="如何观察与排错"></a>如何观察与排错</h2><p>内核调试配置提供 RCU stall 检测与 <code>rcutorture</code>。出现 stall 警告时，应保存完整日志、CPU 堆栈和内核配置，检查长时间关闭抢占&#x2F;中断、CPU 未报告静止状态或读侧临界区异常延长等情况。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">zgrep -E <span class="string">&#x27;CONFIG_RCU|CONFIG_RCU_STALL&#x27;</span> /proc/config.gz 2&gt;/dev/null</span><br><span class="line">dmesg -T | grep -i -E <span class="string">&#x27;rcu.*stall|rcu_sched|rcu_preempt&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>这些日志只能提示 RCU 无法推进，不能单独证明某个业务对象存在 use-after-free。对象生命周期问题仍需结合 KASAN、lockdep、崩溃栈和具体更新路径判断。</p>
+<h2 id="常见误区"><a href="#常见误区" class="headerlink" title="常见误区"></a>常见误区</h2><ul>
+<li><code>rcu_read_lock()</code> 不负责排斥写者，也不让对象内容自动变成不可变。</li>
+<li><code>synchronize_rcu()</code> 等待的是进入当前宽限期之前的读者，不是等待所有 CPU 空闲。</li>
+<li>RCU 保护“是否仍能访问”，引用计数保护“还有多少长期持有者”，二者解决的问题不同。</li>
+<li>不同 RCU 变体对能否阻塞、怎样报告静止状态有不同规则，不能机械替换 API。</li>
 </ul>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494641&idx=1&sn=e4180c6d497c4153f19276c5adc126b6">不懂 RCU，别再说你懂 Linux 内核了</a></p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文描述 Linux 内核中常见的 RCU 使用模型，不覆盖所有 RCU 变体和内存序细节。真正修改内核路径时，应以对应内核版本的 RCU 文档、锁规则和 lockdep&#x2F;KCSAN 结果为准。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/RCU/whatisRCU.html">What is RCU?</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/RCU/index.html">RCU concepts</a> · <a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494641&idx=1&sn=e4180c6d497c4153f19276c5adc126b6">不懂 RCU，别再说你懂 Linux 内核了</a></p>
 
         </div>
 
@@ -281,19 +298,19 @@
             <section class="post-copyright">
                 
                     <p class="copyright-item">
-                        <span>Author:</span>
+                        <span>作者：</span>
                         <span>Quchaosheng</span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>Permalink:</span>
+                        <span>永久链接：</span>
                         <span><a href="https://quchaosheng.github.io/2026/07/29/linux-rcu/">https://quchaosheng.github.io/2026/07/29/linux-rcu/</a></span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>License:</span>
+                        <span>许可协议：</span>
                         <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
                     </p>
                 
@@ -301,9 +318,33 @@
 
             </section>
         
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/lock-free-queue-selection/">
+                            <span>无锁队列：CAS、内存序与工程选型</span>
+                            <time datetime="2026-07-29T09:01:01.000Z">2026-07-29</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/cpp-semaphore/">
+                            <span>信号量：用许可数量协调并发资源</span>
+                            <time datetime="2026-02-23T06:00:00.000Z">2026-02-23</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/cpp20-thread-pool/">
+                            <span>C++20 线程池：任务队列、工作线程与停止协议</span>
+                            <time datetime="2026-02-13T06:00:00.000Z">2026-02-13</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
         <section class="post-tags">
             <div>
-                <span>Tag(s):</span>
+                <span>标签：</span>
                 <span class="tag">
                     
                     
@@ -317,14 +358,14 @@
                 </span>
             </div>
             <div>
-                <a href="javascript:window.history.back();">back</a>
+                <a href="javascript:window.history.back();">返回</a>
                 <span>· </span>
-                <a href="/">home</a>
+                <a href="/">首页</a>
             </div>
         </section>
         <section class="post-nav">
             
-                <a class="prev" rel="prev" href="/2026/07/29/linux-numa-memory-access/">NUMA：CPU 为什么更偏爱本地内存</a>
+                <a class="prev" rel="prev" href="/2026/07/29/linux-page-fault-walk/">缺页异常与页表遍历：一次内存访问的补救过程</a>
             
             
             <a class="next" rel="next" href="/2026/07/29/linux-shared-memory/">Linux 共享内存：少复制不等于零成本</a>

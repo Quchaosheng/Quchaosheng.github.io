@@ -23,12 +23,12 @@
     <summary type="html">Page Cache 缓存文件内容页面。读文件时先查询缓存，命中就直接复制给用户态；未命中才从存储读取并填入缓存。写文件时通常先修改缓存页并标记为脏页，后台回写再把它们批量落盘。它让很多小 I&amp;#x2F;O 合并为更高效的存储访问，但也让“ write() 返回成功”与“数据已经安全落盘”成为两件事。 read/write 系统调用 → 查询 Page Cache → 命中直接访问 → 未命中读取磁盘 → 脏页后台回写 缓存图 读路径追求命中，写路径需要区分“进入缓存”和“持久化完成”。 address_space 文件的页缓存索引，连接 inod...</summary>
   </entry>
   <entry>
-    <title>procfs：把内核运行状态投影成文件</title>
-    <id>https://quchaosheng.github.io/2026/07/29/linux-procfs/</id>
-    <link href="https://quchaosheng.github.io/2026/07/29/linux-procfs/"/>
+    <title>Linux 管道：内核缓冲区上的字节流 IPC</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-pipe/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-pipe/"/>
     <published>2026-07-29T09:36:41.000Z</published>
     <updated>2026-07-29T09:36:41.000Z</updated>
-    <summary type="html">procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它把进程、内存、CPU、网络和内核参数投影成一组文件，因此排障时可以用普通文件工具观察系统。但它不是一个稳定的数据库快照：你读到第一行和最后一行之间，系统状态仍可能已经变化。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 观测图 不同 `/proc` 文件回答的是不同层次的问题，读之前先确定想验证什么。 /proc/PID/status 查看线程数、状态、能力和内存概况。 /proc/PID/maps 观察虚拟地址区域、文件映射...</summary>
+    <summary type="html">管道是内核维护的单向字节流缓冲区，读端和写端通过文件描述符访问。它适合 shell 命令串联或具有亲缘关系的进程通信，数据不需要落盘。它的简单也有边界：管道传的是连续字节，不会替应用保存“这一段是第几条消息”。 创建 pipe → 写端写入内核缓冲区 → 等待的读端被唤醒 → 读端取走字节流 数据图 写入、缓冲、读取和端点关闭共同决定管道的可见行为。 读端 fd 读取字节流，所有写端关闭后会读到 EOF。 写端 fd 写入缓冲区；没有读端时会得到 SIGPIPE 或 EPIPE。 内核缓冲 容量有限，满时阻塞或返回 EAGAIN，取决于阻塞模式。 ...</summary>
   </entry>
   <entry>
     <title>Linux 信号：异步事件如何送达进程</title>
@@ -39,12 +39,12 @@
     <summary type="html">信号是内核向进程或线程报告异步事件的轻量机制，例如终端中断、子进程退出、非法内存访问和定时器到期。它适合通知“发生了什么”，不适合承载复杂数据或在回调里执行复杂业务。理解 pending、屏蔽和投递时机，才能避免看似偶发的竞态。 产生信号 → 加入 pending 集合 → 检查屏蔽字 → 执行默认动作或处理器 → 恢复执行 投递图 信号先处于 pending 状态，解除屏蔽后才可能在合适的线程上处理。 产生者 内核异常、终端、定时器、其他进程或线程都可产生信号。 pending 集合 传统信号同类可合并，实时信号可携带队列项。 屏蔽字 被屏蔽的信...</summary>
   </entry>
   <entry>
-    <title>Linux 管道：内核缓冲区上的字节流 IPC</title>
-    <id>https://quchaosheng.github.io/2026/07/29/linux-pipe/</id>
-    <link href="https://quchaosheng.github.io/2026/07/29/linux-pipe/"/>
+    <title>procfs：把内核运行状态投影成文件</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-procfs/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-procfs/"/>
     <published>2026-07-29T09:36:41.000Z</published>
     <updated>2026-07-29T09:36:41.000Z</updated>
-    <summary type="html">管道是内核维护的单向字节流缓冲区，读端和写端通过文件描述符访问。它适合 shell 命令串联或具有亲缘关系的进程通信，数据不需要落盘。它的简单也有边界：管道传的是连续字节，不会替应用保存“这一段是第几条消息”。 创建 pipe → 写端写入内核缓冲区 → 等待的读端被唤醒 → 读端取走字节流 数据图 写入、缓冲、读取和端点关闭共同决定管道的可见行为。 读端 fd 读取字节流，所有写端关闭后会读到 EOF。 写端 fd 写入缓冲区；没有读端时会得到 SIGPIPE 或 EPIPE。 内核缓冲 容量有限，满时阻塞或返回 EAGAIN，取决于阻塞模式。 ...</summary>
+    <summary type="html">procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它把进程、内存、CPU、网络和内核参数投影成一组文件，因此排障时可以用普通文件工具观察系统。但它不是一个稳定的数据库快照：你读到第一行和最后一行之间，系统状态仍可能已经变化。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 观测图 不同 `/proc` 文件回答的是不同层次的问题，读之前先确定想验证什么。 /proc/PID/status 查看线程数、状态、能力和内存概况。 /proc/PID/maps 观察虚拟地址区域、文件映射...</summary>
   </entry>
   <entry>
     <title>QUIC：在 UDP 之上重建可靠传输</title>
@@ -68,7 +68,7 @@
     <link href="https://quchaosheng.github.io/2026/07/29/cpu-memory-hierarchy/"/>
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">CPU 指令执行速度远快于 DRAM 访问速度。现代处理器依靠寄存器、多级缓存、预取和乱序执行隐藏差距；一旦数据不在缓存中，流水线可能等待数十到数百个周期。 查找路径 每次加载先经过地址翻译，再按层级查询缓存。命中就返回数据；未命中则继续向更低层请求，并以 cache line 为单位把相邻数据带回。 生成虚拟地址 → TLB 地址翻译 → L1/L2/L3 查询 → 访问 DRAM → 回填缓存行 记忆要点 时间局部性：最近使用的数据可能再次使用；空间局部性：相邻数据可能很快被访问。 链表随机跳转通常不如连续数组对缓存友好。 优化应关注数据布局、...</summary>
+    <summary type="html">程序明明只做了几次加法，为什么换一种数据布局就可能慢几倍？瓶颈往往不在算术指令，而在数据能否及时送到执行单元。现代 CPU 可以并行发射多条指令，DRAM 访问延迟却远高于寄存器和一级缓存。处理器只能依靠多级缓存、硬件预取、乱序执行和同时挂起多个访存请求来隐藏差距；当访问缺乏局部性或工作集超过缓存容量，这些办法都会逐渐失效。 一次 load 经过什么 CPU 执行 load 时同时面对两件事：虚拟地址要翻译，目标数据要查找。TLB 缓存虚拟页到物理页框的翻译；数据缓存保存最近使用的缓存行。TLB 未命中可能触发硬件页表遍历，数据缓存未命中则继续查询...</summary>
   </entry>
   <entry>
     <title>GDB 崩溃调试：从信号到调用栈</title>
@@ -84,7 +84,7 @@
     <link href="https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/"/>
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">Linux 内核用分层分配器解决不同粒度的需求：伙伴系统管理以页为单位的连续物理内存，SLUB 在这些页上高效分配频繁使用的小对象。 两层协作 伙伴系统按 2 的幂次组织空闲块。分配时拆分大块，释放时与同阶“伙伴”合并。SLUB 为相同类型或大小的对象建立 cache，把 slab 中的空闲槽直接交给调用者。 kmem_cache_alloc → 从当前 slab 取对象 → slab 不足 → 伙伴系统申请页 → 切分为对象槽 记忆要点 伙伴系统减少外部碎片，但可能产生内部碎片。 SLUB 复用已初始化布局，适合 task_struct 等内核对...</summary>
+    <summary type="html">内核既要分配整页和连续物理页，也要频繁创建几十到几千字节的小对象。只用一种分配器很难同时兼顾碎片、速度和对象复用，因此 Linux 将问题分层：页分配器管理物理页，伙伴系统组织可合并的连续页块，SLUB 再从页块中切出固定大小的对象槽。 从 order 到对象槽 伙伴系统按 order 管理空闲块：order 0 是一页，order 1 是两页，依次按 2 的幂增长。申请某个 order 时，若该链表没有空闲块，可以拆分更高 order；释放时，只有地址对齐且同阶空闲的伙伴才能合并。它能快速拆分和合并，但不能保证系统运行很久后仍能满足高阶连续分配。...</summary>
   </entry>
   <entry>
     <title>CFS 与 vruntime：Linux 如何分配 CPU 时间</title>
@@ -95,20 +95,20 @@
     <summary type="html">CFS 的目标不是让每个任务运行同样久，而是按权重实现公平。它用 vruntime 记录任务经过权重修正后的运行时间，优先选择 vruntime 较小的可运行任务。 调度过程 传统 CFS 运行队列使用红黑树组织调度实体，最左节点代表当前最“欠 CPU 时间”的任务。nice 值越低，权重越大，同样运行时间带来的 vruntime 增量越小。 任务进入运行队列 → 按 vruntime 排序 → 选择最小者运行 → 累计加权运行时间 → 重新入队 记忆要点 vruntime 是“公平债务”，不是实际墙上时间。 红黑树提供有序插入和删除，选择最左节点...</summary>
   </entry>
   <entry>
-    <title>Linux 设备驱动模型：总线、设备和驱动如何相遇</title>
-    <id>https://quchaosheng.github.io/2026/07/29/linux-device-model/</id>
-    <link href="https://quchaosheng.github.io/2026/07/29/linux-device-model/"/>
-    <published>2026-07-29T08:09:18.000Z</published>
-    <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">Linux 设备模型用 bus、device、driver 和 class 统一描述硬件及其关系。它把“设备存在”和“谁来驱动”解耦，并通过 sysfs 向用户空间展示拓扑与属性。 匹配流程 设备由固件描述、枚举逻辑或板级代码注册到总线；驱动注册后，总线的 match 规则比较 compatible、ID 表等信息。匹配成功才调用 probe 建立资源、子系统接口和运行状态。 注册 device → 注册 driver → 总线执行 match → 调用 probe → 注册 class/子系统接口 记忆要点 bus 负责匹配规则，class 按功...</summary>
-  </entry>
-  <entry>
     <title>EEVDF：从公平调度到虚拟截止时间</title>
     <id>https://quchaosheng.github.io/2026/07/29/linux-eevdf-scheduler/</id>
     <link href="https://quchaosheng.github.io/2026/07/29/linux-eevdf-scheduler/"/>
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
     <summary type="html">EEVDF（Earliest Eligible Virtual Deadline First）在公平的基础上引入“可运行资格”和“虚拟截止时间”。它既关注任务是否欠 CPU 时间，也关注任务本次请求何时应该完成。 选择逻辑 调度器先从可运行任务中判断哪些已满足 eligibility，再选择虚拟截止时间最早者。较短的时间片会得到较早的虚拟截止时间，因此交互型任务可获得更低延迟，同时长期权重公平仍然保留。 计算任务 lag → 筛选 eligible 任务 → 计算虚拟截止时间 → 运行截止时间最早者 记忆要点 lag 表示任务相对公平份额是超前还是...</summary>
+  </entry>
+  <entry>
+    <title>Linux 设备驱动模型：总线、设备和驱动如何相遇</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-device-model/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-device-model/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">驱动已经编译进内核，设备树里也有节点，为什么 probe() 仍然没有执行？Linux 设备模型把“系统中存在一个设备”和“某个驱动愿意管理它”分开注册，再由总线定义的匹配规则连接两者。理解 bus、device、driver 和 class 的关系，比在 probe() 入口盲目加日志更有效。 四个对象各管什么 device 表示一个具体设备实例，携带父子关系、固件节点、资源与生命周期。 driver 表示能够管理一类设备的实现，包含匹配表、 probe() 、 remove() 与电源管理回调。 bus 定义设备与驱动怎样匹配，例如 platf...</summary>
   </entry>
   <entry>
     <title>fasync 与 SIGIO：Linux 信号驱动异步通知</title>
@@ -124,7 +124,7 @@
     <link href="https://quchaosheng.github.io/2026/07/29/linux-fork-exec-cow/"/>
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">fork() 创建当前进程的逻辑副本， exec() 用新程序替换当前进程映像。为了避免 fork 时复制全部物理内存，Linux 使用写时复制（COW）：父子进程先共享只读页面，真正写入时才复制。 创建流程 内核复制进程描述信息和页表引用，并把共享页设置为不可写。任一方写入会触发保护性缺页异常，内核分配新页、复制内容并更新写入方页表。 父进程调用 fork → 父子共享物理页 → 某一方尝试写入 → COW 缺页异常 → 复制并建立私有页 记忆要点 fork 返回两次：父进程得到子 PID，子进程得到 0。 exec 成功后不会返回，PID 不变...</summary>
+    <summary type="html">Shell 启动外部命令时，常见路径是先 fork() 得到子进程，再由子进程 execve() 新程序。Linux 不会在 fork 当场复制父进程的全部用户内存，而是复制必要的进程元数据和页表关系，让父子暂时共享物理页。只有某一方写入共享私有页时，才触发写时复制（COW）。 fork 实际复制与共享什么 子进程得到独立的虚拟地址空间视图、进程 ID 和调度实体，但许多内核对象以引用方式继承。文件描述符表中的条目引用相同的 open file description，因此父子可能共享文件偏移和状态标志。信号处理、定时器、锁和其他属性则按 POSI...</summary>
   </entry>
   <entry>
     <title>io_uring：用共享环减少异步 I/O 开销</title>
@@ -132,7 +132,7 @@
     <link href="https://quchaosheng.github.io/2026/07/29/linux-io-uring/"/>
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">io_uring 通过用户态与内核共享的提交环（SQ）和完成环（CQ）批量传递 I&amp;#x2F;O 请求，减少系统调用、数据复制和上下文切换。 请求生命周期 应用填写 SQE 并推进队尾，内核消费请求并执行 I&amp;#x2F;O，完成后写入 CQE。应用读取 CQE 获取结果。批量提交、固定缓冲区和注册文件可进一步减少开销。 应用填写 SQE → 提交到 SQ → 内核执行 I/O → 结果写入 CQE → 应用收割完成事件 记忆要点 SQ&amp;#x2F;CQ 是通信结构，真正 I&amp;#x2F;O 是否异步仍取决于操作类型和内核支持。 zero-copy、SQ...</summary>
+    <summary type="html">传统的同步 I&amp;#x2F;O 常把“提交操作”和“等待结果”绑在一次系统调用里；高并发程序若为每个请求建立线程，又会付出调度与栈空间成本。 io_uring 将提交队列（SQ）和完成队列（CQ）映射到用户态，让应用批量描述请求、批量收割结果。它减少的是进入内核和管理请求的开销，不会让存储设备本身凭空变快。 四个对象先分清 SQ ：提交环，保存待处理 SQE 的索引。 SQE ：提交项，描述操作码、文件、缓冲区、偏移和用户标识。 CQ ：完成环，保存内核已经完成的 CQE。 CQE ：完成项， res 表示结果或负的 errno， user_data...</summary>
   </entry>
   <entry>
     <title>MMU：虚拟地址如何找到物理内存</title>
@@ -140,7 +140,7 @@
     <link href="https://quchaosheng.github.io/2026/07/29/linux-mmu-address-translation/"/>
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">CPU 执行程序时产生虚拟地址，MMU 根据页表把它翻译为物理地址。虚拟内存让每个进程拥有独立地址空间，也使权限隔离、按需分页和内存映射成为可能。 地址翻译 MMU 先查 TLB；命中时直接得到物理页框，未命中时遍历多级页表。页表项还保存读写、用户态、执行权限以及页面是否存在等状态。 CPU 产生虚拟地址 → 查询 TLB → 遍历多级页表 → 组合物理地址 → 访问缓存或内存 记忆要点 TLB 缓存的是地址翻译，不是普通数据。 页越大，TLB 覆盖范围越大，但内部碎片也可能增加。 页表项无效或权限不符会触发缺页异常，由内核决定补页还是发送信号。 ...</summary>
+    <summary type="html">用户程序看到的是虚拟地址。MMU 按操作系统建立的页表把虚拟页映射到物理页框，同时检查用户&amp;#x2F;内核、读&amp;#x2F;写和可执行权限。这样每个进程可以拥有独立地址空间，同一物理页也能被多个地址空间共享。地址翻译主要由硬件完成，但页表内容、缺页处理和映射生命周期由内核管理。 地址怎样被拆开 以多级页表为例，虚拟地址被拆成多级索引和页内偏移。每一级页表项指向下一级表，最后一级给出物理页框号和权限位。最终物理地址由页框基址与页内偏移组合而成。具体级数、位宽和大页形式由架构与内核配置决定，不能把 x86-64 的字段直接套到 ARM64 或 RISC-...</summary>
   </entry>
   <entry>
     <title>Linux 内存泄漏排查：先分清是哪一种内存增长</title>
@@ -159,11 +159,11 @@
     <summary type="html">NUMA（非一致内存访问）把 CPU、内存划分为多个节点。CPU 访问本节点内存延迟较低，跨节点访问则要经过互连总线，因此线程跑在哪个节点、页面落在哪个节点会直接影响性能。 核心机制 Linux 默认采用“首次触碰”策略：虚拟内存被首次实际写入时，物理页通常分配在执行该线程所在的 NUMA 节点。调度器会尽量保持 CPU 与内存亲和性，自动 NUMA balancing 也可能迁移任务或页面。 线程在 Node 0 运行 → 首次写入虚拟页 → Node 0 分配物理页 → 后续本地访问 记忆要点 numactl --hardware 查看节点拓扑...</summary>
   </entry>
   <entry>
-    <title>RCU：读多写少场景下的并发设计</title>
-    <id>https://quchaosheng.github.io/2026/07/29/linux-rcu/</id>
-    <link href="https://quchaosheng.github.io/2026/07/29/linux-rcu/"/>
+    <title>缺页异常与页表遍历：一次内存访问的补救过程</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-page-fault-walk/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-page-fault-walk/"/>
     <published>2026-07-29T08:09:18.000Z</published>
     <updated>2026-07-29T08:09:18.000Z</updated>
-    <summary type="html">RCU（Read-Copy-Update）让读者在极低同步成本下访问共享数据。写者不原地破坏旧版本，而是创建新版本、发布新指针，并等待所有旧读者离开后再回收旧对象。 更新流程 读侧进入 RCU 临界区并解引用指针；写侧复制并修改对象，再原子发布。经过 grace period 后，可确认此前的读侧临界区都已结束，旧对象才安全释放。 读者读取旧指针 → 写者复制并修改 → 原子发布新指针 → 等待宽限期 → 回收旧对象 记忆要点 RCU 优化读路径，代价是写逻辑和回收机制更复杂。 rcu_read_lock() 不等同于普通互斥锁。 synchron...</summary>
+    <summary type="html">缺页异常（page fault）不等于程序出错。MMU 无法按当前页表完成访问时，CPU 把控制权交给内核；内核可能分配匿名页、从文件页缓存建立映射、执行 COW，也可能判定地址或权限非法并发送信号。按需分页正是利用可修复的 fault，避免程序启动时为尚未访问的区域立即准备全部物理页。 先区分 TLB miss TLB miss 通常由硬件页表遍历解决，不一定进入内核；page fault 则表示遍历结果无法满足这次访问，例如页表项尚未建立、页面不在内存、写入只读 COW 映射或权限检查失败。把 perf 中的 TLB miss 数直接当成缺页次...</summary>
   </entry>
 </feed>

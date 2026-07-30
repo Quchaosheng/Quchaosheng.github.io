@@ -18,14 +18,14 @@
 
 <title>MMU：虚拟地址如何找到物理内存 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="CPU 执行程序时产生虚拟地址，MMU 根据页表把它翻译为物理地址。虚拟内存让每个进程拥有独立地址空间，也使权限隔离、按需分页和内存映射成为可能。 地址翻译 MMU 先查 TLB；命中时直接得到物理页框，未命中时遍历多级页表。页表项还保存读写、用户态、执行权限以及页面是否存在等状态。 CPU 产生虚拟地址 → 查询 TLB → 遍历多级页表 → 组合物...">
+    <meta name="description" content="从虚拟地址拆分、TLB、多级页表和缺页异常出发，解释 MMU 翻译路径及其可观测边界。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-mmu-address-translation/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="MMU：虚拟地址如何找到物理内存 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="CPU 执行程序时产生虚拟地址，MMU 根据页表把它翻译为物理地址。虚拟内存让每个进程拥有独立地址空间，也使权限隔离、按需分页和内存映射成为可能。 地址翻译 MMU 先查 TLB；命中时直接得到物理页框，未命中时遍历多级页表。页表项还保存读写、用户态、执行权限以及页面是否存在等状态。 CPU 产生虚拟地址 → 查询 TLB → 遍历多级页表 → 组合物...">
+    <meta property="og:description" content="从虚拟地址拆分、TLB、多级页表和缺页异常出发，解释 MMU 翻译路径及其可观测边界。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-mmu-address-translation/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="MMU：虚拟地址如何找到物理内存 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="CPU 执行程序时产生虚拟地址，MMU 根据页表把它翻译为物理地址。虚拟内存让每个进程拥有独立地址空间，也使权限隔离、按需分页和内存映射成为可能。 地址翻译 MMU 先查 TLB；命中时直接得到物理页框，未命中时遍历多级页表。页表项还保存读写、用户态、执行权限以及页面是否存在等状态。 CPU 产生虚拟地址 → 查询 TLB → 遍历多级页表 → 组合物...">
+    <meta name="twitter:description" content="从虚拟地址拆分、TLB、多级页表和缺页异常出发，解释 MMU 翻译路径及其可观测边界。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -172,9 +172,9 @@
     <div class="tocbot-list">
     </div>
     <div class="tocbot-list-menu">
-        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
-        <a onclick="go_top()">Back to top</a>
-        <a onclick="go_bottom()">Go to bottom</a>
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
     </div>
 </div>
 
@@ -212,7 +212,7 @@
         tocbot.refresh(obj_merge(tocbot_default_config, {
             collapseDepth: expanded ? 1 : DEPTH_MAX
         }));
-        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+        b.innerText = expanded ? '展开全部' : '收起目录';
     }
 
     function go_top() {
@@ -232,6 +232,7 @@
         return target;
     }
 </script>
+
     
 
     
@@ -241,7 +242,7 @@
             
                 <div class="post-meta">
                     
-                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
                     
 
                     
@@ -251,7 +252,7 @@
                     
                     
                         <span class="post-category">
-                    Category:
+                    分类：
                             
                                 <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
                             
@@ -264,17 +265,21 @@
         </header>
 
         <div class="post-content">
-            <p>CPU 执行程序时产生虚拟地址，MMU 根据页表把它翻译为物理地址。虚拟内存让每个进程拥有独立地址空间，也使权限隔离、按需分页和内存映射成为可能。</p>
-<h2 id="地址翻译"><a href="#地址翻译" class="headerlink" title="地址翻译"></a>地址翻译</h2><p>MMU 先查 TLB；命中时直接得到物理页框，未命中时遍历多级页表。页表项还保存读写、用户态、执行权限以及页面是否存在等状态。</p>
+            <p>用户程序看到的是虚拟地址。MMU 按操作系统建立的页表把虚拟页映射到物理页框，同时检查用户&#x2F;内核、读&#x2F;写和可执行权限。这样每个进程可以拥有独立地址空间，同一物理页也能被多个地址空间共享。地址翻译主要由硬件完成，但页表内容、缺页处理和映射生命周期由内核管理。</p>
+<h2 id="地址怎样被拆开"><a href="#地址怎样被拆开" class="headerlink" title="地址怎样被拆开"></a>地址怎样被拆开</h2><p>以多级页表为例，虚拟地址被拆成多级索引和页内偏移。每一级页表项指向下一级表，最后一级给出物理页框号和权限位。最终物理地址由页框基址与页内偏移组合而成。具体级数、位宽和大页形式由架构与内核配置决定，不能把 x86-64 的字段直接套到 ARM64 或 RISC-V。</p>
 <div class="note-flow"><span>CPU 产生虚拟地址</span><i>→</i><span>查询 TLB</span><i>→</i><span>遍历多级页表</span><i>→</i><span>组合物理地址</span><i>→</i><span>访问缓存或内存</span></div>
 
-<h2 id="记忆要点"><a href="#记忆要点" class="headerlink" title="记忆要点"></a>记忆要点</h2><ul>
-<li>TLB 缓存的是地址翻译，不是普通数据。</li>
-<li>页越大，TLB 覆盖范围越大，但内部碎片也可能增加。</li>
-<li>页表项无效或权限不符会触发缺页异常，由内核决定补页还是发送信号。</li>
-</ul>
-<p>一句话回答：<strong>MMU 在硬件中执行翻译，页表由操作系统建立，TLB 用来避免每次都走完整页表。</strong></p>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494575&idx=1&sn=c6d2a9bfd8711a09643a02fd9d170872">不懂 MMU，别再说你懂 Linux 内核了</a></p>
+<div class="note-map"><span><b>虚拟页号</b><small>多级页表索引的来源</small></span><span><b>页内偏移</b><small>翻译前后保持不变</small></span><span><b>页表项</b><small>页框、权限、存在与状态位</small></span><span><b>TLB</b><small>缓存最近使用的翻译结果</small></span><span><b>ASID/PCID</b><small>帮助区分地址空间，减少无谓刷新</small></span><span><b>缺页异常</b><small>把无法完成的访问交回内核判断</small></span></div>
+
+<h2 id="TLB-命中与页表遍历"><a href="#TLB-命中与页表遍历" class="headerlink" title="TLB 命中与页表遍历"></a>TLB 命中与页表遍历</h2><p>MMU 先查询 TLB。命中后可以直接得到页框和权限；未命中时，硬件通常发起页表遍历，并把成功结果填入 TLB。页表遍历本身也要读取内存，所以处理器会使用专门缓存和并行机制减小代价。TLB shootdown 则发生在映射或权限变化后：其他 CPU 上可能缓存了旧翻译，内核需要让相关条目失效。</p>
+<p>TLB miss 与 page fault 不是同一件事。前者可能在硬件遍历成功后悄无声息地结束；只有页表项不存在、权限不符或架构定义的其他异常条件出现时，CPU 才进入缺页异常处理。</p>
+<h2 id="在-Linux-上观察映射"><a href="#在-Linux-上观察映射" class="headerlink" title="在 Linux 上观察映射"></a>在 Linux 上观察映射</h2><p><code>/proc/&lt;pid&gt;/maps</code> 展示 VMA，<code>smaps</code> 提供更细的驻留和共享统计。它们描述的是内核视角的映射与内存记账，不直接展示每次硬件页表遍历。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pid=$$</span><br><span class="line"><span class="built_in">head</span> -n 20 /proc/<span class="variable">$pid</span>/maps</span><br><span class="line">sed -n <span class="string">&#x27;1,35p&#x27;</span> /proc/<span class="variable">$pid</span>/smaps</span><br><span class="line">perf <span class="built_in">stat</span> -e page-faults,minor-faults,major-faults -- ./your_app</span><br></pre></td></tr></table></figure>
+
+<p>若要读取 <code>/proc/&lt;pid&gt;/pagemap</code> 或物理页框信息，还会受到权限和内核安全策略限制。即便拿到页表相关数据，也不能据此推断某一时刻的 TLB 内容。</p>
+<h2 id="大页为什么不是免费加速"><a href="#大页为什么不是免费加速" class="headerlink" title="大页为什么不是免费加速"></a>大页为什么不是免费加速</h2><p>大页能用一个 TLB 条目覆盖更多内存，并减少页表层级和页表内存，但可能增加内部碎片、内存规整和分配失败风险。Transparent Huge Pages 是否有益取决于工作集、访问模式与延迟目标，应结合 <code>smaps</code>、缺页延迟和业务指标验证。</p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文使用架构无关的概念解释流程，没有给出固定页表级数、TLB 容量或访问周期。分析具体机器时必须结合架构手册、内核配置、页大小和性能计数器。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/mm/page_tables.html">Linux page tables</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/admin-guide/mm/pagemap.html">Examining process page tables</a> · <a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494575&idx=1&sn=c6d2a9bfd8711a09643a02fd9d170872">不懂 MMU，别再说你懂 Linux 内核了</a></p>
 
         </div>
 
@@ -282,19 +287,19 @@
             <section class="post-copyright">
                 
                     <p class="copyright-item">
-                        <span>Author:</span>
+                        <span>作者：</span>
                         <span>Quchaosheng</span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>Permalink:</span>
+                        <span>永久链接：</span>
                         <span><a href="https://quchaosheng.github.io/2026/07/29/linux-mmu-address-translation/">https://quchaosheng.github.io/2026/07/29/linux-mmu-address-translation/</a></span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>License:</span>
+                        <span>许可协议：</span>
                         <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
                     </p>
                 
@@ -302,9 +307,33 @@
 
             </section>
         
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/linux-numa-memory-access/">
+                            <span>NUMA：CPU 为什么更偏爱本地内存</span>
+                            <time datetime="2026-07-29T08:09:18.000Z">2026-07-29</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/linux-page-fault-walk/">
+                            <span>缺页异常与页表遍历：一次内存访问的补救过程</span>
+                            <time datetime="2026-07-29T08:09:18.000Z">2026-07-29</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/why-stack-allocation-is-faster-than-heap/">
+                            <span>为什么栈的内存分配通常比堆更快？</span>
+                            <time datetime="2026-07-29T07:35:36.000Z">2026-07-29</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
         <section class="post-tags">
             <div>
-                <span>Tag(s):</span>
+                <span>标签：</span>
                 <span class="tag">
                     
                     
@@ -320,9 +349,9 @@
                 </span>
             </div>
             <div>
-                <a href="javascript:window.history.back();">back</a>
+                <a href="javascript:window.history.back();">返回</a>
                 <span>· </span>
-                <a href="/">home</a>
+                <a href="/">首页</a>
             </div>
         </section>
         <section class="post-nav">

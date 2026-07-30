@@ -172,9 +172,9 @@
     <div class="tocbot-list">
     </div>
     <div class="tocbot-list-menu">
-        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
-        <a onclick="go_top()">Back to top</a>
-        <a onclick="go_bottom()">Go to bottom</a>
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
     </div>
 </div>
 
@@ -212,7 +212,7 @@
         tocbot.refresh(obj_merge(tocbot_default_config, {
             collapseDepth: expanded ? 1 : DEPTH_MAX
         }));
-        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+        b.innerText = expanded ? '展开全部' : '收起目录';
     }
 
     function go_top() {
@@ -232,6 +232,7 @@
         return target;
     }
 </script>
+
     
 
     
@@ -241,7 +242,7 @@
             
                 <div class="post-meta">
                     
-                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
                     
 
                     
@@ -251,7 +252,7 @@
                     
                     
                         <span class="post-category">
-                    Category:
+                    分类：
                             
                                 <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
                             
@@ -279,19 +280,19 @@
             <section class="post-copyright">
                 
                     <p class="copyright-item">
-                        <span>Author:</span>
+                        <span>作者：</span>
                         <span>Quchaosheng</span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>Permalink:</span>
+                        <span>永久链接：</span>
                         <span><a href="https://quchaosheng.github.io/2026/07/29/riscv-kvm-virtualization/">https://quchaosheng.github.io/2026/07/29/riscv-kvm-virtualization/</a></span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>License:</span>
+                        <span>许可协议：</span>
                         <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
                     </p>
                 
@@ -299,25 +300,49 @@
 
             </section>
         
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/linux-page-fault-walk/">
+                            <span>缺页异常与页表遍历：一次内存访问的补救过程</span>
+                            <time datetime="2026-07-29T08:09:18.000Z">2026-07-29</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/riscv-interrupt/">
+                            <span>RISC-V 中断：从外设信号到处理函数</span>
+                            <time datetime="2026-07-29T08:09:18.000Z">2026-07-29</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/riscv-nommu-linux/">
+                            <span>RISC-V Non-MMU Linux：没有虚拟内存怎样运行应用</span>
+                            <time datetime="2026-03-23T06:00:00.000Z">2026-03-23</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
         <section class="post-tags">
             <div>
-                <span>Tag(s):</span>
+                <span>标签：</span>
                 <span class="tag">
                     
                     
                         <a href="/tag/%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98/"># 虚拟内存</a>
                     
-                        <a href="/tag/RISC-V/"># RISC-V</a>
-                    
                         <a href="/tag/KVM/"># KVM</a>
+                    
+                        <a href="/tag/RISC-V/"># RISC-V</a>
                     
                         
                 </span>
             </div>
             <div>
-                <a href="javascript:window.history.back();">back</a>
+                <a href="javascript:window.history.back();">返回</a>
                 <span>· </span>
-                <a href="/">home</a>
+                <a href="/">首页</a>
             </div>
         </section>
         <section class="post-nav">
