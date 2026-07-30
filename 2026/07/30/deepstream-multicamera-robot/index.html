@@ -146,6 +146,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -177,10 +242,26 @@
         </header>
 
         <div class="post-content">
-            <p>DeepStream 基于 GStreamer 组织解码、预处理、批处理、推理、跟踪和消息输出，适合同时处理多路相机。它能减少重复的数据搬运与管线代码，但批处理等待、视频缓冲和跟踪器状态也会增加机器人感知时延。</p>
+            <p>当机器人同时挂着前视、侧视、深度或鱼眼相机时，逐路手写“解码、缩放、推理、跟踪、发布 ROS 2 消息”很快会变成难以维护的管线。DeepStream 基于 GStreamer 组织这些阶段，可将硬件解码、GPU 预处理、TensorRT 推理、跟踪和元数据传递串起来。它擅长多流吞吐，但机器人更在意每条视频从采集到被决策模块消费时已经“老了多久”。</p>
 <div class="note-flow"><span>多路相机采集</span><i>→</i><span>硬件解码与预处理</span><i>→</i><span>组批进入 TensorRT</span><i>→</i><span>目标跟踪与元数据</span><i>→</i><span>ROS 2 节点消费结果</span></div>
 
-<p>移动机器人应按控制周期设置批大小、超时和丢帧策略，并保留原始采集时间戳。吞吐量最高的配置未必有最小感知年龄，评估指标应包含“图像产生到决策使用”的总时延。参考：<a target="_blank" rel="noopener" href="https://docs.nvidia.com/metropolis/deepstream/dev-guide/">DeepStream SDK Documentation</a></p>
+<h2 id="DeepStream-管线里有哪些关键部件"><a href="#DeepStream-管线里有哪些关键部件" class="headerlink" title="DeepStream 管线里有哪些关键部件"></a>DeepStream 管线里有哪些关键部件</h2><p>在典型 GStreamer 图中，source 负责输入，解码器将压缩视频变成帧，<code>nvstreammux</code> 汇聚多路帧，<code>nvinfer</code> 执行 TensorRT 推理，<code>nvtracker</code> 在帧间保持目标 ID，后续组件再做显示、编码或消息输出。每个组件都可能有自己的队列和缓存策略。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">camera / RTSP source</span><br><span class="line">  -&gt; hardware decoder</span><br><span class="line">  -&gt; nvstreammux (batch, timeout)</span><br><span class="line">  -&gt; nvinfer (TensorRT engine)</span><br><span class="line">  -&gt; nvtracker / custom postprocess</span><br><span class="line">  -&gt; ROS 2 bridge (objects, original timestamp)</span><br></pre></td></tr></table></figure>
+
+<p>对机器人来说，最值得盯住的是 <code>nvstreammux</code> 的批大小与等待超时。较大的 batch 可能提高 GPU 利用率，却会让一条已经到达的前视帧等待其他相机；这是视频分析服务可以接受、移动机器人却常常不能接受的取舍。</p>
+<h2 id="不要只量吞吐量"><a href="#不要只量吞吐量" class="headerlink" title="不要只量吞吐量"></a>不要只量吞吐量</h2><p>至少区分三个指标：</p>
+<ul>
+<li><strong>吞吐量</strong>：每秒处理多少帧，适合评估资源上限。</li>
+<li><strong>推理延迟</strong>：帧进入模型到得到网络输出的时间。</li>
+<li><strong>感知年龄</strong>：控制或规划使用结果时，距原始相机曝光已过去的时间。</li>
+</ul>
+<p>例如 30 FPS 的系统可能每帧推理只需 12 ms，但若 pipeline 累积了 8 帧，规划器拿到的其实是 250 ms 前的世界。对移动底盘而言，这比模型快慢更危险。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">perception_age = planner_consume_time - camera_capture_stamp</span><br><span class="line">pipeline_wait  = inference_start - camera_capture_stamp</span><br></pre></td></tr></table></figure>
+
+<p>所有进入 ROS 2 的检测、跟踪和深度结果都应保留原始采集时间戳，而不是只在发布时填 <code>now()</code>。否则日志会把“旧帧很快发布”误判成“新帧很快处理”。</p>
+<h2 id="与机器人控制层的边界"><a href="#与机器人控制层的边界" class="headerlink" title="与机器人控制层的边界"></a>与机器人控制层的边界</h2><p>ROS 2 bridge 最好发布结构化、有限的语义信息，例如目标类别、2D&#x2F;3D 位置、置信度、帧号和时间戳。任务层再根据对象年龄、置信度和当前地图决定是否执行动作。控制器不直接依赖视频管线存活：当相机&#x2F;DeepStream 进程异常时，应获得明确的失效状态，进入低速、暂停或停车策略。</p>
+<p>多相机校准也不可省略。相机间的外参、曝光时间和时钟不同步，会让跟踪器把同一目标看成两个目标，或让后续三维融合出现错位。先用单相机跑通时间戳和失效处理，再增加 batch 和更多传感器，排障成本会低很多。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.nvidia.com/metropolis/deepstream/dev-guide/">DeepStream SDK Documentation</a> · <a target="_blank" rel="noopener" href="https://gstreamer.freedesktop.org/documentation/application-development/">GStreamer Application Development Manual</a></p>
 
         </div>
 
