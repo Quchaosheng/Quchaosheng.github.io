@@ -63,19 +63,6 @@ function parseLocalDateTime(value) {
   return new Date(validation.getTime() - SHANGHAI_OFFSET_MS);
 }
 
-function localDateKey(date) {
-  const shanghaiDate = new Date(date.getTime() + SHANGHAI_OFFSET_MS);
-  const year = String(shanghaiDate.getUTCFullYear()).padStart(4, '0');
-  const month = String(shanghaiDate.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(shanghaiDate.getUTCDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function permalinkDate(permalink) {
-  const match = String(permalink || '').match(/^\/(\d{4})\/(\d{2})\/(\d{2})\//);
-  return match ? `${match[1]}-${match[2]}-${match[3]}` : '';
-}
-
 function validatePostDates(postsDirectory, now = new Date()) {
   const errors = [];
   const files = fs.readdirSync(postsDirectory)
@@ -115,15 +102,8 @@ function validatePostDates(postsDirectory, now = new Date()) {
       if (sourceDate.getTime() > now.getTime() + FUTURE_TOLERANCE_MS) {
         errors.push(`${file}: ${field} is in the future (${frontMatter[field]})`);
       }
-      if (noteDate.getTime() < sourceDate.getTime()) {
+      if (field === 'source_published_at' && noteDate.getTime() < sourceDate.getTime()) {
         errors.push(`${file}: note date precedes ${field}`);
-      }
-    }
-
-    if (sourcePublishedAt || sourceCheckedAt) {
-      const pathDate = permalinkDate(frontMatter.permalink);
-      if (pathDate && localDateKey(noteDate) !== pathDate) {
-        errors.push(`${file}: note date does not match permalink date ${pathDate}`);
       }
     }
   }

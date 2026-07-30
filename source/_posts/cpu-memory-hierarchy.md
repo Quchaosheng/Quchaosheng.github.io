@@ -1,6 +1,6 @@
 ---
 title: CPU 很快，为什么取数据仍然很慢
-date: 2026-07-29 16:09:18
+date: 2026-04-17 10:00:00
 source_checked_at: 2026-07-29 16:09:18
 permalink: /2026/07/29/cpu-memory-hierarchy/
 categories: [技术, 计算机体系结构]

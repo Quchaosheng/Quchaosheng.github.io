@@ -1,6 +1,6 @@
 ---
 title: Linux 设备驱动模型：总线、设备和驱动如何相遇
-date: 2026-07-29 16:09:18
+date: 2026-04-17 20:00:00
 source_checked_at: 2026-07-29 16:09:18
 permalink: /2026/07/29/linux-device-model/
 categories: [技术, 嵌入式Linux]

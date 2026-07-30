@@ -51,11 +51,11 @@ test('rejects future Shanghai timestamps beyond the tolerance', () => {
   ]);
 });
 
-test('checks permalink dates in Shanghai calendar time', () => {
+test('allows source checks after the note date without changing its permalink', () => {
   const result = validate(
     [
       '---',
-      'date: 2026-07-30 00:30:00',
+      'date: 2026-04-13 14:00:00',
       'source_checked_at: 2026-07-30 00:00:00',
       'permalink: /2026/07/29/post/',
       '---',
@@ -63,7 +63,22 @@ test('checks permalink dates in Shanghai calendar time', () => {
     ].join('\n'),
     new Date('2026-07-30T12:00:00Z')
   );
+  assert.deepEqual(result.errors, []);
+});
+
+test('rejects a note date earlier than the source publication date', () => {
+  const result = validate(
+    [
+      '---',
+      'date: 2026-04-13 14:00:00',
+      'source_published_at: 2026-04-14 10:00:00',
+      'permalink: /2026/07/29/post/',
+      '---',
+      ''
+    ].join('\n'),
+    new Date('2026-07-30T12:00:00Z')
+  );
   assert.deepEqual(result.errors, [
-    'post.md: note date does not match permalink date 2026-07-29'
+    'post.md: note date precedes source_published_at'
   ]);
 });

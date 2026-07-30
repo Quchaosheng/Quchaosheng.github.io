@@ -1,6 +1,6 @@
 ---
 title: procfs：把内核运行状态投影成文件
-date: 2026-07-29 17:36:41
+date: 2026-05-08 10:00:00
 source_checked_at: 2026-07-29 17:36:41
 permalink: /2026/07/29/linux-procfs/
 categories: [技术, Linux内核]

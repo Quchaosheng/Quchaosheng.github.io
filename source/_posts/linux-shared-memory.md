@@ -1,6 +1,6 @@
 ---
 title: Linux 共享内存：少复制不等于零成本
-date: 2026-07-29 16:09:18
+date: 2026-04-16 10:00:00
 source_checked_at: 2026-07-29 16:09:18
 permalink: /2026/07/29/linux-shared-memory/
 categories: [技术, Linux内核]
