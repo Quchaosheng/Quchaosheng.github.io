@@ -18,14 +18,14 @@
 
 <title>Projects | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="项目证据说明 这些项目按实际验证环境展示。 vcan 、Gazebo 和 QEMU 是可复现的软件或虚拟硬件证据，不等于物理执行器验证。 RoboTraceOpt 主线： RuntimeEvent v2 → ROS 2 tracing &amp;#x2F; eBPF &amp;#x2F; SocketCAN 适配 → 类型化证据图 → 可审计诊断 → 受约束的配置优化...">
+    <meta name="description" content="项目说明 这里放的是可以直接看代码和运行说明的项目。每个项目页都会写清它做什么、在哪个环境跑过，以及哪些结论还不能下。 vcan 、Gazebo 和 QEMU 只能说明软件或仿真路径跑通，不能代替真机测试。 RoboTraceOpt 用来把 ROS 2 事件、调度 trace 和 CAN ACK 放在一起排查超时和抖动。 仓库已有 RuntimeEve...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/projects/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Projects | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="项目证据说明 这些项目按实际验证环境展示。 vcan 、Gazebo 和 QEMU 是可复现的软件或虚拟硬件证据，不等于物理执行器验证。 RoboTraceOpt 主线： RuntimeEvent v2 → ROS 2 tracing &amp;#x2F; eBPF &amp;#x2F; SocketCAN 适配 → 类型化证据图 → 可审计诊断 → 受约束的配置优化...">
+    <meta property="og:description" content="项目说明 这里放的是可以直接看代码和运行说明的项目。每个项目页都会写清它做什么、在哪个环境跑过，以及哪些结论还不能下。 vcan 、Gazebo 和 QEMU 只能说明软件或仿真路径跑通，不能代替真机测试。 RoboTraceOpt 用来把 ROS 2 事件、调度 trace 和 CAN ACK 放在一起排查超时和抖动。 仓库已有 RuntimeEve...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/projects/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Projects | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="项目证据说明 这些项目按实际验证环境展示。 vcan 、Gazebo 和 QEMU 是可复现的软件或虚拟硬件证据，不等于物理执行器验证。 RoboTraceOpt 主线： RuntimeEvent v2 → ROS 2 tracing &amp;#x2F; eBPF &amp;#x2F; SocketCAN 适配 → 类型化证据图 → 可审计诊断 → 受约束的配置优化...">
+    <meta name="twitter:description" content="项目说明 这里放的是可以直接看代码和运行说明的项目。每个项目页都会写清它做什么、在哪个环境跑过，以及哪些结论还不能下。 vcan 、Gazebo 和 QEMU 只能说明软件或仿真路径跑通，不能代替真机测试。 RoboTraceOpt 用来把 ROS 2 事件、调度 trace 和 CAN ACK 放在一起排查超时和抖动。 仓库已有 RuntimeEve...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -171,41 +171,36 @@
         <h2 class="post-title">Projects</h2>
         
         <section class="post-content">
-            <h2 id="项目证据说明"><a href="#项目证据说明" class="headerlink" title="项目证据说明"></a>项目证据说明</h2><p>这些项目按实际验证环境展示。<code>vcan</code>、Gazebo 和 QEMU 是可复现的软件或虚拟硬件证据，不等于物理执行器验证。</p>
+            <h2 id="项目说明"><a href="#项目说明" class="headerlink" title="项目说明"></a>项目说明</h2><p>这里放的是可以直接看代码和运行说明的项目。每个项目页都会写清它做什么、在哪个环境跑过，以及哪些结论还不能下。<code>vcan</code>、Gazebo 和 QEMU 只能说明软件或仿真路径跑通，不能代替真机测试。</p>
 <h3 id="RoboTraceOpt"><a href="#RoboTraceOpt" class="headerlink" title="RoboTraceOpt"></a>RoboTraceOpt</h3><ul>
-<li><strong>主线：</strong> RuntimeEvent v2 → ROS 2 tracing &#x2F; eBPF &#x2F; SocketCAN 适配 → 类型化证据图 → 可审计诊断 → 受约束的配置优化</li>
-<li><strong>已有实现：</strong> 三类 ROS 2 工作负载插桩、拓扑约束的 trace-stage 关联、冲突与不确定性处理、候选方案验证和离线回滚决策</li>
-<li><strong>证据边界：</strong> WSL、RuntimeEvent-only 与 vcan 是开发或代理证据；正式调度器归因和 X5 结论仍需合格的原生 Linux 或 X5 实测会话</li>
-<li><a href="/projects/robotraceopt/">项目详情与证据边界</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/RoboTraceOpt">源码、运行说明与预检流程</a></li>
+<li>用来把 ROS 2 事件、调度 trace 和 CAN ACK 放在一起排查超时和抖动。</li>
+<li>仓库已有 RuntimeEvent 插桩、trace 关联、诊断和配置尝试的代码。</li>
+<li>WSL、RuntimeEvent-only 和 vcan 只用于开发检查；调度器问题和 X5 上的结论还要在原生环境测。</li>
+<li><a href="/projects/robotraceopt/">看项目说明</a> · <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/RoboTraceOpt">源码与运行步骤</a></li>
 </ul>
 <h3 id="Embodied-Agent-Runtime"><a href="#Embodied-Agent-Runtime" class="headerlink" title="Embodied Agent Runtime"></a>Embodied Agent Runtime</h3><ul>
-<li><strong>主线：</strong> AI 输入 → 严格任务契约 → ROS 2 Action → SocketCAN</li>
-<li><strong>已验证：</strong> X5&#x2F;Humble、UVC ArUco、双 CANable 通信、受限真实 Provider 集成</li>
-<li><strong>未验证：</strong> 电机运动、硬件急停、闭环机器人控制</li>
-<li><a href="/projects/embodied-agent-runtime/">项目详情与证据边界</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/embodied-agent-runtime">源码与演示</a></li>
+<li>模型或视觉模块只能提交允许的工作流，不能直接发 CAN 帧。</li>
+<li>已跑过 X5&#x2F;Humble、UVC ArUco、双 CANable 和受限 Provider 的链路。</li>
+<li>还没有拿它验证电机运动、硬件急停或闭环控制。</li>
+<li><a href="/projects/embodied-agent-runtime/">看项目说明</a> · <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/embodied-agent-runtime">源码与演示</a></li>
 </ul>
 <h3 id="ros2-control-vcan-Motor-Demo"><a href="#ros2-control-vcan-Motor-Demo" class="headerlink" title="ros2_control vcan Motor Demo"></a>ros2_control vcan Motor Demo</h3><ul>
-<li><strong>主线：</strong> <code>cmd_vel</code> → <code>ros2_control</code> → SocketCAN → 双虚拟电机</li>
-<li><strong>已验证：</strong> ACK、feedback、watchdog、bus-off、超时与 safe-stop</li>
-<li><strong>边界：</strong> 不模拟真实电机负载和电气 CAN</li>
-<li><a href="/projects/ros2-control-vcan/">项目详情与证据边界</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/ros2-control-vcan-motor-demo">源码与演示</a></li>
+<li>把 <code>cmd_vel</code> 经过 <code>ros2_control</code> 和 SocketCAN 送到两只虚拟电机。</li>
+<li>可以复现 ACK、反馈、watchdog、bus-off、超时和 safe-stop。</li>
+<li>没有模拟真实电机负载和电气 CAN。</li>
+<li><a href="/projects/ros2-control-vcan/">看项目说明</a> · <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/ros2-control-vcan-motor-demo">源码与演示</a></li>
 </ul>
 <h3 id="AprilTag-Docking-Demo"><a href="#AprilTag-Docking-Demo" class="headerlink" title="AprilTag Docking Demo"></a>AprilTag Docking Demo</h3><ul>
-<li><strong>主线：</strong> AprilTag 观测 → Guard → Nav2 Docking</li>
-<li><strong>已验证：</strong> Gazebo 仿真、任务触发、取消与 Tag 状态策略</li>
-<li><strong>边界：</strong> 未声明真实机器人自主停靠</li>
-<li><a href="/projects/apriltag-docking/">项目详情与证据边界</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo">源码与演示</a></li>
+<li>在 Gazebo 中把 AprilTag 观测、Guard 和 Nav2 Docking 接起来。</li>
+<li>已测试任务触发、取消和 Tag 状态处理。</li>
+<li>这不是一套真机自主停靠验证。</li>
+<li><a href="/projects/apriltag-docking/">看项目说明</a> · <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo">源码与演示</a></li>
 </ul>
 <h3 id="Quard-Star-RISC-V64"><a href="#Quard-Star-RISC-V64" class="headerlink" title="Quard Star RISC-V64"></a>Quard Star RISC-V64</h3><ul>
-<li><strong>主线：</strong> OpenSBI → 七核 SMP C 内核 + 独立 FreeRTOS hart</li>
-<li><strong>已验证：</strong> QEMU&#x2F;TAP、VirtIO、FatFs、TCP&#x2F;IP、PMP 双向隔离</li>
-<li><strong>边界：</strong> 隔离和性能数据仅适用于 QEMU 模型</li>
-<li><a href="/projects/quard-star-riscv64/">项目详情与证据边界</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/quard-star-riscv64-net">源码与证据回放</a></li>
+<li>用 OpenSBI 启动七个普通内核 hart 和一个独立 FreeRTOS hart。</li>
+<li>在 QEMU&#x2F;TAP 中测试了 VirtIO、FatFs、TCP&#x2F;IP 和 PMP 隔离。</li>
+<li>隔离和性能结论目前只适用于 QEMU 模型。</li>
+<li><a href="/projects/quard-star-riscv64/">看项目说明</a> · <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/quard-star-riscv64-net">源码与测试记录</a></li>
 </ul>
 
         </section>

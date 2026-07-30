@@ -18,14 +18,14 @@
 
 <title>精选阅读 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="CURATED READING 外部资料在这里以“来源、适用问题、自己的延伸笔记”组织。只保留短摘要和原文链接，不复制原文；读完后最好用一个小实验或一篇站内笔记把理解落下来。 读原始资料 → 记录工程问题 → 做最小复现 → 写自己的结论 → 留下证据与链接 LINUX KERNEL DOCS osnoise tracer 适合在实时任务出现尾延迟时，...">
+    <meta name="description" content="外部资料 这里放官方文档、上游项目和对应的站内笔记。每条只留一句说明和原文链接，方便知道该从哪里开始。 读完一篇资料后，最好在自己的环境里跑一个小例子，再把遇到的问题记下来。只收藏链接，通常很快就会忘记它为什么有用。 LINUX KERNEL DOCS osnoise tracer 实时任务出现尾延迟时，用它检查 IRQ、softirq、调度、NMI/...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/reading/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="website">
 <meta property="og:title" content="精选阅读 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="CURATED READING 外部资料在这里以“来源、适用问题、自己的延伸笔记”组织。只保留短摘要和原文链接，不复制原文；读完后最好用一个小实验或一篇站内笔记把理解落下来。 读原始资料 → 记录工程问题 → 做最小复现 → 写自己的结论 → 留下证据与链接 LINUX KERNEL DOCS osnoise tracer 适合在实时任务出现尾延迟时，...">
+    <meta property="og:description" content="外部资料 这里放官方文档、上游项目和对应的站内笔记。每条只留一句说明和原文链接，方便知道该从哪里开始。 读完一篇资料后，最好在自己的环境里跑一个小例子，再把遇到的问题记下来。只收藏链接，通常很快就会忘记它为什么有用。 LINUX KERNEL DOCS osnoise tracer 实时任务出现尾延迟时，用它检查 IRQ、softirq、调度、NMI/...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/reading/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="精选阅读 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="CURATED READING 外部资料在这里以“来源、适用问题、自己的延伸笔记”组织。只保留短摘要和原文链接，不复制原文；读完后最好用一个小实验或一篇站内笔记把理解落下来。 读原始资料 → 记录工程问题 → 做最小复现 → 写自己的结论 → 留下证据与链接 LINUX KERNEL DOCS osnoise tracer 适合在实时任务出现尾延迟时，...">
+    <meta name="twitter:description" content="外部资料 这里放官方文档、上游项目和对应的站内笔记。每条只留一句说明和原文链接，方便知道该从哪里开始。 读完一篇资料后，最好在自己的环境里跑一个小例子，再把遇到的问题记下来。只收藏链接，通常很快就会忘记它为什么有用。 LINUX KERNEL DOCS osnoise tracer 实时任务出现尾延迟时，用它检查 IRQ、softirq、调度、NMI/...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -172,15 +172,19 @@
         
         <section class="post-content">
             <div class="page-lead">
-  <p class="section-kicker">CURATED READING</p>
-  <p>外部资料在这里以“来源、适用问题、自己的延伸笔记”组织。只保留短摘要和原文链接，不复制原文；读完后最好用一个小实验或一篇站内笔记把理解落下来。</p>
+  <p class="section-kicker">外部资料</p>
+  <p>这里放官方文档、上游项目和对应的站内笔记。每条只留一句说明和原文链接，方便知道该从哪里开始。</p>
 </div>
 
-<div class="note-flow"><span>读原始资料</span><i>→</i><span>记录工程问题</span><i>→</i><span>做最小复现</span><i>→</i><span>写自己的结论</span><i>→</i><span>留下证据与链接</span></div>
+<p>读完一篇资料后，最好在自己的环境里跑一个小例子，再把遇到的问题记下来。只收藏链接，通常很快就会忘记它为什么有用。</p>
 
-<div class="resource-list"><article class="resource-item"><p class="section-kicker">LINUX KERNEL DOCS</p><h3><a href="https://docs.kernel.org/trace/osnoise-tracer.html" target="_blank" rel="noopener">osnoise tracer</a></h3><p>适合在实时任务出现尾延迟时，按 IRQ、softirq、调度、NMI/SMI 等方向收集可解释证据。</p><p class="resource-links"><a href="/2026/07/30/linux-osnoise-tracer/">站内延伸：osnoise tracer</a> · <a href="/2026/07/30/realtime-regression-baseline/">回归基线</a></p></article><article class="resource-item"><p class="section-kicker">ROS 2</p><h3><a href="https://github.com/ros2/ros2_tracing" target="_blank" rel="noopener">ros2_tracing</a></h3><p>用于理解 ROS 2 层面的追踪能力。它能提供观测信号，但系统归因仍需要与进程、调度和业务语义关联。</p><p class="resource-links"><a href="/projects/robotraceopt/">站内延伸：RoboTraceOpt</a> · <a href="/evidence/">证据日志</a></p></article><article class="resource-item"><p class="section-kicker">NVIDIA ISAAC</p><h3><a href="https://nvidia-isaac-ros.github.io/" target="_blank" rel="noopener">Isaac ROS Documentation</a></h3><p>适合在已有 ROS 2 管线后评估 GPU 加速、视觉、VSLAM 与硬件平台集成，而不是把 Isaac 当成一键解决机器人问题的总称。</p><p class="resource-links"><a href="/2026/07/30/isaac-ros-nitros-zero-copy/">NITROS 与少拷贝</a> · <a href="/2026/07/30/isaac-ros-vslam-nvblox/">VSLAM 与 nvblox</a></p></article><article class="resource-item"><p class="section-kicker">BUILD SYSTEM</p><h3><a href="https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html" target="_blank" rel="noopener">CMake Toolchains Manual</a></h3><p>交叉编译的关键是用 toolchain file 固定目标视角：编译器、sysroot、查找路径和 try-compile 都不能误回到宿主机。</p><p class="resource-links"><a href="/2026/07/29/cmake-cross-compilation/">站内延伸：CMake 交叉编译</a> · <a href="https://buildroot.org/downloads/manual/manual.html" target="_blank" rel="noopener">Buildroot Manual</a></p></article><article class="resource-item"><p class="section-kicker">LINUX BPF</p><h3><a href="https://docs.kernel.org/bpf/" target="_blank" rel="noopener">Linux BPF Documentation</a></h3><p>适合了解 eBPF 的内核接口与限制。采集本身不会自动给出根因，时间、进程身份和工作负载拓扑仍必须对齐。</p><p class="resource-links"><a href="/projects/robotraceopt/">站内延伸：跨层证据图</a> · <a href="/2026/07/29/tcp-drop-tracing/">TCP 丢包追踪</a></p></article></div>
+<div class="resource-list"><article class="resource-item"><p class="section-kicker">LINUX KERNEL DOCS</p><h3><a href="https://docs.kernel.org/trace/osnoise-tracer.html" target="_blank" rel="noopener">osnoise tracer</a></h3><p>实时任务出现尾延迟时，用它检查 IRQ、softirq、调度、NMI/SMI 等干扰。</p><p class="resource-links"><a href="/2026/07/30/linux-osnoise-tracer/">站内延伸：osnoise tracer</a> · <a href="/2026/07/30/realtime-regression-baseline/">回归基线</a></p></article><article class="resource-item"><p class="section-kicker">ROS 2</p><h3><a href="https://github.com/ros2/ros2_tracing" target="_blank" rel="noopener">ros2_tracing</a></h3><p>用来采集 ROS 2 的 trace。要找根因，还得把它和进程、调度、业务事件对起来。</p><p class="resource-links"><a href="/projects/robotraceopt/">站内延伸：RoboTraceOpt</a> · <a href="/evidence/">证据日志</a></p></article><article class="resource-item"><p class="section-kicker">NVIDIA ISAAC</p><h3><a href="https://nvidia-isaac-ros.github.io/" target="_blank" rel="noopener">Isaac ROS Documentation</a></h3><p>已有 ROS 2 管线后，可以从这里看 GPU 加速、视觉、VSLAM 和平台集成。</p><p class="resource-links"><a href="/2026/07/30/isaac-ros-nitros-zero-copy/">NITROS 与少拷贝</a> · <a href="/2026/07/30/isaac-ros-vslam-nvblox/">VSLAM 与 nvblox</a></p></article><article class="resource-item"><p class="section-kicker">BUILD SYSTEM</p><h3><a href="https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html" target="_blank" rel="noopener">CMake Toolchains Manual</a></h3><p>交叉编译时，用 toolchain file 固定编译器、sysroot、查找路径和 try-compile 的行为。</p><p class="resource-links"><a href="/2026/07/29/cmake-cross-compilation/">站内延伸：CMake 交叉编译</a> · <a href="https://buildroot.org/downloads/manual/manual.html" target="_blank" rel="noopener">Buildroot Manual</a></p></article><article class="resource-item"><p class="section-kicker">LINUX BPF</p><h3><a href="https://docs.kernel.org/bpf/" target="_blank" rel="noopener">Linux BPF Documentation</a></h3><p>这里讲 eBPF 的内核接口和限制。采集到数据后，还要把时间、进程身份和工作负载对齐。</p><p class="resource-links"><a href="/projects/robotraceopt/">站内延伸：跨层证据图</a> · <a href="/2026/07/29/tcp-drop-tracing/">TCP 丢包追踪</a></p></article></div>
 
-<h2 id="收录准则"><a href="#收录准则" class="headerlink" title="收录准则"></a>收录准则</h2><div class="note-map"><span><b>优先一手资料</b><small>官方文档、上游源码、标准、论文和真实项目仓库优先。</small></span><span><b>标明原文</b><small>每个外部观点保留可访问的原文链接与适用版本。</small></span><span><b>不整篇搬运</b><small>只写与当前工程问题有关的摘要和自己的解释。</small></span><span><b>给出边界</b><small>区分文档描述、仿真复现、台架观察和正式实验结论。</small></span><span><b>保留可操作性</b><small>优先能导向命令、代码、实验设计或排障动作的资料。</small></span><span><b>定期淘汰</b><small>失效链接、过时版本或无法核验的说法会被替换或标注。</small></span></div>
+<h2 id="收录原则"><a href="#收录原则" class="headerlink" title="收录原则"></a>收录原则</h2><ul>
+<li>优先放官方文档、上游源码、标准、论文和真实项目仓库。</li>
+<li>只摘和当前问题有关的内容，不整篇复制原文。</li>
+<li>链接失效、版本过旧或说法无法核对时，会删除或标注。</li>
+</ul>
 
         </section>
     </article>

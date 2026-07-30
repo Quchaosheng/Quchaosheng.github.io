@@ -18,14 +18,14 @@
 
 <title>CPU 隔离：为实时任务留出安静的核心 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="将实时线程绑到一个 CPU 并不意味着这个 CPU 变安静了。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能在它上面运行。CPU 隔离是一组协同配置：把普通负载和内核杂务集中到 housekeeping CPU，把真正需要低抖动的线程、其内存与必要设备路径留在实时 CPU，并持续验证还剩下什么噪声。 划分实...">
+    <meta name="description" content="把实时线程绑到一个 CPU，不代表这个 CPU 上只有它。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能抢时间。CPU 隔离要做的是把系统杂务放到 housekeeping CPU，把关键线程和必要设备路径留给实时 CPU，再检查还有哪些干扰没移走。 划分实时与 housekeeping CPU → 迁移...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/linux-cpu-isolation/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="CPU 隔离：为实时任务留出安静的核心 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="将实时线程绑到一个 CPU 并不意味着这个 CPU 变安静了。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能在它上面运行。CPU 隔离是一组协同配置：把普通负载和内核杂务集中到 housekeeping CPU，把真正需要低抖动的线程、其内存与必要设备路径留在实时 CPU，并持续验证还剩下什么噪声。 划分实...">
+    <meta property="og:description" content="把实时线程绑到一个 CPU，不代表这个 CPU 上只有它。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能抢时间。CPU 隔离要做的是把系统杂务放到 housekeeping CPU，把关键线程和必要设备路径留给实时 CPU，再检查还有哪些干扰没移走。 划分实时与 housekeeping CPU → 迁移...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/linux-cpu-isolation/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="CPU 隔离：为实时任务留出安静的核心 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="将实时线程绑到一个 CPU 并不意味着这个 CPU 变安静了。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能在它上面运行。CPU 隔离是一组协同配置：把普通负载和内核杂务集中到 housekeeping CPU，把真正需要低抖动的线程、其内存与必要设备路径留在实时 CPU，并持续验证还剩下什么噪声。 划分实...">
+    <meta name="twitter:description" content="把实时线程绑到一个 CPU，不代表这个 CPU 上只有它。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能抢时间。CPU 隔离要做的是把系统杂务放到 housekeeping CPU，把关键线程和必要设备路径留给实时 CPU，再检查还有哪些干扰没移走。 划分实时与 housekeeping CPU → 迁移...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -264,17 +264,17 @@
         </header>
 
         <div class="post-content">
-            <p>将实时线程绑到一个 CPU 并不意味着这个 CPU 变安静了。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能在它上面运行。CPU 隔离是一组协同配置：把普通负载和内核杂务集中到 housekeeping CPU，把真正需要低抖动的线程、其内存与必要设备路径留在实时 CPU，并持续验证还剩下什么噪声。</p>
+            <p>把实时线程绑到一个 CPU，不代表这个 CPU 上只有它。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能抢时间。CPU 隔离要做的是把系统杂务放到 housekeeping CPU，把关键线程和必要设备路径留给实时 CPU，再检查还有哪些干扰没移走。</p>
 <div class="note-flow"><span>划分实时与 housekeeping CPU</span><i>→</i><span>迁移 IRQ 和内核线程</span><i>→</i><span>配置 nohz_full/rcu_nocbs</span><i>→</i><span>绑定实时任务</span><i>→</i><span>追踪残余干扰</span></div>
 
 <h2 id="隔离的对象比“进程”多得多"><a href="#隔离的对象比“进程”多得多" class="headerlink" title="隔离的对象比“进程”多得多"></a>隔离的对象比“进程”多得多</h2><p><code>nohz_full</code> 让满足条件的 CPU 尽可能停止周期调度 tick；<code>rcu_nocbs</code> 将 RCU 回调从指定 CPU 卸载到其他 CPU；cpuset&#x2F;cgroup 和 <code>taskset</code> 则用来约束应用线程。它们各自解决不同的噪声来源，缺一项都可能让测试中留下规律性的尖峰。</p>
 <div class="note-map"><span><b>实时 CPU</b><small>控制线程、必要驱动路径、已锁定的资源</small></span><span><b>housekeeping CPU</b><small>系统服务、日志、网络后台、RCU 与 workqueue</small></span><span><b>nohz_full</b><small>尽量减少无任务时的周期 tick 干扰</small></span><span><b>rcu_nocbs</b><small>将 RCU callback 扔给指定的非实时 CPU</small></span><span><b>IRQ 布局</b><small>把无关设备中断从实时 CPU 移走</small></span><span><b>应用亲和性</b><small>明确每个关键线程在哪个 CPU 上运行</small></span></div>
 
-<p>一个常见的启动参数思路是让 CPU 0–1 做 housekeeping，CPU 2–3 承担实时负载，例如 <code>nohz_full=2-3 rcu_nocbs=2-3</code>。是否还需要 <code>isolcpus</code>、如何设置 IRQ 默认亲和性，取决于内核版本、cgroup 管理方式和设备拓扑；不要直接复制别人的完整命令行就上生产。</p>
+<p>一个常见的做法是让 CPU 0-1 做 housekeeping，CPU 2-3 承担实时负载，例如 <code>nohz_full=2-3 rcu_nocbs=2-3</code>。是否还需要 <code>isolcpus</code>、如何设置 IRQ 默认亲和性，取决于内核版本、cgroup 管理方式和设备拓扑；不要直接复制别人的完整命令行就上生产。</p>
 <h2 id="从“绑定”开始，而不是从启动参数开始"><a href="#从“绑定”开始，而不是从启动参数开始" class="headerlink" title="从“绑定”开始，而不是从启动参数开始"></a>从“绑定”开始，而不是从启动参数开始</h2><p>先画出 CPU 规划：哪些线程必须准时、哪些中断必须靠近设备、哪些服务可以接受延迟。然后用 <code>taskset</code> 或 cpuset 把关键线程固定，使用 <code>ps</code> 查看它们是否真的停在预期 CPU，再处理 IRQ 和后台核。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看线程调度类、实时优先级与当前所在 CPU</span></span><br><span class="line">ps -eLo pid,tid,psr,cls,rtprio,<span class="built_in">comm</span> | <span class="built_in">sort</span> -k3,3n</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看每个 CPU 收到的中断，排查实时核上不该出现的设备</span></span><br><span class="line"><span class="built_in">cat</span> /proc/interrupts</span><br></pre></td></tr></table></figure>
 
-<p>CPU 亲和性不是永久承诺。热插拔、容器 cgroup、服务重启、<code>irqbalance</code> 或启动脚本都可能改变布局。把这些检查纳入开机自检和性能回归，远比手工调通一次可靠。</p>
+<p>CPU 亲和性会变。热插拔、容器 cgroup、服务重启、<code>irqbalance</code> 和启动脚本都可能改掉布局。开机和回归测试时都检查一次，比手工调通一次更有用。</p>
 <h2 id="为什么隔离后还会有尖峰"><a href="#为什么隔离后还会有尖峰" class="headerlink" title="为什么隔离后还会有尖峰"></a>为什么隔离后还会有尖峰</h2><p>隔离不能消除共享 LLC、内存带宽、SMI、深度 C-state、DMA 竞争和设备固件。它也不能让一个实时线程在自己的 CPU 上无限计算而不影响系统。正确做法是先用隔离削掉可控噪声，再用 <code>rtla osnoise</code>、ftrace、<code>/proc/interrupts</code> 和业务日志解释剩余尖峰。</p>
 <p>验收时要在正常负载、网络满载、磁盘 I&#x2F;O、内存压力和热稳定状态下都复测。实时 CPU 真正“安静”的标准不是看起来没有普通进程，而是关键任务的最长唤醒&#x2F;执行时间在所有预期工况下都可接受。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/timers/no_hz.html">NO_HZ: The Linux Kernel Tick</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/RCU/rcu_nocb.html">RCU NO-CBs</a></p>

@@ -18,14 +18,14 @@
 
 <title>osnoise tracer：把 Linux 实时抖动拆成可解释的噪声 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="实时延迟出现尖峰时，最难回答的问题通常不是“慢了多少”，而是“这段时间谁占走了”。 osnoise tracer 在指定 CPU 上运行采样线程，比较预期可运行的时间与线程实际获得的运行时间，并将时间缺口关联到 IRQ、softirq、NMI、调度和其他内核事件。它像一台专门测系统噪声的听诊器，适合将“偶尔抖一下”拆成可追查的干扰类型。 建立采样时间窗...">
+    <meta name="description" content="实时延迟出现尖峰时，先要知道那段时间被谁占走了。 osnoise tracer 在指定 CPU 上运行采样线程，比较它本该运行的时间和实际得到的时间，再把缺口和 IRQ、softirq、NMI、调度等内核事件对上。它适合用来拆开“偶尔抖一下”到底是哪类干扰。 建立采样时间窗 → 持续读取运行时间 → 发现时间缺口 → 关联 IRQ/线程等事件 → 锁定...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/linux-osnoise-tracer/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="osnoise tracer：把 Linux 实时抖动拆成可解释的噪声 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="实时延迟出现尖峰时，最难回答的问题通常不是“慢了多少”，而是“这段时间谁占走了”。 osnoise tracer 在指定 CPU 上运行采样线程，比较预期可运行的时间与线程实际获得的运行时间，并将时间缺口关联到 IRQ、softirq、NMI、调度和其他内核事件。它像一台专门测系统噪声的听诊器，适合将“偶尔抖一下”拆成可追查的干扰类型。 建立采样时间窗...">
+    <meta property="og:description" content="实时延迟出现尖峰时，先要知道那段时间被谁占走了。 osnoise tracer 在指定 CPU 上运行采样线程，比较它本该运行的时间和实际得到的时间，再把缺口和 IRQ、softirq、NMI、调度等内核事件对上。它适合用来拆开“偶尔抖一下”到底是哪类干扰。 建立采样时间窗 → 持续读取运行时间 → 发现时间缺口 → 关联 IRQ/线程等事件 → 锁定...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/linux-osnoise-tracer/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="osnoise tracer：把 Linux 实时抖动拆成可解释的噪声 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="实时延迟出现尖峰时，最难回答的问题通常不是“慢了多少”，而是“这段时间谁占走了”。 osnoise tracer 在指定 CPU 上运行采样线程，比较预期可运行的时间与线程实际获得的运行时间，并将时间缺口关联到 IRQ、softirq、NMI、调度和其他内核事件。它像一台专门测系统噪声的听诊器，适合将“偶尔抖一下”拆成可追查的干扰类型。 建立采样时间窗...">
+    <meta name="twitter:description" content="实时延迟出现尖峰时，先要知道那段时间被谁占走了。 osnoise tracer 在指定 CPU 上运行采样线程，比较它本该运行的时间和实际得到的时间，再把缺口和 IRQ、softirq、NMI、调度等内核事件对上。它适合用来拆开“偶尔抖一下”到底是哪类干扰。 建立采样时间窗 → 持续读取运行时间 → 发现时间缺口 → 关联 IRQ/线程等事件 → 锁定...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -264,7 +264,7 @@
         </header>
 
         <div class="post-content">
-            <p>实时延迟出现尖峰时，最难回答的问题通常不是“慢了多少”，而是“这段时间谁占走了”。<code>osnoise</code> tracer 在指定 CPU 上运行采样线程，比较预期可运行的时间与线程实际获得的运行时间，并将时间缺口关联到 IRQ、softirq、NMI、调度和其他内核事件。它像一台专门测系统噪声的听诊器，适合将“偶尔抖一下”拆成可追查的干扰类型。</p>
+            <p>实时延迟出现尖峰时，先要知道那段时间被谁占走了。<code>osnoise</code> tracer 在指定 CPU 上运行采样线程，比较它本该运行的时间和实际得到的时间，再把缺口和 IRQ、softirq、NMI、调度等内核事件对上。它适合用来拆开“偶尔抖一下”到底是哪类干扰。</p>
 <div class="note-flow"><span>建立采样时间窗</span><i>→</i><span>持续读取运行时间</span><i>→</i><span>发现时间缺口</span><i>→</i><span>关联 IRQ/线程等事件</span><i>→</i><span>锁定主要噪声源</span></div>
 
 <h2 id="osnoise-与-timerlat-的分工"><a href="#osnoise-与-timerlat-的分工" class="headerlink" title="osnoise 与 timerlat 的分工"></a>osnoise 与 timerlat 的分工</h2><p><code>timerlat</code> 从定时器到期开始，关注 IRQ 延迟和被唤醒线程真正获得 CPU 的延迟；<code>osnoise</code> 则在一个 CPU 上持续观察“本应属于采样线程的时间为什么消失”。前者更适合解释周期唤醒尖峰，后者更适合枚举该 CPU 长期存在的各种噪声。二者通常应配合：先用 <code>cyclictest/timerlat</code> 发现 deadline 风险，再用 <code>osnoise</code> 和 ftrace 追根因。</p>
@@ -275,7 +275,7 @@
 
 <p>不同内核版本的 <code>rtla osnoise</code> 参数会有差异，因此更稳妥的做法是先阅读本机 <code>--help</code>，把实际命令、持续时间和阈值写入测试脚本，而不是复制一条未知版本的命令。</p>
 <h2 id="从一个缺口走到根因"><a href="#从一个缺口走到根因" class="headerlink" title="从一个缺口走到根因"></a>从一个缺口走到根因</h2><p>发现一个 300 微秒缺口后，先锁定它发生的时间窗口和 CPU。若同时看到某个网卡 IRQ 或 <code>ksoftirqd</code> 活跃，优先检查 IRQ affinity、队列和 NAPI；若 trace 中没有合理的内核事件，却在温度或 BIOS 事件附近反复出现，则继续怀疑 NMI、SMI 或固件。每次只调整一个因素，然后在同一负载、同一时间长度下复测。</p>
-<p><code>osnoise</code> 不会直接替你修复系统，它提供的是归因线索。只有把结果与业务级超时、硬件中断、功耗状态和实际负载一起保存，尖峰才会从“偶然”变成可工程化处理的问题。</p>
+<p><code>osnoise</code> 只告诉你线索，不会替你修好系统。把结果和业务超时、硬件中断、功耗状态、实际负载一起记录，才知道这次尖峰值不值得处理、该从哪里下手。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/trace/osnoise-tracer.html">OSNOISE Tracer</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/tools/rtla/index.html">rtla</a></p>
 
         </div>

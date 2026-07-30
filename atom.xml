@@ -44,7 +44,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/"/>
     <published>2026-07-26T06:00:00.000Z</published>
     <updated>2026-07-26T06:00:00.000Z</updated>
-    <summary type="html">训练模型在电脑上能跑，不代表它能在机器人上稳定地跑。TensorRT 会解析 ONNX 或其他模型表示，融合算子、选择 kernel 和内存布局，并针对目标 GPU 构建可执行的 engine。FP16 和 INT8 常能降低计算量与带宽，但机器人真正需要的是在持续输入、温度变化和其他节点抢资源时，仍能解释端到端延迟和漏检风险。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 engine → 预分配并预热推理 → 测量端到端延迟与精度 从模型文件到 engine 的四个关口 导出正确 ：固定 opset、输入名称、坐标约定和前后处理。...</summary>
+    <summary type="html">训练模型在电脑上能跑，不代表它放到机器人上就稳定。TensorRT 会解析 ONNX 等模型，融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine。FP16 和 INT8 往往能减小计算量和带宽，但还要测持续输入、温度变化和其他节点抢资源时，结果会不会变慢或过期。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 engine → 预分配并预热推理 → 测量端到端延迟与精度 从模型文件到 engine 的四个关口 导出正确 ：固定 opset、输入名称、坐标约定和前后处理。很多“推理精度下降”其实是 RGB&amp;#x...</summary>
   </entry>
   <entry>
     <title>Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU</title>
@@ -52,7 +52,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/isaac-ros-nitros-zero-copy/"/>
     <published>2026-07-25T06:00:00.000Z</published>
     <updated>2026-07-25T06:00:00.000Z</updated>
-    <summary type="html">在机器人视觉链路中，“模型只跑了 8 ms，系统却要 80 ms”很常见。原因通常不是 CUDA kernel，而是图像经过驱动、ROS 消息、颜色转换、CPU 内存和 GPU 内存时发生了多次复制与排队。Isaac ROS 的 NITROS（NVIDIA Isaac Transport for ROS）利用 ROS 2 类型适配与 GXF，让一组兼容节点协商适合硬件加速的数据格式，尽量使图像和张量在加速内存中连续流动。 相机产生图像 → NITROS 协商兼容格式 → 缓冲区留在加速内存 → GPU 节点连续处理 → 只在边界转换数据 普通链路为...</summary>
+    <summary type="html">机器人视觉链路里，模型本身只跑几毫秒，结果却晚很多才出来，很常见。时间通常花在图像从驱动到 ROS 消息、颜色转换、CPU 内存和 GPU 内存之间的复制与排队上。Isaac ROS 的 NITROS 用 ROS 2 类型适配和 GXF 让兼容节点协商数据格式，尽量让图像和张量留在加速内存里继续处理。 相机产生图像 → NITROS 协商兼容格式 → 缓冲区留在加速内存 → GPU 节点连续处理 → 只在边界转换数据 普通链路为什么容易慢 一个典型的非加速链路是：相机驱动将帧写入 CPU 内存，发布 sensor_msgs/Image ；订阅者收到...</summary>
   </entry>
   <entry>
     <title>Jetson 机器人部署：功耗、算力与实时控制怎样分工</title>
@@ -60,7 +60,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/"/>
     <published>2026-07-24T06:00:00.000Z</published>
     <updated>2026-07-24T06:00:00.000Z</updated>
-    <summary type="html">Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器集成在一块边缘板上。JetPack 将 Linux for Tegra、CUDA、TensorRT、cuDNN 和系统组件打包起来，使相机、视觉推理与 ROS 2 能在机器人本体运行。它很适合“看懂环境”和“生成任务”，但 GPU 的高吞吐量并不自动等于电机控制回路拥有可预测的最坏时延。 选择 JetPack 与功耗模式 → 部署模型和 ROS 2 节点 → 测量 CPU/GPU/内存负载 → 分离推理与实时控制 → 在温度稳定后复测长尾 Jetson 上实际要争抢哪些资源 ...</summary>
+    <summary type="html">Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。 选择 JetPack 与功耗模式 → 部署模型和 ROS 2 节点 → 测量 CPU/GPU/内存负载 → 分离推理与实时控制 → 在温度稳定后复测长尾 Jetson 上实际要争抢哪些资源 推理不只占 GPU。摄像头采集和图...</summary>
   </entry>
   <entry>
     <title>NVIDIA Physical AI 技术栈：机器人从模型到执行器要经过什么</title>
@@ -140,7 +140,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/linux-osnoise-tracer/"/>
     <published>2026-07-15T06:00:00.000Z</published>
     <updated>2026-07-15T06:00:00.000Z</updated>
-    <summary type="html">实时延迟出现尖峰时，最难回答的问题通常不是“慢了多少”，而是“这段时间谁占走了”。 osnoise tracer 在指定 CPU 上运行采样线程，比较预期可运行的时间与线程实际获得的运行时间，并将时间缺口关联到 IRQ、softirq、NMI、调度和其他内核事件。它像一台专门测系统噪声的听诊器，适合将“偶尔抖一下”拆成可追查的干扰类型。 建立采样时间窗 → 持续读取运行时间 → 发现时间缺口 → 关联 IRQ/线程等事件 → 锁定主要噪声源 osnoise 与 timerlat 的分工 timerlat 从定时器到期开始，关注 IRQ 延迟和被唤醒...</summary>
+    <summary type="html">实时延迟出现尖峰时，先要知道那段时间被谁占走了。 osnoise tracer 在指定 CPU 上运行采样线程，比较它本该运行的时间和实际得到的时间，再把缺口和 IRQ、softirq、NMI、调度等内核事件对上。它适合用来拆开“偶尔抖一下”到底是哪类干扰。 建立采样时间窗 → 持续读取运行时间 → 发现时间缺口 → 关联 IRQ/线程等事件 → 锁定主要噪声源 osnoise 与 timerlat 的分工 timerlat 从定时器到期开始，关注 IRQ 延迟和被唤醒线程真正获得 CPU 的延迟； osnoise 则在一个 CPU 上持续观察“本...</summary>
   </entry>
   <entry>
     <title>Linux 高精度定时器：实时任务为何不再依赖系统节拍</title>

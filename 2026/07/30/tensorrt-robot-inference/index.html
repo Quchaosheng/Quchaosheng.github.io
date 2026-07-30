@@ -18,14 +18,14 @@
 
 <title>TensorRT 机器人推理：从训练模型到稳定延迟 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="训练模型在电脑上能跑，不代表它能在机器人上稳定地跑。TensorRT 会解析 ONNX 或其他模型表示，融合算子、选择 kernel 和内存布局，并针对目标 GPU 构建可执行的 engine。FP16 和 INT8 常能降低计算量与带宽，但机器人真正需要的是在持续输入、温度变化和其他节点抢资源时，仍能解释端到端延迟和漏检风险。 导出 ONNX 模型...">
+    <meta name="description" content="训练模型在电脑上能跑，不代表它放到机器人上就稳定。TensorRT 会解析 ONNX 等模型，融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine。FP16 和 INT8 往往能减小计算量和带宽，但还要测持续输入、温度变化和其他节点抢资源时，结果会不会变慢或过期。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 e...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="TensorRT 机器人推理：从训练模型到稳定延迟 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="训练模型在电脑上能跑，不代表它能在机器人上稳定地跑。TensorRT 会解析 ONNX 或其他模型表示，融合算子、选择 kernel 和内存布局，并针对目标 GPU 构建可执行的 engine。FP16 和 INT8 常能降低计算量与带宽，但机器人真正需要的是在持续输入、温度变化和其他节点抢资源时，仍能解释端到端延迟和漏检风险。 导出 ONNX 模型...">
+    <meta property="og:description" content="训练模型在电脑上能跑，不代表它放到机器人上就稳定。TensorRT 会解析 ONNX 等模型，融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine。FP16 和 INT8 往往能减小计算量和带宽，但还要测持续输入、温度变化和其他节点抢资源时，结果会不会变慢或过期。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 e...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="TensorRT 机器人推理：从训练模型到稳定延迟 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="训练模型在电脑上能跑，不代表它能在机器人上稳定地跑。TensorRT 会解析 ONNX 或其他模型表示，融合算子、选择 kernel 和内存布局，并针对目标 GPU 构建可执行的 engine。FP16 和 INT8 常能降低计算量与带宽，但机器人真正需要的是在持续输入、温度变化和其他节点抢资源时，仍能解释端到端延迟和漏检风险。 导出 ONNX 模型...">
+    <meta name="twitter:description" content="训练模型在电脑上能跑，不代表它放到机器人上就稳定。TensorRT 会解析 ONNX 等模型，融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine。FP16 和 INT8 往往能减小计算量和带宽，但还要测持续输入、温度变化和其他节点抢资源时，结果会不会变慢或过期。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 e...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -264,7 +264,7 @@
         </header>
 
         <div class="post-content">
-            <p>训练模型在电脑上能跑，不代表它能在机器人上稳定地跑。TensorRT 会解析 ONNX 或其他模型表示，融合算子、选择 kernel 和内存布局，并针对目标 GPU 构建可执行的 engine。FP16 和 INT8 常能降低计算量与带宽，但机器人真正需要的是在持续输入、温度变化和其他节点抢资源时，仍能解释端到端延迟和漏检风险。</p>
+            <p>训练模型在电脑上能跑，不代表它放到机器人上就稳定。TensorRT 会解析 ONNX 等模型，融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine。FP16 和 INT8 往往能减小计算量和带宽，但还要测持续输入、温度变化和其他节点抢资源时，结果会不会变慢或过期。</p>
 <div class="note-flow"><span>导出 ONNX 模型</span><i>→</i><span>校验算子与精度</span><i>→</i><span>构建目标设备 engine</span><i>→</i><span>预分配并预热推理</span><i>→</i><span>测量端到端延迟与精度</span></div>
 
 <h2 id="从模型文件到-engine-的四个关口"><a href="#从模型文件到-engine-的四个关口" class="headerlink" title="从模型文件到 engine 的四个关口"></a>从模型文件到 engine 的四个关口</h2><p><strong>导出正确</strong>：固定 opset、输入名称、坐标约定和前后处理。很多“推理精度下降”其实是 RGB&#x2F;BGR、归一化、letterbox 或 NMS 参数和训练时不一致。</p>
@@ -274,7 +274,7 @@
 <h2 id="推理时间为什么会不稳定"><a href="#推理时间为什么会不稳定" class="headerlink" title="推理时间为什么会不稳定"></a>推理时间为什么会不稳定</h2><p>稳定延迟依赖稳定的内存生命周期。每帧 <code>cudaMalloc</code>、创建 execution context、从默认流同步、在 CPU 与 GPU 之间来回拷贝，都会引入可变成本。较好的做法是启动时创建 context 和 CUDA stream，预分配输入&#x2F;输出 buffer，做足预热，再在同一 stream 上异步投递工作。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">context-&gt;<span class="built_in">setInputShape</span>(<span class="string">&quot;images&quot;</span>, input_dims);</span><br><span class="line">context-&gt;<span class="built_in">setTensorAddress</span>(<span class="string">&quot;images&quot;</span>, device_input);</span><br><span class="line">context-&gt;<span class="built_in">setTensorAddress</span>(<span class="string">&quot;output&quot;</span>, device_output);</span><br><span class="line">context-&gt;<span class="built_in">enqueueV3</span>(stream);  <span class="comment">// 与预处理、后处理使用明确的 stream 依赖</span></span><br></pre></td></tr></table></figure>
 
-<p>这段接口只描述 TensorRT 的核心调用，实际项目还需要管理输入数据何时可读、输出何时可用，以及异常时如何丢弃过期帧。最重要的一点是：不要让控制路径等待一个已经过期的推理结果。</p>
+<p>这段接口只展示 TensorRT 的核心调用。实际项目还要管输入何时可读、输出何时可用，以及异常时怎样丢掉过期帧。控制侧不应等待已经过期的推理结果。</p>
 <h2 id="用端到端指标验收，而不是用-benchmark-骗自己"><a href="#用端到端指标验收，而不是用-benchmark-骗自己" class="headerlink" title="用端到端指标验收，而不是用 benchmark 骗自己"></a>用端到端指标验收，而不是用 benchmark 骗自己</h2><p>至少记录五个时间点：相机采集、进入预处理、开始 GPU 推理、推理完成、控制&#x2F;规划模块消费结果。由此可以同时看出模型计算时间、排队时间和感知年龄。</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">frame_age = decision_time - camera_stamp</span><br><span class="line">queue_wait = inference_start - enqueue_time</span><br><span class="line">gpu_time = inference_end - inference_start</span><br></pre></td></tr></table></figure>
 
