@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>精选阅读 | Quchaosheng&#39;s Notes</title>
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/evidence">证据</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/evidence">证据</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    <article class="post-wrap page">
+        
+        <h2 class="post-title">精选阅读</h2>
+        
+        <section class="post-content">
+            <div class="page-lead">
+  <p class="section-kicker">CURATED READING</p>
+  <p>外部资料在这里以“来源、适用问题、自己的延伸笔记”组织。只保留短摘要和原文链接，不复制原文；读完后最好用一个小实验或一篇站内笔记把理解落下来。</p>
+</div>
+
+<div class="note-flow"><span>读原始资料</span><i>→</i><span>记录工程问题</span><i>→</i><span>做最小复现</span><i>→</i><span>写自己的结论</span><i>→</i><span>留下证据与链接</span></div>
+
+<div class="resource-list"><article class="resource-item"><p class="section-kicker">LINUX KERNEL DOCS</p><h3><a href="https://docs.kernel.org/trace/osnoise-tracer.html" target="_blank" rel="noopener">osnoise tracer</a></h3><p>适合在实时任务出现尾延迟时，按 IRQ、softirq、调度、NMI/SMI 等方向收集可解释证据。</p><p class="resource-links"><a href="/2026/07/30/linux-osnoise-tracer/">站内延伸：osnoise tracer</a> · <a href="/2026/07/30/realtime-regression-baseline/">回归基线</a></p></article><article class="resource-item"><p class="section-kicker">ROS 2</p><h3><a href="https://github.com/ros2/ros2_tracing" target="_blank" rel="noopener">ros2_tracing</a></h3><p>用于理解 ROS 2 层面的追踪能力。它能提供观测信号，但系统归因仍需要与进程、调度和业务语义关联。</p><p class="resource-links"><a href="/projects/robotraceopt/">站内延伸：RoboTraceOpt</a> · <a href="/evidence/">证据日志</a></p></article><article class="resource-item"><p class="section-kicker">NVIDIA ISAAC</p><h3><a href="https://nvidia-isaac-ros.github.io/" target="_blank" rel="noopener">Isaac ROS Documentation</a></h3><p>适合在已有 ROS 2 管线后评估 GPU 加速、视觉、VSLAM 与硬件平台集成，而不是把 Isaac 当成一键解决机器人问题的总称。</p><p class="resource-links"><a href="/2026/07/30/isaac-ros-nitros-zero-copy/">NITROS 与少拷贝</a> · <a href="/2026/07/30/isaac-ros-vslam-nvblox/">VSLAM 与 nvblox</a></p></article><article class="resource-item"><p class="section-kicker">BUILD SYSTEM</p><h3><a href="https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html" target="_blank" rel="noopener">CMake Toolchains Manual</a></h3><p>交叉编译的关键是用 toolchain file 固定目标视角：编译器、sysroot、查找路径和 try-compile 都不能误回到宿主机。</p><p class="resource-links"><a href="/2026/07/29/cmake-cross-compilation/">站内延伸：CMake 交叉编译</a> · <a href="https://buildroot.org/downloads/manual/manual.html" target="_blank" rel="noopener">Buildroot Manual</a></p></article><article class="resource-item"><p class="section-kicker">LINUX BPF</p><h3><a href="https://docs.kernel.org/bpf/" target="_blank" rel="noopener">Linux BPF Documentation</a></h3><p>适合了解 eBPF 的内核接口与限制。采集本身不会自动给出根因，时间、进程身份和工作负载拓扑仍必须对齐。</p><p class="resource-links"><a href="/projects/robotraceopt/">站内延伸：跨层证据图</a> · <a href="/2026/07/29/tcp-drop-tracing/">TCP 丢包追踪</a></p></article></div>
+
+<h2 id="收录准则"><a href="#收录准则" class="headerlink" title="收录准则"></a>收录准则</h2><div class="note-map"><span><b>优先一手资料</b><small>官方文档、上游源码、标准、论文和真实项目仓库优先。</small></span><span><b>标明原文</b><small>每个外部观点保留可访问的原文链接与适用版本。</small></span><span><b>不整篇搬运</b><small>只写与当前工程问题有关的摘要和自己的解释。</small></span><span><b>给出边界</b><small>区分文档描述、仿真复现、台架观察和正式实验结论。</small></span><span><b>保留可操作性</b><small>优先能导向命令、代码、实验设计或排障动作的资料。</small></span><span><b>定期淘汰</b><small>失效链接、过时版本或无法核验的说法会被替换或标注。</small></span></div>
+
+        </section>
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>
