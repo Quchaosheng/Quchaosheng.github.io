@@ -1,6 +1,7 @@
 ---
 title: VFS 路径查找：目录字符串如何定位 inode
-date: 2026-07-29 14:06:00
+date: 2026-07-08 09:30:00
+permalink: /2026/07/29/vfs-path-lookup/
 categories: [技术, 文件系统]
 tags: [VFS, dentry, inode]
 ---

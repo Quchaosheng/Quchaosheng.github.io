@@ -1,6 +1,7 @@
 ---
 title: GDB 崩溃调试：从信号到调用栈
-date: 2026-07-29 13:13:00
+date: 2026-06-20 14:10:00
+permalink: /2026/07/29/gdb-crash-debugging/
 categories: [技术, 调试]
 tags: [GDB, CoreDump, 崩溃分析]
 ---

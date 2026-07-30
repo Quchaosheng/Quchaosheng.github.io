@@ -1,6 +1,7 @@
 ---
 title: EEVDF：从公平调度到虚拟截止时间
-date: 2026-07-29 13:04:00
+date: 2026-06-17 14:10:00
+permalink: /2026/07/29/linux-eevdf-scheduler/
 categories: [技术, Linux内核]
 tags: [EEVDF, 调度器, Linux]
 ---

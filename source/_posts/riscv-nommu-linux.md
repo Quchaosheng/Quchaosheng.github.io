@@ -1,6 +1,7 @@
 ---
 title: RISC-V Non-MMU Linux：没有虚拟内存怎样运行应用
-date: 2026-07-29 13:54:00
+date: 2026-07-04 09:30:00
+permalink: /2026/07/29/riscv-nommu-linux/
 categories: [技术, RISC-V]
 tags: [Non-MMU, uClinux, RISC-V]
 ---

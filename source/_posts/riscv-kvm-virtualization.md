@@ -1,6 +1,7 @@
 ---
 title: RISC-V KVM：Host、Guest 与两阶段地址翻译
-date: 2026-07-29 13:55:00
+date: 2026-07-04 14:10:00
+permalink: /2026/07/29/riscv-kvm-virtualization/
 categories: [技术, 虚拟化]
 tags: [KVM, RISC-V, 虚拟内存]
 ---

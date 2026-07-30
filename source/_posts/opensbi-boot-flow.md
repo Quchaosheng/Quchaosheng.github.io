@@ -1,6 +1,7 @@
 ---
 title: OpenSBI 启动流程：从 M 模式进入操作系统
-date: 2026-07-29 13:48:00
+date: 2026-07-02 09:30:00
+permalink: /2026/07/29/opensbi-boot-flow/
 categories: [技术, RISC-V]
 tags: [OpenSBI, SBI, 启动]
 ---

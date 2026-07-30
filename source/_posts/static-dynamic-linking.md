@@ -1,6 +1,7 @@
 ---
 title: 静态链接与动态链接：符号如何成为可执行程序
-date: 2026-07-29 14:05:00
+date: 2026-07-07 20:20:00
+permalink: /2026/07/29/static-dynamic-linking/
 categories: [技术, C-C++]
 tags: [链接器, ELF, 动态库]
 ---

@@ -1,6 +1,7 @@
 ---
 title: Linux 共享内存：少复制不等于零成本
-date: 2026-07-29 13:16:00
+date: 2026-06-21 14:10:00
+permalink: /2026/07/29/linux-shared-memory/
 categories: [技术, Linux内核]
 tags: [共享内存, IPC, mmap]
 ---

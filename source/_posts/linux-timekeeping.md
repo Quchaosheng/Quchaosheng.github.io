@@ -1,6 +1,7 @@
 ---
 title: Linux 时间管理：时钟源、时钟事件与定时器
-date: 2026-07-29 14:15:00
+date: 2026-07-11 09:30:00
+permalink: /2026/07/29/linux-timekeeping/
 categories: [技术, Linux内核]
 tags: [timekeeping, clocksource, timer]
 ---

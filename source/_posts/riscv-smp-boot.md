@@ -1,6 +1,7 @@
 ---
 title: RISC-V SMP 启动：多个 hart 如何加入 Linux
-date: 2026-07-29 13:50:00
+date: 2026-07-02 20:20:00
+permalink: /2026/07/29/riscv-smp-boot/
 categories: [技术, RISC-V]
 tags: [SMP, hart, Linux启动]
 ---

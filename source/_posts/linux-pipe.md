@@ -1,6 +1,7 @@
 ---
 title: Linux 管道：内核缓冲区上的字节流 IPC
-date: 2026-07-29 13:34:00
+date: 2026-06-27 14:10:00
+permalink: /2026/07/29/linux-pipe/
 categories: [技术, Linux内核]
 tags: [管道, IPC, 文件描述符]
 ---

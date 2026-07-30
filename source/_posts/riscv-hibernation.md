@@ -1,6 +1,7 @@
 ---
 title: RISC-V 休眠与恢复：把运行现场写入交换区
-date: 2026-07-29 13:52:00
+date: 2026-07-03 14:10:00
+permalink: /2026/07/29/riscv-hibernation/
 categories: [技术, RISC-V]
 tags: [休眠, 电源管理, swap]
 ---

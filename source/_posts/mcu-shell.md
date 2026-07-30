@@ -1,6 +1,7 @@
 ---
 title: MCU Shell：给嵌入式设备一个可诊断入口
-date: 2026-07-29 14:21:00
+date: 2026-07-13 09:30:00
+permalink: /2026/07/29/mcu-shell/
 categories: [技术, 嵌入式]
 tags: [Shell, letter-shell, 调试]
 ---

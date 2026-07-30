@@ -1,6 +1,7 @@
 ---
 title: kGDB：远程单步调试 Linux 内核
-date: 2026-07-29 14:00:00
+date: 2026-07-06 09:30:00
+permalink: /2026/07/29/linux-kgdb/
 categories: [技术, 调试]
 tags: [kGDB, GDB, 内核调试]
 ---

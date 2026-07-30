@@ -1,6 +1,7 @@
 ---
 title: 嵌入式低功耗：从功耗预算到睡眠唤醒
-date: 2026-07-29 14:31:00
+date: 2026-07-16 14:10:00
+permalink: /2026/07/29/embedded-low-power/
 categories: [技术, 嵌入式]
 tags: [低功耗, 睡眠, 电源管理]
 ---

@@ -1,6 +1,7 @@
 ---
 title: 嵌入式 MQTT：连接、会话、QoS 与离线恢复
-date: 2026-07-29 14:25:00
+date: 2026-07-14 14:10:00
+permalink: /2026/07/29/embedded-mqtt-client/
 categories: [技术, 嵌入式网络]
 tags: [MQTT, IoT, QoS]
 ---

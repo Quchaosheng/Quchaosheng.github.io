@@ -1,6 +1,7 @@
 ---
 title: bcachefs：写时复制文件系统的核心设计
-date: 2026-07-29 13:59:00
+date: 2026-07-05 20:20:00
+permalink: /2026/07/29/bcachefs-overview/
 categories: [技术, 文件系统]
 tags: [bcachefs, COW, B树]
 ---

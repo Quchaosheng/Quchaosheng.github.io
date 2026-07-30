@@ -1,6 +1,7 @@
 ---
 title: RCU：读多写少场景下的并发设计
-date: 2026-07-29 13:09:00
+date: 2026-06-19 09:30:00
+permalink: /2026/07/29/linux-rcu/
 categories: [技术, Linux内核]
 tags: [RCU, 并发, 同步]
 ---

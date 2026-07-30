@@ -1,6 +1,7 @@
 ---
 title: 缺页异常与页表遍历：一次内存访问的补救过程
-date: 2026-07-29 13:07:00
+date: 2026-06-18 14:10:00
+permalink: /2026/07/29/linux-page-fault-walk/
 categories: [技术, Linux内核]
 tags: [缺页异常, 页表, 虚拟内存]
 ---

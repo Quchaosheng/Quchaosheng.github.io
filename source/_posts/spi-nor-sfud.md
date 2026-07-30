@@ -1,6 +1,7 @@
 ---
 title: SPI NOR Flash：从 JEDEC ID 到通用驱动
-date: 2026-07-29 14:37:00
+date: 2026-07-18 14:10:00
+permalink: /2026/07/29/spi-nor-sfud/
 categories: [技术, 嵌入式]
 tags: [SPI-NOR, SFUD, Flash]
 ---

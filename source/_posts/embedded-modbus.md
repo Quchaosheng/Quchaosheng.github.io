@@ -1,6 +1,7 @@
 ---
 title: Modbus RTU：帧边界、CRC 与寄存器模型
-date: 2026-07-29 14:28:00
+date: 2026-07-15 14:10:00
+permalink: /2026/07/29/embedded-modbus/
 categories: [技术, 嵌入式]
 tags: [Modbus, RS485, CRC]
 ---

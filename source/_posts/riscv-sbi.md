@@ -1,6 +1,7 @@
 ---
 title: RISC-V SBI：固件与操作系统之间的统一接口
-date: 2026-07-29 13:49:00
+date: 2026-07-02 14:10:00
+permalink: /2026/07/29/riscv-sbi/
 categories: [技术, RISC-V]
 tags: [SBI, OpenSBI, 特权级]
 ---

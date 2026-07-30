@@ -1,6 +1,7 @@
 ---
 title: Linux 设备驱动模型：总线、设备和驱动如何相遇
-date: 2026-07-29 13:19:00
+date: 2026-06-22 14:10:00
+permalink: /2026/07/29/linux-device-model/
 categories: [技术, 嵌入式Linux]
 tags: [设备模型, 驱动, sysfs]
 ---

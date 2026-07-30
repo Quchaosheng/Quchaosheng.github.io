@@ -1,6 +1,7 @@
 ---
 title: open 系统调用：路径怎样变成文件描述符
-date: 2026-07-29 14:03:00
+date: 2026-07-07 09:30:00
+permalink: /2026/07/29/open-system-call/
 categories: [技术, Linux内核]
 tags: [open, VFS, 系统调用]
 ---

@@ -1,6 +1,7 @@
 ---
 title: I2C 总线：寻址、时序与故障恢复
-date: 2026-07-29 14:26:00
+date: 2026-07-14 20:20:00
+permalink: /2026/07/29/embedded-i2c/
 categories: [技术, 嵌入式]
 tags: [I2C, 总线, 驱动]
 ---

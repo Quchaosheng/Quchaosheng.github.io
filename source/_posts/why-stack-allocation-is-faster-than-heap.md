@@ -1,6 +1,7 @@
 ---
 title: 为什么栈的内存分配通常比堆更快？
-date: 2026-07-29 12:00:00
+date: 2026-06-16 09:30:00
+permalink: /2026/07/29/why-stack-allocation-is-faster-than-heap/
 categories:
   - 技术
   - C/C++
@@ -34,6 +35,8 @@ description: 从分配算法、生命周期、缓存局部性和线程并发几�
 - 运行时才能确定大小的缓冲区；
 - 大型或复杂的数据结构；
 - 由多个模块共享所有权的数据。
+
+<div class="note-map"><span><b>栈</b><small>随函数调用建立/回收，LIFO 生命周期，容量较小且线程私有</small></span><span><b>堆</b><small>任意顺序分配释放，适合动态大小与跨作用域对象</small></span><span><b>栈帧</b><small>保存局部变量、寄存器/返回信息；函数返回整体回收</small></span><span><b>分配器</b><small>管理 size class、元数据、碎片和多线程缓存</small></span><span><b>局部性</b><small>由数据布局和访问模式决定，不由“栈/堆”标签自动保证</small></span><span><b>选择准则</b><small>先看大小、生命周期、所有权和逃逸需求，再看性能</small></span></div>
 
 ## 2. 栈分配为什么快
 
@@ -130,6 +133,8 @@ void process() {
 - 使用 `std::pmr` 多态内存资源；
 - 减少不必要的动态分配；
 - 改善数据布局和访问局部性。
+
+<div class="note-flow"><span>确认对象生命周期</span><i>→</i><span>优先自动存储/RAII</span><i>→</i><span>跨作用域再使用堆所有权</span><i>→</i><span>测量分配是否热点</span><i>→</i><span>必要时复用或使用内存资源</span></div>
 
 不要仅凭“堆比较慢”就提前优化。先用 profiler 或基准测试确认热点，并避免让编译器优化掉测试代码。
 

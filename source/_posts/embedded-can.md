@@ -1,6 +1,7 @@
 ---
 title: CAN 总线：仲裁、错误处理与可靠通信
-date: 2026-07-29 14:27:00
+date: 2026-07-15 09:30:00
+permalink: /2026/07/29/embedded-can/
 categories: [技术, 嵌入式]
 tags: [CAN, 仲裁, 总线]
 ---

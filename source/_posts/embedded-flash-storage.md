@@ -1,6 +1,7 @@
 ---
 title: 嵌入式 Flash 存储：擦写约束、掉电安全与磨损均衡
-date: 2026-07-29 14:20:00
+date: 2026-07-12 20:20:00
+permalink: /2026/07/29/embedded-flash-storage/
 categories: [技术, 嵌入式]
 tags: [Flash, EasyFlash, 掉电保护]
 ---

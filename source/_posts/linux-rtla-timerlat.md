@@ -1,6 +1,7 @@
 ---
 title: rtla timerlat：定位实时系统的唤醒延迟
-date: 2026-07-29 13:47:00
+date: 2026-07-01 20:20:00
+permalink: /2026/07/29/linux-rtla-timerlat/
 categories: [技术, Linux实时]
 tags: [rtla, timerlat, 实时Linux]
 ---

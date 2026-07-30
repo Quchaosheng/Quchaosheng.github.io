@@ -1,6 +1,7 @@
 ---
 title: 嵌入式日志系统：在可观测性与实时性之间取舍
-date: 2026-07-29 14:18:00
+date: 2026-07-12 09:30:00
+permalink: /2026/07/29/embedded-logging/
 categories: [技术, 嵌入式]
 tags: [日志, EasyLogger, 可观测性]
 ---

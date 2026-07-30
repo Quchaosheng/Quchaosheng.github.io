@@ -1,6 +1,7 @@
 ---
 title: 嵌入式 RTOS 选型：不要只比较功能列表
-date: 2026-07-29 14:16:00
+date: 2026-07-11 14:10:00
+permalink: /2026/07/29/embedded-rtos-selection/
 categories: [技术, 嵌入式]
 tags: [RTOS, FreeRTOS, RT-Thread]
 ---
