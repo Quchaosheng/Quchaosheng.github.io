@@ -259,6 +259,8 @@
 <li>大型或复杂的数据结构；</li>
 <li>由多个模块共享所有权的数据。</li>
 </ul>
+<div class="note-map"><span><b>栈</b><small>随函数调用建立/回收，LIFO 生命周期，容量较小且线程私有</small></span><span><b>堆</b><small>任意顺序分配释放，适合动态大小与跨作用域对象</small></span><span><b>栈帧</b><small>保存局部变量、寄存器/返回信息；函数返回整体回收</small></span><span><b>分配器</b><small>管理 size class、元数据、碎片和多线程缓存</small></span><span><b>局部性</b><small>由数据布局和访问模式决定，不由“栈/堆”标签自动保证</small></span><span><b>选择准则</b><small>先看大小、生命周期、所有权和逃逸需求，再看性能</small></span></div>
+
 <h2 id="2-栈分配为什么快"><a href="#2-栈分配为什么快" class="headerlink" title="2. 栈分配为什么快"></a>2. 栈分配为什么快</h2><h3 id="2-1-通常只需移动一个指针"><a href="#2-1-通常只需移动一个指针" class="headerlink" title="2.1 通常只需移动一个指针"></a>2.1 通常只需移动一个指针</h3><p>栈顶由栈指针记录。为局部变量预留空间时，生成的机器指令通常只需将栈指针增加或减少一个固定值；函数退出时再恢复栈指针。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">work</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> values[<span class="number">64</span>]&#123;&#125;; <span class="comment">// 通常位于当前函数的栈帧中</span></span><br><span class="line">    <span class="comment">// 使用 values</span></span><br><span class="line">&#125; <span class="comment">// 函数返回时，栈帧整体释放</span></span><br></pre></td></tr></table></figure>
 
@@ -310,6 +312,8 @@
 <li>减少不必要的动态分配；</li>
 <li>改善数据布局和访问局部性。</li>
 </ul>
+<div class="note-flow"><span>确认对象生命周期</span><i>→</i><span>优先自动存储/RAII</span><i>→</i><span>跨作用域再使用堆所有权</span><i>→</i><span>测量分配是否热点</span><i>→</i><span>必要时复用或使用内存资源</span></div>
+
 <p>不要仅凭“堆比较慢”就提前优化。先用 profiler 或基准测试确认热点，并避免让编译器优化掉测试代码。</p>
 <h2 id="6-面试版回答"><a href="#6-面试版回答" class="headerlink" title="6. 面试版回答"></a>6. 面试版回答</h2><p>可以将答案压缩为下面这段：</p>
 <blockquote>
