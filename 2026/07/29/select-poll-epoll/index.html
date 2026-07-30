@@ -146,6 +146,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -177,11 +242,19 @@
         </header>
 
         <div class="post-content">
-            <p>三者都用于等待多个文件描述符就绪。select 有 fd 数量限制且每次传递位图；poll 去掉固定上限但仍线性扫描；epoll 把关注集合保存在内核，并返回就绪事件。</p>
+            <p>网络服务器往往需要同时等待大量 socket、定时器、管道或 eventfd，而不是为每个 fd 创建一个阻塞线程。<code>select</code>、<code>poll</code> 与 <code>epoll</code> 都实现“等待多个 fd 是否就绪”，区别在于关注集合如何传给内核、就绪集合怎样返回、每轮需要扫描多少对象。理解它们的重点不只是复杂度，更是就绪通知、非阻塞 I&#x2F;O、连接生命周期和背压如何配合。</p>
 <div class="note-flow"><span>注册感兴趣的 fd</span><i>→</i><span>内核监听就绪事件</span><i>→</i><span>epoll_wait 返回就绪列表</span><i>→</i><span>Reactor 分派读写处理</span></div>
 
-<p>边缘触发要求一次读写到 <code>EAGAIN</code>，否则可能错过后续通知；水平触发更易正确。epoll 不是“绝对 O(1)”，应用仍需正确管理连接、事件与背压。</p>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=MzkzNDk2NTUwOQ==&mid=2247484469&idx=1&sn=3e4486b632c564e302f6a534070192b1">epoll、poll、select 的区别</a></p>
+<h2 id="select、poll、epoll-的核心差异"><a href="#select、poll、epoll-的核心差异" class="headerlink" title="select、poll、epoll 的核心差异"></a>select、poll、epoll 的核心差异</h2><p><code>select</code> 每轮传递 fd 位图，受 <code>FD_SETSIZE</code> 等接口限制，返回后应用还要扫描集合。<code>poll</code> 用数组描述 fd，去掉固定小上限，但仍需每轮扫描所有关注项。<code>epoll</code> 将关注集合保存到内核，应用先 <code>epoll_ctl()</code> 添加&#x2F;修改&#x2F;删除，再由 <code>epoll_wait()</code> 取得就绪事件列表，因此适合连接数多、活跃比例低的场景。</p>
+<div class="note-map"><span><b>select</b><small>位图接口，简单但有集合大小与每轮扫描限制</small></span><span><b>poll</b><small>数组接口，无固定小上限，仍需线性检查关注集合</small></span><span><b>epoll</b><small>内核维护兴趣集合，返回就绪列表，适合大量 idle 连接</small></span><span><b>水平触发 LT</b><small>只要 fd 仍可读/写就持续通知，较易正确</small></span><span><b>边缘触发 ET</b><small>状态变化时通知，需一次处理到 EAGAIN，减少重复事件</small></span><span><b>EPOLLONESHOT</b><small>一次事件后需显式 rearm，便于多线程避免重复处理同一 fd</small></span></div>
+
+<h2 id="ET-模式为什么经常“丢事件”"><a href="#ET-模式为什么经常“丢事件”" class="headerlink" title="ET 模式为什么经常“丢事件”"></a>ET 模式为什么经常“丢事件”</h2><p>边缘触发不是把水平触发换成更快的开关。它只在从“不可读”变成“可读”时通知；收到事件后若应用只读了一点就返回，fd 仍处于可读状态却不会再次发生边缘变化，于是剩余数据可能一直躺在内核缓冲区。正确模式是将 fd 设为 nonblocking，在事件回调中循环读&#x2F;写直到返回 <code>EAGAIN</code>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    <span class="type">ssize_t</span> n = recv(fd, buf, <span class="keyword">sizeof</span> buf, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (n &gt; <span class="number">0</span>) &#123; handle(buf, n); <span class="keyword">continue</span>; &#125;</span><br><span class="line">    <span class="keyword">if</span> (n &lt; <span class="number">0</span> &amp;&amp; errno == EAGAIN) <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">if</span> (n == <span class="number">0</span> || (n &lt; <span class="number">0</span> &amp;&amp; errno != EINTR)) close_connection(fd);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这段逻辑还需要处理半包、写缓冲、关闭事件和连接对象生命周期。事件循环正确性通常比 <code>epoll_wait()</code> 本身更难。</p>
+<h2 id="Reactor-仍然需要背压"><a href="#Reactor-仍然需要背压" class="headerlink" title="Reactor 仍然需要背压"></a>Reactor 仍然需要背压</h2><p>epoll 能告诉你“现在可以写”，不代表你应该无限生产数据。若对端慢、发送缓冲满或业务处理落后，应用需要有界队列、高低水位线、暂停读&#x2F;恢复读和超时策略。对实时消息更要记录数据年龄：宁可丢弃过期状态，也不要让它在事件循环队列里排到失去意义。</p>
+<p>选择哪种接口应由连接数量、活跃比例、团队熟悉度和正确性需求决定。几百个稳定连接用 poll 也可能足够；数十万闲连接则更适合 epoll。先写清生命周期和背压，再追求事件模型的理论复杂度。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/epoll.7.html">epoll(7)</a> · <a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/select.2.html">select(2)</a></p>
 
         </div>
 

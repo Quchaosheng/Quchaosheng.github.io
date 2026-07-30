@@ -146,6 +146,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -177,11 +242,19 @@
         </header>
 
         <div class="post-content">
-            <p>应用发送数据后，socket 层构造 skb，TCP&#x2F;UDP 与 IP 层补充协议头并查路由，邻居子系统解析链路地址，qdisc 排队后由网卡驱动提交 DMA 描述符。</p>
+            <p>应用调用 <code>sendmsg()</code> 后，数据并不会立刻从网线发出。它要先进入 socket 发送缓冲区，被 TCP&#x2F;UDP、IP 和邻居子系统逐层补充元数据与协议头，经过 qdisc 排队&#x2F;整形，最终由网卡驱动的 <code>ndo_start_xmit</code> 把 DMA 描述符提交给硬件。发送端的延迟、突发和丢包同样是分层发生的：应用返回快，不代表包已经离开主机。</p>
 <div class="note-flow"><span>sendmsg</span><i>→</i><span>TCP/UDP 构造 skb</span><i>→</i><span>IP 路由与分片</span><i>→</i><span>qdisc 排队</span><i>→</i><span>ndo_start_xmit 与 DMA</span></div>
 
-<p>发送瓶颈可能来自 socket 缓冲区、分段、路由、队列规则、锁竞争或网卡 ring；必须按层观察，而不是只看应用耗时。</p>
-<p>参考：<a target="_blank" rel="noopener" href="https://www.kerneltravel.net/blog/2020/network_ljr11/">Linux 内核网络数据发送</a></p>
+<h2 id="从用户缓冲区到网卡的关键节点"><a href="#从用户缓冲区到网卡的关键节点" class="headerlink" title="从用户缓冲区到网卡的关键节点"></a>从用户缓冲区到网卡的关键节点</h2><p>socket 层负责发送缓冲、拥塞&#x2F;流控语义与协议状态；TCP 可能按 MSS 分段，也可能借助 GSO 把大 skb 延后到更靠近网卡的位置再分段；IP 层查路由、选择出口和处理 MTU；邻居子系统解析下一跳 MAC；qdisc 依据优先级、整形或队列规则决定何时交给设备；驱动再填充 TX ring 并启动 DMA。</p>
+<div class="note-map"><span><b>socket send buffer</b><small>应用可写入的数据队列；满时 send 可能阻塞或返回 EAGAIN</small></span><span><b>TCP/UDP + IP</b><small>协议头、路由、MTU、分段/校验和等处理</small></span><span><b>neighbor</b><small>ARP/NDP 解析下一跳；邻居未就绪时包可能等待</small></span><span><b>qdisc</b><small>排队、优先级、AQM 与整形的控制点</small></span><span><b>TX ring</b><small>驱动提交 DMA 描述符的硬件队列，满时产生背压</small></span><span><b>completion</b><small>硬件发送完成后回收描述符和 skb，影响持续发送能力</small></span></div>
+
+<h2 id="GSO、qdisc-与队列不是“额外负担”"><a href="#GSO、qdisc-与队列不是“额外负担”" class="headerlink" title="GSO、qdisc 与队列不是“额外负担”"></a>GSO、qdisc 与队列不是“额外负担”</h2><p>GSO 允许协议栈用较少的大 skb 表达多个 MTU 大小分段，降低每包固定开销；硬件若支持 TSO&#x2F;校验和卸载，可在更晚的阶段完成分段与校验。qdisc 则是 Linux 做队列管理、流量整形和公平调度的位置。它们通常提高吞吐和可控性，但对极低延迟控制包也可能引入排队，因此要按流量类别设置策略而非全局追求最大批量。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ip -s <span class="built_in">link</span> show dev eth0</span><br><span class="line">tc qdisc show dev eth0</span><br><span class="line">tc -s qdisc show dev eth0</span><br><span class="line">ethtool -S eth0</span><br></pre></td></tr></table></figure>
+
+<p>这些输出可帮助区分接口层丢包、qdisc 排队、驱动 ring 压力与硬件错误。若应用 <code>send()</code> 频繁返回 <code>EAGAIN</code>，先检查 socket 缓冲与对端窗口；若 qdisc backlog 持续增加，则是链路&#x2F;整形&#x2F;出口过载问题；若 TX ring 无法及时回收，则要进一步看驱动和网卡完成路径。</p>
+<h2 id="给实时控制包设计一条明确路径"><a href="#给实时控制包设计一条明确路径" class="headerlink" title="给实时控制包设计一条明确路径"></a>给实时控制包设计一条明确路径</h2><p>控制包的价值会随排队时间迅速降低。可以用优先级&#x2F;traffic class 将它与视频、日志和批量上传分开，限制背景流突发；应用协议携带时间戳和序列号，让接收端拒绝过期命令。不要把“大 socket buffer”当成实时优化，它通常只是允许更多旧数据排队。</p>
+<p>发送性能最终来自端到端协同：应用发送节奏、TCP&#x2F;UDP 语义、qdisc、网卡队列、对端消费和交换机都必须在预算内。沿着这条链路逐层观测，比只在 <code>send()</code> 前后打时间戳可靠得多。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/networking/index.html">Linux Networking</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/networking/tc-actions-env-rules.html">Traffic Control</a></p>
 
         </div>
 
