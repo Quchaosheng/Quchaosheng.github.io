@@ -4,166 +4,166 @@
   <id>https://quchaosheng.github.io/atom.xml</id>
   <link href="https://quchaosheng.github.io/"/>
   <link href="https://quchaosheng.github.io/atom.xml" rel="self"/>
-  <updated>2026-07-30T06:00:00.000Z</updated>
+  <updated>2026-07-29T09:36:41.000Z</updated>
   <author><name>Quchaosheng</name></author>
   <entry>
-    <title>NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层</title>
-    <id>https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/"/>
-    <published>2026-07-30T06:00:00.000Z</published>
-    <updated>2026-07-30T06:00:00.000Z</updated>
-    <summary type="html">GR00T 代表视觉-语言-动作（VLA）模型进入机器人任务的一条路线：模型接收图像、语言、状态等多模态信息，输出任务步骤、动作候选或连续控制参考。它的价值在于把过去需要大量手工规则的泛化理解交给数据驱动模型；它的风险也很直接，模型输出会受训练分布、上下文、延迟和硬件状态影响，不能因为“看起来懂了”就越过安全边界直接驱动执行器。 接收视觉与语言指令 → 模型生成任务/动作候选 → 运行时校验场景与约束 → 控制器执行有限动作 → 反馈结果或安全停止 VLA 模型适合做什么，不适合做什么 它适合处理高层的、语义模糊的任务，例如把“整理桌面上的工具”分...</summary>
+    <title>环形缓冲区：固定容量队列的基础结构</title>
+    <id>https://quchaosheng.github.io/2026/07/29/circular-buffer/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/circular-buffer/"/>
+    <published>2026-07-29T09:36:41.000Z</published>
+    <updated>2026-07-29T09:36:41.000Z</updated>
+    <summary type="html">环形缓冲区用固定数组和读写索引实现 FIFO。写指针到末尾后回绕到开头，因此无需移动已有数据，适合网络收发、音视频和单生产者单消费者队列。它的难点不在取模，而在于满与空的语义、索引发布顺序和容量满后的业务策略。 写入 tail 位置 → tail 环绕递增 → 消费者读取 head → head 环绕递增 队列图 数据写入完成后再发布 tail，读取完成后再推进 head。 storage 固定容量槽位，生命周期不随每条消息频繁分配释放。 head 消费者下一次读取的位置，只由消费者推进。 tail 生产者下一次写入的位置，只由生产者推进。 满与空...</summary>
   </entry>
   <entry>
-    <title>DeepStream 多相机机器人：视频流怎样批量进入 AI 管线</title>
-    <id>https://quchaosheng.github.io/2026/07/30/deepstream-multicamera-robot/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/deepstream-multicamera-robot/"/>
-    <published>2026-07-29T06:00:00.000Z</published>
-    <updated>2026-07-29T06:00:00.000Z</updated>
-    <summary type="html">当机器人同时挂着前视、侧视、深度或鱼眼相机时，逐路手写“解码、缩放、推理、跟踪、发布 ROS 2 消息”很快会变成难以维护的管线。DeepStream 基于 GStreamer 组织这些阶段，可将硬件解码、GPU 预处理、TensorRT 推理、跟踪和元数据传递串起来。它擅长多流吞吐，但机器人更在意每条视频从采集到被决策模块消费时已经“老了多久”。 多路相机采集 → 硬件解码与预处理 → 组批进入 TensorRT → 目标跟踪与元数据 → ROS 2 节点消费结果 DeepStream 管线里有哪些关键部件 在典型 GStreamer 图中，so...</summary>
+    <title>Page Cache：文件 I/O 为什么常常先经过内存</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-page-cache/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-page-cache/"/>
+    <published>2026-07-29T09:36:41.000Z</published>
+    <updated>2026-07-29T09:36:41.000Z</updated>
+    <summary type="html">Page Cache 缓存文件内容页面。读文件时先查询缓存，命中就直接复制给用户态；未命中才从存储读取并填入缓存。写文件时通常先修改缓存页并标记为脏页，后台回写再把它们批量落盘。它让很多小 I&amp;#x2F;O 合并为更高效的存储访问，但也让“ write() 返回成功”与“数据已经安全落盘”成为两件事。 read/write 系统调用 → 查询 Page Cache → 命中直接访问 → 未命中读取磁盘 → 脏页后台回写 缓存图 读路径追求命中，写路径需要区分“进入缓存”和“持久化完成”。 address_space 文件的页缓存索引，连接 inod...</summary>
   </entry>
   <entry>
-    <title>Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间</title>
-    <id>https://quchaosheng.github.io/2026/07/30/isaac-ros-vslam-nvblox/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/isaac-ros-vslam-nvblox/"/>
-    <published>2026-07-28T06:00:00.000Z</published>
-    <updated>2026-07-28T06:00:00.000Z</updated>
-    <summary type="html">机器人要自主移动，至少需要回答两个问题：自己在哪里，以及周围哪些空间安全。Visual SLAM 通过相机特征与 IMU 估计连续位姿；nvblox 将深度观测按位姿融合，维护 TSDF、占据栅格或 ESDF 等空间表示。前者提供“运动轨迹”，后者提供“可通行距离”，二者接到导航栈后，规划器才有可靠的起点与障碍信息。 同步相机与 IMU → Visual SLAM 估计位姿 → 深度数据按位姿融合 → 生成三维地图/距离场 → 导航规划并反馈新观测 先分清四个坐标系 在 ROS 2 机器人里， base_link 通常表示机体， camera_li...</summary>
+    <title>procfs：把内核运行状态投影成文件</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-procfs/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-procfs/"/>
+    <published>2026-07-29T09:36:41.000Z</published>
+    <updated>2026-07-29T09:36:41.000Z</updated>
+    <summary type="html">procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它把进程、内存、CPU、网络和内核参数投影成一组文件，因此排障时可以用普通文件工具观察系统。但它不是一个稳定的数据库快照：你读到第一行和最后一行之间，系统状态仍可能已经变化。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 观测图 不同 `/proc` 文件回答的是不同层次的问题，读之前先确定想验证什么。 /proc/PID/status 查看线程数、状态、能力和内存概况。 /proc/PID/maps 观察虚拟地址区域、文件映射...</summary>
   </entry>
   <entry>
-    <title>Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界</title>
-    <id>https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/"/>
-    <published>2026-07-27T06:00:00.000Z</published>
-    <updated>2026-07-27T06:00:00.000Z</updated>
-    <summary type="html">Isaac Sim 不是一个只用来看机器人动画的 3D 工具。它基于 USD 场景描述和物理仿真，可以组合机器人模型、关节、传感器、材质、光照与环境，并通过 ROS 2 Bridge、Replicator 等组件接入算法联调、合成数据和自动化回归。真正的 Sim-to-Real 目标也不是“画面逼真”，而是让部署到真实机器人后最重要的误差来源已被识别、建模或留有安全余量。 建立机器人与传感器模型 → 标定物理和噪声参数 → 随机化场景与扰动 → 批量训练和回归 → 实机小范围验证再迭代 一个可用的仿真场景应包含什么 第一层是 几何和坐标系 ：URD...</summary>
+    <title>Linux 信号：异步事件如何送达进程</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-process-signals/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-process-signals/"/>
+    <published>2026-07-29T09:36:41.000Z</published>
+    <updated>2026-07-29T09:36:41.000Z</updated>
+    <summary type="html">信号是内核向进程或线程报告异步事件的轻量机制，例如终端中断、子进程退出、非法内存访问和定时器到期。它适合通知“发生了什么”，不适合承载复杂数据或在回调里执行复杂业务。理解 pending、屏蔽和投递时机，才能避免看似偶发的竞态。 产生信号 → 加入 pending 集合 → 检查屏蔽字 → 执行默认动作或处理器 → 恢复执行 投递图 信号先处于 pending 状态，解除屏蔽后才可能在合适的线程上处理。 产生者 内核异常、终端、定时器、其他进程或线程都可产生信号。 pending 集合 传统信号同类可合并，实时信号可携带队列项。 屏蔽字 被屏蔽的信...</summary>
   </entry>
   <entry>
-    <title>TensorRT 机器人推理：从训练模型到稳定延迟</title>
-    <id>https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/"/>
-    <published>2026-07-26T06:00:00.000Z</published>
-    <updated>2026-07-26T06:00:00.000Z</updated>
-    <summary type="html">训练模型在电脑上能跑，不代表它放到机器人上就稳定。TensorRT 会解析 ONNX 等模型，融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine。FP16 和 INT8 往往能减小计算量和带宽，但还要测持续输入、温度变化和其他节点抢资源时，结果会不会变慢或过期。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 engine → 预分配并预热推理 → 测量端到端延迟与精度 时延图 模型、engine、缓冲区和队列要一起看，单独缩短 GPU 时间不等于感知结果更及时。 ONNX 输入契约 opset、形状、颜色、...</summary>
+    <title>Linux 管道：内核缓冲区上的字节流 IPC</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-pipe/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-pipe/"/>
+    <published>2026-07-29T09:36:41.000Z</published>
+    <updated>2026-07-29T09:36:41.000Z</updated>
+    <summary type="html">管道是内核维护的单向字节流缓冲区，读端和写端通过文件描述符访问。它适合 shell 命令串联或具有亲缘关系的进程通信，数据不需要落盘。它的简单也有边界：管道传的是连续字节，不会替应用保存“这一段是第几条消息”。 创建 pipe → 写端写入内核缓冲区 → 等待的读端被唤醒 → 读端取走字节流 数据图 写入、缓冲、读取和端点关闭共同决定管道的可见行为。 读端 fd 读取字节流，所有写端关闭后会读到 EOF。 写端 fd 写入缓冲区；没有读端时会得到 SIGPIPE 或 EPIPE。 内核缓冲 容量有限，满时阻塞或返回 EAGAIN，取决于阻塞模式。 ...</summary>
   </entry>
   <entry>
-    <title>Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU</title>
-    <id>https://quchaosheng.github.io/2026/07/30/isaac-ros-nitros-zero-copy/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/isaac-ros-nitros-zero-copy/"/>
-    <published>2026-07-25T06:00:00.000Z</published>
-    <updated>2026-07-25T06:00:00.000Z</updated>
-    <summary type="html">机器人视觉链路里，模型本身只跑几毫秒，结果却晚很多才出来，很常见。时间通常花在图像从驱动到 ROS 消息、颜色转换、CPU 内存和 GPU 内存之间的复制与排队上。Isaac ROS 的 NITROS 用 ROS 2 类型适配和 GXF 让兼容节点协商数据格式，尽量让图像和张量留在加速内存里继续处理。 相机产生图像 → NITROS 协商兼容格式 → 缓冲区留在加速内存 → GPU 节点连续处理 → 只在边界转换数据 数据图 判断少拷贝是否成立，要沿着每个缓冲区检查位置、格式、所有权和同步点。 相机输出 先确认原始帧位于哪里、是什么格式、由谁拥有。...</summary>
+    <title>QUIC：在 UDP 之上重建可靠传输</title>
+    <id>https://quchaosheng.github.io/2026/07/29/quic-overview/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/quic-overview/"/>
+    <published>2026-07-29T09:36:41.000Z</published>
+    <updated>2026-07-29T09:36:41.000Z</updated>
+    <summary type="html">QUIC 在 UDP 上实现加密、可靠传输、拥塞控制和多路复用，是 HTTP&amp;#x2F;3 的传输基础。UDP 只负责发送数据报；确认、重传、流控、拥塞控制和 TLS 1.3 握手都由 QUIC 协议实现。把连接状态放在用户态让协议演进更快，但也要求实现方认真处理定时器、内存和丢包恢复。 UDP 收发数据报 → QUIC 加密包与帧 → 独立 Stream 重组 → ACK/丢包检测 → 拥塞控制与重传 协议图 一个 QUIC 包可以承载多种帧，流和包的可靠性层次不同。 UDP 数据报 提供尽力而为的传输，不维护连接和重传。 QUIC 包 携带加密...</summary>
   </entry>
   <entry>
-    <title>Jetson 机器人部署：功耗、算力与实时控制怎样分工</title>
-    <id>https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/"/>
-    <published>2026-07-24T06:00:00.000Z</published>
-    <updated>2026-07-24T06:00:00.000Z</updated>
-    <summary type="html">Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。 选择 JetPack 与功耗模式 → 部署模型和 ROS 2 节点 → 测量 CPU/GPU/内存负载 → 分离推理与实时控制 → 在温度稳定后复测长尾 资源图 Jetson 是感知和任务平台，实时控制与安全链路应有更确定的...</summary>
+    <title>无锁队列：CAS、内存序与工程选型</title>
+    <id>https://quchaosheng.github.io/2026/07/29/lock-free-queue-selection/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/lock-free-queue-selection/"/>
+    <published>2026-07-29T09:01:01.000Z</published>
+    <updated>2026-07-29T09:01:01.000Z</updated>
+    <summary type="html">无锁队列不是“删掉 mutex 就更快”。它用原子操作和重试替代阻塞等待，适合冲突较少、延迟敏感、并且能严格控制数据结构生命周期的场景。若竞争非常激烈，反复 CAS 失败造成的自旋和缓存行抖动可能比互斥锁更糟。 1. 队列首先要保证什么 多个生产者和消费者同时操作队列时，需要同时处理三件事： 一致性 ：head、tail、元素槽位不能相互矛盾； 原子性 ：一次入队或出队不能暴露半完成状态； 可见性 ：生产者写入数据后，消费者必须能以正确顺序看到它。 有锁队列让 mutex 和条件变量承担这些职责，代码直观、易于阻塞等待；无锁队列则要由原子变量、内存...</summary>
   </entry>
   <entry>
-    <title>NVIDIA Physical AI 技术栈：机器人从模型到执行器要经过什么</title>
-    <id>https://quchaosheng.github.io/2026/07/30/nvidia-physical-ai-stack/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/nvidia-physical-ai-stack/"/>
-    <published>2026-07-23T06:00:00.000Z</published>
-    <updated>2026-07-23T06:00:00.000Z</updated>
-    <summary type="html">“Physical AI”听起来像一个大模型控制机器人，实际是一条比聊天模型长得多的工程链路：传感器要可靠地产生时间对齐的数据，模型要在目标硬件上稳定推理，规划器要把语义意图拆成受约束的动作，底层控制器还要能在模型失误时独立把系统带回安全状态。NVIDIA 的 Cosmos、Isaac Sim、Isaac ROS、TensorRT 与 Jetson 分别覆盖数据、仿真、机器人计算图、推理和边缘算力，而 ROS 2、控制器和安全 I&amp;#x2F;O 负责把这些能力接入真实机器。 采集或生成机器人数据 → 训练感知/决策模型 → Isaac Sim 仿真...</summary>
+    <title>CPU 很快，为什么取数据仍然很慢</title>
+    <id>https://quchaosheng.github.io/2026/07/29/cpu-memory-hierarchy/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/cpu-memory-hierarchy/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">CPU 指令执行速度远快于 DRAM 访问速度。现代处理器依靠寄存器、多级缓存、预取和乱序执行隐藏差距；一旦数据不在缓存中，流水线可能等待数十到数百个周期。 查找路径 每次加载先经过地址翻译，再按层级查询缓存。命中就返回数据；未命中则继续向更低层请求，并以 cache line 为单位把相邻数据带回。 生成虚拟地址 → TLB 地址翻译 → L1/L2/L3 查询 → 访问 DRAM → 回填缓存行 记忆要点 时间局部性：最近使用的数据可能再次使用；空间局部性：相邻数据可能很快被访问。 链表随机跳转通常不如连续数组对缓存友好。 优化应关注数据布局、...</summary>
   </entry>
   <entry>
-    <title>实时回归测试：把一次调优变成可持续的延迟基线</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-regression-baseline/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-regression-baseline/"/>
-    <published>2026-07-22T12:00:00.000Z</published>
-    <updated>2026-07-22T12:00:00.000Z</updated>
-    <summary type="html">实时性会被看似无关的改动悄悄破坏：内核升级、网卡驱动、BIOS、容器配置、日志服务、模型版本、散热策略甚至办公室温度都可能改变长尾。一次成功调优如果没有留下环境、负载和原始数据，下一次尖峰出现时只能从头猜。实时回归测试的价值是把“那天跑得很好”变成可复现、可比较、可阻止回归的工程基线。 定义负载与通过阈值 → 记录软硬件环境 → 长时间组合压测 → 比较尾延迟与直方图 → 超阈值后保留追踪证据 基线不是一个最大值 单个 max=37 us 无法说明测试跑了多久、在什么负载下、是否刚好没碰到低频事件。一个有用的基线至少包含：最小&amp;#x2F;平均&amp;#x...</summary>
+    <title>GDB 崩溃调试：从信号到调用栈</title>
+    <id>https://quchaosheng.github.io/2026/07/29/gdb-crash-debugging/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/gdb-crash-debugging/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">崩溃调试的目标不是盯着最后一行代码，而是还原“异常信号、出错线程、调用路径、关键变量和内存状态”这条证据链。 排查路径 开启 core dump 并保留与二进制匹配的调试符号。使用 gdb program core 后先看信号与全部线程，再定位故障栈帧，检查参数、局部变量、寄存器和相关内存。 程序收到致命信号 → 内核生成 core → 加载二进制与符号 → 定位异常线程和栈帧 → 验证变量与内存 常用命令 thread apply all bt full ：查看全部线程调用栈。 frame 、 info locals 、 info args ：检...</summary>
   </entry>
   <entry>
-    <title>Linux 实时网络路径：从网卡中断到应用线程</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-network-path/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-network-path/"/>
-    <published>2026-07-22T02:00:00.000Z</published>
-    <updated>2026-07-22T02:00:00.000Z</updated>
-    <summary type="html">应用线程收到一个网络包之前，数据通常已经走过网卡 DMA、RX queue、中断、NAPI、协议栈、socket 队列和一次线程唤醒。任何一段的 CPU 迁移、队列积压、软中断预算、内存分配或锁竞争，都可能让端到端延迟比“网卡中断很快”大得多。实时网络优化因此不是把应用优先级调高，而是让整条路径的队列、CPU 和时间戳都可见。 网卡收到数据包 → IRQ 唤起 NAPI → 协议栈处理并入 socket → 唤醒实时应用 → 记录端到端延迟 把收包路径拆开看 网卡将报文 DMA 到 RX ring；随后 IRQ 提醒 CPU，Linux 常在 NA...</summary>
+    <title>伙伴系统与 SLUB：Linux 内核怎样分配内存</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">Linux 内核用分层分配器解决不同粒度的需求：伙伴系统管理以页为单位的连续物理内存，SLUB 在这些页上高效分配频繁使用的小对象。 两层协作 伙伴系统按 2 的幂次组织空闲块。分配时拆分大块，释放时与同阶“伙伴”合并。SLUB 为相同类型或大小的对象建立 cache，把 slab 中的空闲槽直接交给调用者。 kmem_cache_alloc → 从当前 slab 取对象 → slab 不足 → 伙伴系统申请页 → 切分为对象槽 记忆要点 伙伴系统减少外部碎片，但可能产生内部碎片。 SLUB 复用已初始化布局，适合 task_struct 等内核对...</summary>
   </entry>
   <entry>
-    <title>NUMA 与共享缓存：实时线程为何会被别的 CPU 干扰</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-numa-cache-jitter/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-numa-cache-jitter/"/>
-    <published>2026-07-21T06:00:00.000Z</published>
-    <updated>2026-07-21T06:00:00.000Z</updated>
-    <summary type="html">把实时线程独占一个 CPU 后，仍可能发现执行时间随“其他核在干什么”而波动。原因是核心并不独占整台芯片：同一 NUMA 节点中的 CPU 可能共享末级缓存（LLC）、内存控制器和互连带宽；跨节点访问还会经过更长路径。另一个核心上大规模 memcpy、GPU DMA、数据库或网络包处理，都可能让实时线程的缓存命中率下降、内存访问排队变长。 实时线程命中本地数据 → 邻核任务争用 LLC/带宽 → 缓存失效或排队增加 → 最坏执行时间变长 → 重新规划 CPU 与内存布局 CPU 亲和性不等于内存亲和性 Linux 常用“首次触碰”分配策略：一页虚拟...</summary>
+    <title>CFS 与 vruntime：Linux 如何分配 CPU 时间</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-cfs-vruntime/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-cfs-vruntime/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">CFS 的目标不是让每个任务运行同样久，而是按权重实现公平。它用 vruntime 记录任务经过权重修正后的运行时间，优先选择 vruntime 较小的可运行任务。 调度过程 传统 CFS 运行队列使用红黑树组织调度实体，最左节点代表当前最“欠 CPU 时间”的任务。nice 值越低，权重越大，同样运行时间带来的 vruntime 增量越小。 任务进入运行队列 → 按 vruntime 排序 → 选择最小者运行 → 累计加权运行时间 → 重新入队 记忆要点 vruntime 是“公平债务”，不是实际墙上时间。 红黑树提供有序插入和删除，选择最左节点...</summary>
   </entry>
   <entry>
-    <title>容器里的实时任务：cgroup、权限和 CPU 配额如何共同生效</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-cgroup-containers/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-cgroup-containers/"/>
-    <published>2026-07-20T06:00:00.000Z</published>
-    <updated>2026-07-20T06:00:00.000Z</updated>
-    <summary type="html">容器把进程、文件系统和资源视图隔开，却不提供一套新的实时内核。容器中的线程仍由宿主机同一个调度器、同一组 IRQ、同一块缓存和同一套功耗策略管理。因此“进容器后 chrt 成功了”只证明进程拿到了调度权限，不证明它已经获得稳定的 CPU、内存或设备时延。 授予最小调度权限 → 配置 cpuset 与内存节点 → 核对 CPU/RT 预算 → 迁移宿主 IRQ 与杂务 → 在容器内外联合压测 容器里实时性由哪几层共同决定 进程能否设置实时策略通常受 CAP_SYS_NICE 、 RLIMIT_RTPRIO 和宿主机安全策略约束；能在哪些 CPU 上运...</summary>
+    <title>Linux 设备驱动模型：总线、设备和驱动如何相遇</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-device-model/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-device-model/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">Linux 设备模型用 bus、device、driver 和 class 统一描述硬件及其关系。它把“设备存在”和“谁来驱动”解耦，并通过 sysfs 向用户空间展示拓扑与属性。 匹配流程 设备由固件描述、枚举逻辑或板级代码注册到总线；驱动注册后，总线的 match 规则比较 compatible、ID 表等信息。匹配成功才调用 probe 建立资源、子系统接口和运行状态。 注册 device → 注册 driver → 总线执行 match → 调用 probe → 注册 class/子系统接口 记忆要点 bus 负责匹配规则，class 按功...</summary>
   </entry>
   <entry>
-    <title>SCHED_DEADLINE：用运行预算和截止期调度周期任务</title>
-    <id>https://quchaosheng.github.io/2026/07/30/sched-deadline-cbs/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/sched-deadline-cbs/"/>
-    <published>2026-07-19T06:00:00.000Z</published>
-    <updated>2026-07-19T06:00:00.000Z</updated>
-    <summary type="html">当一个任务可以明确说出“我每 10 ms 来一次、最坏需要 1 ms CPU、最晚 8 ms 必须完成”时， SCHED_DEADLINE 往往比手工安排一堆 FIFO 优先级更贴近问题本身。它采用最早截止期优先（EDF）选择任务，并使用 Constant Bandwidth Server（CBS）为每个任务分配运行预算。这样某个任务突然超量执行时，不会无休止侵占其他 deadline 任务的带宽。 声明 runtime/deadline/period → 内核执行准入检查 → 按最早截止期运行 → 消耗完预算后节流 → 下周期补充并重排 三个参数...</summary>
+    <title>EEVDF：从公平调度到虚拟截止时间</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-eevdf-scheduler/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-eevdf-scheduler/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">EEVDF（Earliest Eligible Virtual Deadline First）在公平的基础上引入“可运行资格”和“虚拟截止时间”。它既关注任务是否欠 CPU 时间，也关注任务本次请求何时应该完成。 选择逻辑 调度器先从可运行任务中判断哪些已满足 eligibility，再选择虚拟截止时间最早者。较短的时间片会得到较早的虚拟截止时间，因此交互型任务可获得更低延迟，同时长期权重公平仍然保留。 计算任务 lag → 筛选 eligible 任务 → 计算虚拟截止时间 → 运行截止时间最早者 记忆要点 lag 表示任务相对公平份额是超前还是...</summary>
   </entry>
   <entry>
-    <title>SMI 与固件延迟：Linux 追踪不到的实时尖峰从哪里来</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-smi-firmware-latency/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-smi-firmware-latency/"/>
-    <published>2026-07-18T06:00:00.000Z</published>
-    <updated>2026-07-18T06:00:00.000Z</updated>
-    <summary type="html">有一种实时尖峰特别让人困惑： cyclictest 明确记录到几百微秒甚至毫秒级延迟，ftrace 时间线上却没有足够长的 IRQ、锁或调度事件。对于 x86 平台，系统管理中断（SMI）会让 CPU 进入 System Management Mode 执行固件代码；普通操作系统不能抢占它，也通常看不到里面的调用栈。热管理、BIOS 服务、硬件纠错与平台管理都可能在这里引入不可见时间。 实时测试捕获尖峰 → 内核事件无法解释 → 核对 NMI/SMI 与硬件计数 → 调整 BIOS/固件策略 → 同负载长时间复测 为什么 Linux 看不见这段时间...</summary>
+    <title>fasync 与 SIGIO：Linux 信号驱动异步通知</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-fasync-sigio/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-fasync-sigio/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">fasync 允许设备状态变化时由驱动向订阅进程发送 SIGIO 。它适合事件频率不高、只需通知“可以读写”的场景；大量事件通常更适合 poll&amp;#x2F;epoll 或专用事件队列。 建立通知 用户空间设置文件描述符所有者并启用 O_ASYNC ，VFS 调用驱动的 fasync 回调维护订阅者列表。设备事件到来时，驱动调用 kill_fasync() ，进程收到信号后再执行实际读写。 应用设置 F_SETOWN → 启用 O_ASYNC → 驱动登记 fasync → 设备事件触发 kill_fasync → 应用收到 SIGIO 并读取 记忆...</summary>
   </entry>
   <entry>
-    <title>CPU 频率与空闲态：实时延迟中容易忽略的硬件变量</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-cpu-frequency-idle/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-cpu-frequency-idle/"/>
-    <published>2026-07-17T06:00:00.000Z</published>
-    <updated>2026-07-17T06:00:00.000Z</updated>
-    <summary type="html">实时线程按时被唤醒，只代表它开始有机会运行；它之后多久完成还取决于当时 CPU 的频率、缓存与电源状态。动态调频会改变每条指令的执行时间，深度 idle&amp;#x2F;C-state 则要付出退出延迟。它们能显著节能，却会引入与负载、温度、固件决策相关的长尾，所以一个空闲时非常漂亮的实时测试，在热稳定或低负载唤醒后可能突然变差。 CPU 负载下降 → 降低频率或进入深度空闲 → 实时事件到来 → 硬件恢复频率与状态 → 任务开始执行 频率与 idle 影响的是两段不同时间 cpufreq 主要影响任务开始执行后的计算速度：同一段算法在低频和高频下耗时不...</summary>
+    <title>fork、exec 与 COW：进程是怎样创建的</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-fork-exec-cow/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-fork-exec-cow/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">fork() 创建当前进程的逻辑副本， exec() 用新程序替换当前进程映像。为了避免 fork 时复制全部物理内存，Linux 使用写时复制（COW）：父子进程先共享只读页面，真正写入时才复制。 创建流程 内核复制进程描述信息和页表引用，并把共享页设置为不可写。任一方写入会触发保护性缺页异常，内核分配新页、复制内容并更新写入方页表。 父进程调用 fork → 父子共享物理页 → 某一方尝试写入 → COW 缺页异常 → 复制并建立私有页 记忆要点 fork 返回两次：父进程得到子 PID，子进程得到 0。 exec 成功后不会返回，PID 不变...</summary>
   </entry>
   <entry>
-    <title>Linux 实时节流：SCHED_FIFO 为什么会突然让出 CPU</title>
-    <id>https://quchaosheng.github.io/2026/07/30/linux-realtime-throttling/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/linux-realtime-throttling/"/>
-    <published>2026-07-16T06:00:00.000Z</published>
-    <updated>2026-07-16T06:00:00.000Z</updated>
-    <summary type="html">SCHED_FIFO 线程若从不阻塞，可以永远占着一个 CPU。对控制环而言这似乎很诱人，对整台 Linux 机器却很危险：同核上的内核维护、SSH、日志、网络处理甚至恢复机制都可能没有机会运行。Linux 因此提供实时节流机制，用一个统计周期和其中可供实时调度类使用的运行预算，为普通任务和系统维护留出 CPU 时间。 实时线程开始运行 → 消耗 RT 运行预算 → 达到周期上限 → 实时类被暂时节流 → 下个周期补充预算 两个 sysctl 的含义 kernel.sched_rt_period_us 定义预算统计的周期； kernel.sched...</summary>
+    <title>io_uring：用共享环减少异步 I/O 开销</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-io-uring/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-io-uring/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">io_uring 通过用户态与内核共享的提交环（SQ）和完成环（CQ）批量传递 I&amp;#x2F;O 请求，减少系统调用、数据复制和上下文切换。 请求生命周期 应用填写 SQE 并推进队尾，内核消费请求并执行 I&amp;#x2F;O，完成后写入 CQE。应用读取 CQE 获取结果。批量提交、固定缓冲区和注册文件可进一步减少开销。 应用填写 SQE → 提交到 SQ → 内核执行 I/O → 结果写入 CQE → 应用收割完成事件 记忆要点 SQ&amp;#x2F;CQ 是通信结构，真正 I&amp;#x2F;O 是否异步仍取决于操作类型和内核支持。 zero-copy、SQ...</summary>
   </entry>
   <entry>
-    <title>osnoise tracer：把 Linux 实时抖动拆成可解释的噪声</title>
-    <id>https://quchaosheng.github.io/2026/07/30/linux-osnoise-tracer/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/linux-osnoise-tracer/"/>
-    <published>2026-07-15T06:00:00.000Z</published>
-    <updated>2026-07-15T06:00:00.000Z</updated>
-    <summary type="html">实时延迟出现尖峰时，先要知道那段时间被谁占走了。 osnoise tracer 在指定 CPU 上运行采样线程，比较它本该运行的时间和实际得到的时间，再把缺口和 IRQ、softirq、NMI、调度等内核事件对上。它适合用来拆开“偶尔抖一下”到底是哪类干扰。 建立采样时间窗 → 持续读取运行时间 → 发现时间缺口 → 关联 IRQ/线程等事件 → 锁定主要噪声源 osnoise 与 timerlat 的分工 timerlat 从定时器到期开始，关注 IRQ 延迟和被唤醒线程真正获得 CPU 的延迟； osnoise 则在一个 CPU 上持续观察“本...</summary>
+    <title>MMU：虚拟地址如何找到物理内存</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-mmu-address-translation/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-mmu-address-translation/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">CPU 执行程序时产生虚拟地址，MMU 根据页表把它翻译为物理地址。虚拟内存让每个进程拥有独立地址空间，也使权限隔离、按需分页和内存映射成为可能。 地址翻译 MMU 先查 TLB；命中时直接得到物理页框，未命中时遍历多级页表。页表项还保存读写、用户态、执行权限以及页面是否存在等状态。 CPU 产生虚拟地址 → 查询 TLB → 遍历多级页表 → 组合物理地址 → 访问缓存或内存 记忆要点 TLB 缓存的是地址翻译，不是普通数据。 页越大，TLB 覆盖范围越大，但内部碎片也可能增加。 页表项无效或权限不符会触发缺页异常，由内核决定补页还是发送信号。 ...</summary>
   </entry>
   <entry>
-    <title>Linux 高精度定时器：实时任务为何不再依赖系统节拍</title>
-    <id>https://quchaosheng.github.io/2026/07/30/linux-high-resolution-timers/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/linux-high-resolution-timers/"/>
-    <published>2026-07-14T06:00:00.000Z</published>
-    <updated>2026-07-14T06:00:00.000Z</updated>
-    <summary type="html">一个周期任务若每 1 ms 运行一次，最直观的写法是“睡 1 ms，再做一次工作”。但如果每轮工作多花了 80 微秒，下一轮又从当前时刻开始睡，误差会不断累积，最终周期已经悄悄漂移。Linux 的高精度定时器（hrtimer）配合硬件 clock event，可以把到期时刻表达为绝对时间，并按下一次最近到期事件编程硬件定时器。它解决的是“什么时候该触发”，不是“触发后什么时候一定能拿到 CPU”。 任务设置到期时间 → hrtimer 入队排序 → 编程 clock event → 定时中断触发回调 → 唤醒任务并参与调度 clocksource、...</summary>
+    <title>Linux 内存泄漏排查：先分清是哪一种内存增长</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-memory-leak-diagnosis/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-memory-leak-diagnosis/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">“内存占用变大”不等于“发生泄漏”。进程 RSS 增长可能来自真正不可达的堆对象、仍被引用的缓存、内存映射、线程栈、共享内存，或分配器尚未归还的空闲页。排查第一步是确定增长属于哪一类。 诊断路径 先用系统指标确认增长进程和时间段，再分析 /proc/&amp;lt;pid&amp;gt;/smaps 区分匿名页、文件映射与共享页。能复现时使用 ASan、LSan、Valgrind 或 heap profiler 定位分配栈；线上则优先采用低开销采样和趋势对比。 监控发现 RSS 增长 → 确认增长是否持续 → 用 smaps 分类内存 → 采样分配调用栈 → 复现...</summary>
   </entry>
   <entry>
-    <title>Linux 实时系统落地检查清单</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-linux-checklist/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-linux-checklist/"/>
-    <published>2026-07-13T12:00:00.000Z</published>
-    <updated>2026-07-13T12:00:00.000Z</updated>
-    <summary type="html">实时化不是“装一个 PREEMPT_RT 内核，再把线程优先级调到 99”。一个可交付的实时系统必须能回答：哪个任务多久运行一次、最晚何时完成、在什么工况下仍然成立、失败时做什么、由什么数据证明。只有把需求、平台、软件、观测和验收连起来，调优才不会沦为一次偶然的 benchmark。 定义 deadline 与最坏延迟 → 配置 PREEMPT_RT 与调度 → 隔离 CPU/IRQ/内存 → 施加组合压力测试 → 追踪尖峰并形成回归基线 从需求写出可验收的数字 先避免“系统要实时”这种无法测试的说法。对每条关键链路写出周期、截止期、最坏执行时间、...</summary>
+    <title>NUMA：CPU 为什么更偏爱本地内存</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-numa-memory-access/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-numa-memory-access/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">NUMA（非一致内存访问）把 CPU、内存划分为多个节点。CPU 访问本节点内存延迟较低，跨节点访问则要经过互连总线，因此线程跑在哪个节点、页面落在哪个节点会直接影响性能。 核心机制 Linux 默认采用“首次触碰”策略：虚拟内存被首次实际写入时，物理页通常分配在执行该线程所在的 NUMA 节点。调度器会尽量保持 CPU 与内存亲和性，自动 NUMA balancing 也可能迁移任务或页面。 线程在 Node 0 运行 → 首次写入虚拟页 → Node 0 分配物理页 → 后续本地访问 记忆要点 numactl --hardware 查看节点拓扑...</summary>
   </entry>
   <entry>
-    <title>TSN：以太网怎样提供确定性时延</title>
-    <id>https://quchaosheng.github.io/2026/07/30/tsn-deterministic-network/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/tsn-deterministic-network/"/>
-    <published>2026-07-13T02:00:00.000Z</published>
-    <updated>2026-07-13T02:00:00.000Z</updated>
-    <summary type="html">传统以太网的核心优点是共享与尽力而为：大包可以占用链路，突发流量可以在交换机队列里等待。TSN（Time-Sensitive Networking）并不是把以太网换成另一种网络，而是在标准以太网上叠加共同时间、流量分类、整形、门控和可靠性机制，使关键流有预先安排的发送窗口和可计算的端到端时延。 PTP 同步全网时间 → 识别关键业务流 → 配置队列与 Gate Control List → 按时间窗发送 → 监控延迟、丢包与时钟偏差 TSN 不是一个 qdisc，而是一组配合机制 IEEE 802.1AS&amp;#x2F;gPTP 提供共同时间；802....</summary>
+    <title>RCU：读多写少场景下的并发设计</title>
+    <id>https://quchaosheng.github.io/2026/07/29/linux-rcu/</id>
+    <link href="https://quchaosheng.github.io/2026/07/29/linux-rcu/"/>
+    <published>2026-07-29T08:09:18.000Z</published>
+    <updated>2026-07-29T08:09:18.000Z</updated>
+    <summary type="html">RCU（Read-Copy-Update）让读者在极低同步成本下访问共享数据。写者不原地破坏旧版本，而是创建新版本、发布新指针，并等待所有旧读者离开后再回收旧对象。 更新流程 读侧进入 RCU 临界区并解引用指针；写侧复制并修改对象，再原子发布。经过 grace period 后，可确认此前的读侧临界区都已结束，旧对象才安全释放。 读者读取旧指针 → 写者复制并修改 → 原子发布新指针 → 等待宽限期 → 回收旧对象 记忆要点 RCU 优化读路径，代价是写逻辑和回收机制更复杂。 rcu_read_lock() 不等同于普通互斥锁。 synchron...</summary>
   </entry>
 </feed>
