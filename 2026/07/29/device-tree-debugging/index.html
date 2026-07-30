@@ -242,16 +242,19 @@
         </header>
 
         <div class="post-content">
-            <p>设备树描述不能由硬件自动枚举的平台设备，包括地址、中断、时钟、GPIO 和设备间引用。调试重点是确认“编译结果是否进入运行系统、节点是否启用、资源是否正确、驱动是否匹配”。</p>
-<h2 id="排查顺序"><a href="#排查顺序" class="headerlink" title="排查顺序"></a>排查顺序</h2><p>先确认实际加载的 DTB，再检查 <code>/sys/firmware/devicetree/base</code> 中的运行时树。随后核对 compatible 与驱动表、status、reg、interrupts、clocks 等属性，最后查看 probe 日志和延迟探测状态。</p>
+            <p>设备树解决的是“这块不可自动枚举的硬件如何被内核认识”。它描述寄存器地址、中断、时钟、复位、GPIO、DMA、供电和设备间引用；内核根据节点创建设备，再用 <code>compatible</code> 匹配驱动并执行 probe。设备树调试最常见的陷阱是只改了源码 DTS，却没有确认编译出的 DTB、Bootloader 实际加载的 DTB 和运行时内核看到的树是同一份。</p>
 <div class="note-flow"><span>DTS 编译为 DTB</span><i>→</i><span>Bootloader 传给内核</span><i>→</i><span>内核创建设备</span><i>→</i><span>compatible 匹配</span><i>→</i><span>probe 获取资源</span></div>
 
-<h2 id="记忆要点"><a href="#记忆要点" class="headerlink" title="记忆要点"></a>记忆要点</h2><ul>
-<li><code>reg</code> 的单元数量由父节点的 <code>#address-cells/#size-cells</code> 决定。</li>
-<li>中断号必须结合 interrupt-parent 和对应 binding 解读。</li>
-<li>不要只看源码 DTS，要看系统实际启动使用的设备树。</li>
-</ul>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247495130&idx=1&sn=2fcc1daca481b12c6bba87978b582910">吃透设备树调试，嵌入式面试稳拿分</a></p>
+<h2 id="先验证“运行时树”而不是源码"><a href="#先验证“运行时树”而不是源码" class="headerlink" title="先验证“运行时树”而不是源码"></a>先验证“运行时树”而不是源码</h2><p>内核会在 <code>/sys/firmware/devicetree/base</code> 暴露运行时设备树；它是二进制 DTB 解析后的真实视图。应先确认目标节点是否存在、<code>status</code> 是否为 <code>okay</code>、<code>compatible</code> 是否正确，再看地址、中断、时钟和 phandle 引用。字符串属性以 NUL 结尾，二进制单元以大端编码，直接 <code>cat</code> 时不要误解输出。</p>
+<div class="note-map"><span><b>源码 DTS/DTSI</b><small>开发时编辑的描述，可能被其他 include/overlay 覆盖</small></span><span><b>编译 DTB</b><small>实际交给 Bootloader 的二进制树，要确认路径和版本</small></span><span><b>运行时树</b><small>/sys/firmware/devicetree/base，排查必须以它为准</small></span><span><b>compatible</b><small>决定可匹配哪些驱动；字符串顺序和 binding 都有语义</small></span><span><b>资源属性</b><small>reg/interrupts/clocks/resets/dmas 需按父节点与 binding 解读</small></span><span><b>probe/defer</b><small>依赖未就绪会延迟 probe，不等于驱动没匹配</small></span></div>
+
+<h2 id="一条稳定的排查顺序"><a href="#一条稳定的排查顺序" class="headerlink" title="一条稳定的排查顺序"></a>一条稳定的排查顺序</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在目标板确认节点和属性（路径按实际节点调整）</span></span><br><span class="line"><span class="built_in">ls</span> /sys/firmware/devicetree/base</span><br><span class="line"><span class="built_in">tr</span> -d <span class="string">&#x27;\0&#x27;</span> &lt; /sys/firmware/devicetree/base/soc/&lt;node&gt;/compatible</span><br><span class="line">dmesg | grep -i -E <span class="string">&#x27;probe|defer|&lt;driver-name&gt;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>然后检查驱动的 <code>of_match_table</code> 是否包含相同&#x2F;兼容的字符串；查看 <code>/sys/bus/*/devices</code>、<code>/sys/bus/*/drivers</code> 判断设备是否创建与绑定；若出现 <code>-EPROBE_DEFER</code>，找出它正在等待的时钟、regulator、GPIO 或父设备，而不是强行重试 probe。</p>
+<h2 id="属性必须结合-binding-和父节点解释"><a href="#属性必须结合-binding-和父节点解释" class="headerlink" title="属性必须结合 binding 和父节点解释"></a>属性必须结合 binding 和父节点解释</h2><p><code>reg</code> 的单元数量由父节点的 <code>#address-cells</code> 与 <code>#size-cells</code> 决定，不能把一串数简单当成一个地址。<code>interrupts</code> 必须和 <code>interrupt-parent</code>、中断控制器 binding 一起解释；<code>clocks</code>、<code>resets</code> 和 <code>dmas</code> 通常引用其他节点的 phandle，索引含义由对应 provider binding 决定。只看一个 DTS 片段很容易得出错误结论。</p>
+<p>设备树绑定是 ABI 文档，不是可自由发挥的注释。优先阅读内核的 YAML binding 和已有同类节点，使用 <code>dtbs_check</code> 检查 schema；对新增硬件，把电源、复位、时钟、pinctrl 和中断完整写出，别依赖 Bootloader 留下的偶然状态。</p>
+<h2 id="最后才去看驱动业务逻辑"><a href="#最后才去看驱动业务逻辑" class="headerlink" title="最后才去看驱动业务逻辑"></a>最后才去看驱动业务逻辑</h2><p>运行时节点正确、资源也能获取后，才排查驱动内部传输、寄存器和状态机。这样可以把“设备树没生效”“依赖没起来”“driver probe 失败”和“设备真正不响应”分成不同问题。设备树调试的核心纪律是：从实际 DTB、实际运行时树和实际 dmesg 出发。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://devicetree-specification.readthedocs.io/">Devicetree specification</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/devicetree/bindings/index.html">Linux Devicetree bindings</a></p>
 
         </div>
 
