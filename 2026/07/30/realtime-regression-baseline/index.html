@@ -146,6 +146,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -177,10 +242,21 @@
         </header>
 
         <div class="post-content">
-            <p>实时性可能被内核配置、驱动、BIOS、容器参数甚至温度策略悄悄改变。可靠做法是固定硬件与测试矩阵，保存原始直方图、最大值、分位数和环境信息，让每次系统升级都能与已知基线比较。</p>
+            <p>实时性会被看似无关的改动悄悄破坏：内核升级、网卡驱动、BIOS、容器配置、日志服务、模型版本、散热策略甚至办公室温度都可能改变长尾。一次成功调优如果没有留下环境、负载和原始数据，下一次尖峰出现时只能从头猜。实时回归测试的价值是把“那天跑得很好”变成可复现、可比较、可阻止回归的工程基线。</p>
 <div class="note-flow"><span>定义负载与通过阈值</span><i>→</i><span>记录软硬件环境</span><i>→</i><span>长时间组合压测</span><i>→</i><span>比较尾延迟与直方图</span><i>→</i><span>超阈值后保留追踪证据</span></div>
 
-<p>测试应覆盖空载、CPU&#x2F;内存&#x2F;网络&#x2F;存储压力和温度稳定后的场景，并把失败时的 ftrace 或 rtla 数据作为构建产物。只保存一个“最好结果”无法阻止回归。参考：<a target="_blank" rel="noopener" href="https://wiki.linuxfoundation.org/realtime/documentation/howto/tools/rt-tests">rt-tests</a></p>
+<h2 id="基线不是一个最大值"><a href="#基线不是一个最大值" class="headerlink" title="基线不是一个最大值"></a>基线不是一个最大值</h2><p>单个 <code>max=37 us</code> 无法说明测试跑了多久、在什么负载下、是否刚好没碰到低频事件。一个有用的基线至少包含：最小&#x2F;平均&#x2F;最大值、P95&#x2F;P99&#x2F;P99.9、直方图、超过阈值的次数、连续运行时长，以及业务端到端指标，例如相机帧年龄或控制周期 miss 数。</p>
+<div class="note-map"><span><b>测试描述</b><small>周期、CPU、优先级、负载、时长和通过阈值</small></span><span><b>环境快照</b><small>内核、firmware、启动参数、温度、频率、IRQ 与容器配置</small></span><span><b>原始数据</b><small>cyclictest/rtla 输出、直方图、业务时间戳</small></span><span><b>失败证据</b><small>trace、/proc/interrupts、osnoise、日志和复现步骤</small></span><span><b>比较规则</b><small>与同硬件同负载基线比尾部和超阈值次数</small></span><span><b>版本门禁</b><small>超阈值阻止镜像、内核或配置进入下一阶段</small></span></div>
+
+<h2 id="先固定测试矩阵"><a href="#先固定测试矩阵" class="headerlink" title="先固定测试矩阵"></a>先固定测试矩阵</h2><p>测试矩阵应覆盖最可能制造噪声的维度，而不是无穷排列。常见的组合包括：空载、CPU 压力、内存压力、磁盘 I&#x2F;O、网络满载、相机&#x2F;GPU 推理、热稳定和服务重启。对于机器人，还应加入传感器断流、消息积压、控制器取消和安全恢复。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">每个 case = 固定硬件 + 固定镜像 + 固定启动参数</span><br><span class="line">          + 固定 CPU/IRQ 布局 + 固定负载脚本 + 固定运行时长</span><br><span class="line">          -&gt; 输出原始延迟数据、环境快照、pass/fail 和异常 trace</span><br></pre></td></tr></table></figure>
+
+<p>这样一次结果变坏时，首先能比较的是“什么变了”，而不是先争论测试是不是可信。</p>
+<h2 id="把时间戳和环境一起收集"><a href="#把时间戳和环境一起收集" class="headerlink" title="把时间戳和环境一起收集"></a>把时间戳和环境一起收集</h2><p>测试脚本启动时保存 <code>uname -a</code>、内核 config、CPU governor、温度、<code>/proc/interrupts</code>、cgroup&#x2F;cpuset 与应用版本；运行中保存周期延迟、工作集、丢帧&#x2F;超时和系统日志。超阈值时自动抓取较短的 ftrace&#x2F;rtla 证据，而不是依赖人恰好在终端前。</p>
+<p>长尾比较最好同时看数值和形状：最大值偶尔变化可能是采样机会不同；直方图整体右移、P99 持续升高或超阈值次数增加，通常更能说明系统发生了真实退化。阈值也应分级，例如 warning 用于调查，fail 用于阻止发布。</p>
+<h2 id="让回归测试进入交付流程"><a href="#让回归测试进入交付流程" class="headerlink" title="让回归测试进入交付流程"></a>让回归测试进入交付流程</h2><p>在有固定硬件的实验台或 HIL 环境上，将测试作为镜像、内核、驱动和 BIOS 变更的门禁。自动化并不意味着完全无人值守：一旦失败，应保留硬件状态、trace 和复现脚本，供工程师判断是环境噪声、测试缺陷还是产品风险。</p>
+<p>最终目标不是让图表永远完美，而是让每一次变差都有证据、每一次优化能留下基线、每一次版本升级都知道自己是否仍满足 deadline。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://wiki.linuxfoundation.org/realtime/documentation/howto/tools/rt-tests">rt-tests</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/tools/rtla/index.html">rtla</a></p>
 
         </div>
 
