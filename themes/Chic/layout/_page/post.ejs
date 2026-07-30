@@ -11,7 +11,7 @@
             <% if(theme.post_meta_enable){ %>
                 <div class="post-meta">
                     <% if(theme.post_author_enable && config.author){ %>
-                        Author: <a itemprop="author" rel="author" href="/"><%- config.author %></a>
+                        作者：<a itemprop="author" rel="author" href="/"><%- config.author %></a>
                     <% } %>
 
                     <% if(page.date && theme.post_date_enable){ %>
@@ -21,7 +21,7 @@
                     <% } %>
                     <% if(page.categories.length!==0 && theme.post_category_enable){ %>
                         <span class="post-category">
-                    Category:
+                    分类：
                             <% page.categories.forEach(item=>{ %>
                                 <a href="<%- url_for(item.path) %>"><%- item.name %></a>
                             <% }) %>
@@ -39,34 +39,88 @@
             <section class="post-copyright">
                 <% if(theme.post_copyright_author_enable){ %>
                     <p class="copyright-item">
-                        <span>Author:</span>
+                        <span>作者：</span>
                         <span><%- config.author %></span>
                     </p>
                 <% } %>
                 <% if(theme.post_copyright_permalink_enable){ %>
                     <p class="copyright-item">
-                        <span>Permalink:</span>
+                        <span>永久链接：</span>
                         <span><a href="<%- page.permalink %>"><%- page.permalink %></a></span>
                     </p>
                 <% } %>
                 <% if(theme.post_copyright_license_enable){ %>
                     <p class="copyright-item">
-                        <span>License:</span>
+                        <span>许可协议：</span>
                         <span><%- theme.post_copyright_license_text %></span>
                     </p>
                 <% } %>
                 <% if(theme.post_copyright_slogan_enable){ %>
                      <p class="copyright-item">
-                         <span>Slogan:</span>
+                        <span>说明：</span>
                          <span><%- theme.post_copyright_slogan_text %></span>
                      </p>
                 <% } %>
 
             </section>
         <% } %>
+        <%
+            function collectTermNames(terms) {
+                var names = [];
+                if (terms && typeof terms.each === 'function') {
+                    terms.each(function (term) { names.push(term.name); });
+                } else if (terms && typeof terms.forEach === 'function') {
+                    terms.forEach(function (term) { names.push(term.name); });
+                }
+                return names;
+            }
+
+            var genericCategories = ['技术', '感悟'];
+            var currentCategories = collectTermNames(page.categories).filter(function (name) {
+                return genericCategories.indexOf(name) === -1;
+            });
+            var currentTags = collectTermNames(page.tags);
+            var relatedPosts = [];
+
+            site.posts.each(function (candidate) {
+                if (candidate.path === page.path) return;
+
+                var candidateCategories = collectTermNames(candidate.categories);
+                var candidateTags = collectTermNames(candidate.tags);
+                var score = 0;
+
+                currentCategories.forEach(function (name) {
+                    if (candidateCategories.indexOf(name) !== -1) score += 2;
+                });
+                currentTags.forEach(function (name) {
+                    if (candidateTags.indexOf(name) !== -1) score += 5;
+                });
+
+                if (score > 0) relatedPosts.push({ post: candidate, score: score });
+            });
+
+            relatedPosts.sort(function (left, right) {
+                if (left.score !== right.score) return right.score - left.score;
+                return right.post.date.valueOf() - left.post.date.valueOf();
+            });
+            relatedPosts = relatedPosts.slice(0, 3);
+        %>
+        <% if (relatedPosts.length) { %>
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    <% relatedPosts.forEach(function (item) { %>
+                        <a href="<%- url_for(item.post.path) %>">
+                            <span><%= item.post.title %></span>
+                            <time datetime="<%= item.post.date.toISOString() %>"><%- date(item.post.date, theme.date_format) %></time>
+                        </a>
+                    <% }); %>
+                </div>
+            </section>
+        <% } %>
         <section class="post-tags">
             <div>
-                <span>Tag(s):</span>
+                <span>标签：</span>
                 <span class="tag">
                     <% if(page.tags.length!==0){%>
                     <% page.tags.forEach(item=>{ %>
@@ -76,9 +130,9 @@
                 </span>
             </div>
             <div>
-                <a href="javascript:window.history.back();">back</a>
+                <a href="javascript:window.history.back();">返回</a>
                 <span>· </span>
-                <a href="<%- config.root %>">home</a>
+                <a href="<%- config.root %>">首页</a>
             </div>
         </section>
         <section class="post-nav">

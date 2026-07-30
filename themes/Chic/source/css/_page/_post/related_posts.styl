@@ -1,0 +1,48 @@
+.related-posts
+  margin-top 3rem
+  padding-top 1.5rem
+  border-top 1px solid $light-border-color
+
+  .dark-theme &
+    border-top-color $dark-border-color
+
+  h2
+    margin 0 0 0.75rem
+    font-size 1.15rem
+    line-height 1.5
+
+.related-post-list
+  display grid
+
+  a
+    display grid
+    grid-template-columns minmax(0, 1fr) auto
+    gap 1rem
+    align-items baseline
+    padding 0.7rem 0
+    border-bottom 1px solid $light-border-color
+    color $light-font-color
+
+    .dark-theme &
+      border-bottom-color $dark-border-color
+      color $dark-font-color
+
+    &:hover span
+      color $light-post-link-color
+
+    span
+      min-width 0
+      line-height 1.55
+
+    time
+      color $light-font-secondary-color
+      font-size 0.82rem
+      white-space nowrap
+
+      .dark-theme &
+        color $dark-font-secondary-color
+
+@media (max-width: 520px)
+  .related-post-list a
+    grid-template-columns 1fr
+    gap 0.2rem
