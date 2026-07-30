@@ -18,14 +18,14 @@
 
 <title>伙伴系统与 SLUB：Linux 内核怎样分配内存 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="Linux 内核用分层分配器解决不同粒度的需求：伙伴系统管理以页为单位的连续物理内存，SLUB 在这些页上高效分配频繁使用的小对象。 两层协作 伙伴系统按 2 的幂次组织空闲块。分配时拆分大块，释放时与同阶“伙伴”合并。SLUB 为相同类型或大小的对象建立 cache，把 slab 中的空闲槽直接交给调用者。 kmem_cache_alloc → 从当...">
+    <meta name="description" content="串起页分配器、伙伴系统、SLUB、kmalloc 与 vmalloc，说明内核分配失败和碎片问题该如何观察。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="伙伴系统与 SLUB：Linux 内核怎样分配内存 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="Linux 内核用分层分配器解决不同粒度的需求：伙伴系统管理以页为单位的连续物理内存，SLUB 在这些页上高效分配频繁使用的小对象。 两层协作 伙伴系统按 2 的幂次组织空闲块。分配时拆分大块，释放时与同阶“伙伴”合并。SLUB 为相同类型或大小的对象建立 cache，把 slab 中的空闲槽直接交给调用者。 kmem_cache_alloc → 从当...">
+    <meta property="og:description" content="串起页分配器、伙伴系统、SLUB、kmalloc 与 vmalloc，说明内核分配失败和碎片问题该如何观察。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="伙伴系统与 SLUB：Linux 内核怎样分配内存 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="Linux 内核用分层分配器解决不同粒度的需求：伙伴系统管理以页为单位的连续物理内存，SLUB 在这些页上高效分配频繁使用的小对象。 两层协作 伙伴系统按 2 的幂次组织空闲块。分配时拆分大块，释放时与同阶“伙伴”合并。SLUB 为相同类型或大小的对象建立 cache，把 slab 中的空闲槽直接交给调用者。 kmem_cache_alloc → 从当...">
+    <meta name="twitter:description" content="串起页分配器、伙伴系统、SLUB、kmalloc 与 vmalloc，说明内核分配失败和碎片问题该如何观察。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -172,9 +172,9 @@
     <div class="tocbot-list">
     </div>
     <div class="tocbot-list-menu">
-        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
-        <a onclick="go_top()">Back to top</a>
-        <a onclick="go_bottom()">Go to bottom</a>
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
     </div>
 </div>
 
@@ -212,7 +212,7 @@
         tocbot.refresh(obj_merge(tocbot_default_config, {
             collapseDepth: expanded ? 1 : DEPTH_MAX
         }));
-        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+        b.innerText = expanded ? '展开全部' : '收起目录';
     }
 
     function go_top() {
@@ -232,6 +232,7 @@
         return target;
     }
 </script>
+
     
 
     
@@ -241,7 +242,7 @@
             
                 <div class="post-meta">
                     
-                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
                     
 
                     
@@ -251,7 +252,7 @@
                     
                     
                         <span class="post-category">
-                    Category:
+                    分类：
                             
                                 <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
                             
@@ -264,16 +265,30 @@
         </header>
 
         <div class="post-content">
-            <p>Linux 内核用分层分配器解决不同粒度的需求：伙伴系统管理以页为单位的连续物理内存，SLUB 在这些页上高效分配频繁使用的小对象。</p>
-<h2 id="两层协作"><a href="#两层协作" class="headerlink" title="两层协作"></a>两层协作</h2><p>伙伴系统按 2 的幂次组织空闲块。分配时拆分大块，释放时与同阶“伙伴”合并。SLUB 为相同类型或大小的对象建立 cache，把 slab 中的空闲槽直接交给调用者。</p>
+            <p>内核既要分配整页和连续物理页，也要频繁创建几十到几千字节的小对象。只用一种分配器很难同时兼顾碎片、速度和对象复用，因此 Linux 将问题分层：页分配器管理物理页，伙伴系统组织可合并的连续页块，SLUB 再从页块中切出固定大小的对象槽。</p>
+<h2 id="从-order-到对象槽"><a href="#从-order-到对象槽" class="headerlink" title="从 order 到对象槽"></a>从 order 到对象槽</h2><p>伙伴系统按 order 管理空闲块：order 0 是一页，order 1 是两页，依次按 2 的幂增长。申请某个 order 时，若该链表没有空闲块，可以拆分更高 order；释放时，只有地址对齐且同阶空闲的伙伴才能合并。它能快速拆分和合并，但不能保证系统运行很久后仍能满足高阶连续分配。</p>
+<p>SLUB 为同类对象建立 <code>kmem_cache</code>。每个 slab 由一组页面组成，内部保存已经分割好的对象槽。快速路径尽量从当前 CPU 的 slab 取对象，减少全局锁争用；槽不足时才向页分配器申请新的 slab。</p>
 <div class="note-flow"><span>kmem_cache_alloc</span><i>→</i><span>从当前 slab 取对象</span><i>→</i><span>slab 不足</span><i>→</i><span>伙伴系统申请页</span><i>→</i><span>切分为对象槽</span></div>
 
-<h2 id="记忆要点"><a href="#记忆要点" class="headerlink" title="记忆要点"></a>记忆要点</h2><ul>
-<li>伙伴系统减少外部碎片，但可能产生内部碎片。</li>
-<li>SLUB 复用已初始化布局，适合 <code>task_struct</code> 等内核对象。</li>
-<li><code>kmalloc</code> 适合物理上连续的小块，<code>vmalloc</code> 虚拟连续但物理可分散。</li>
+<div class="note-map"><span><b>伙伴系统</b><small>管理 2 的幂次连续物理页</small></span><span><b>SLUB cache</b><small>按对象类型或大小复用 slab</small></span><span><b>kmalloc</b><small>小块内存，物理上连续</small></span><span><b>vmalloc</b><small>虚拟连续，物理页可以分散</small></span><span><b>GFP 标志</b><small>描述可否睡眠、可用区域与回收约束</small></span><span><b>memcg/NUMA</b><small>配额和节点位置也影响分配结果</small></span></div>
+
+<h2 id="kmalloc、kmem-cache-与-vmalloc"><a href="#kmalloc、kmem-cache-与-vmalloc" class="headerlink" title="kmalloc、kmem_cache 与 vmalloc"></a>kmalloc、kmem_cache 与 vmalloc</h2><ul>
+<li><code>kmalloc()</code> 适合通用的小块分配，返回物理连续、虚拟连续的内存；过大的连续申请更容易受碎片影响。</li>
+<li><code>kmem_cache_create()</code> 适合大量同构对象，可配置对齐、构造和调试能力。</li>
+<li><code>vmalloc()</code> 只保证虚拟地址连续，页表建立和 TLB 压力更高，也不适合要求物理连续的 DMA 场景。</li>
+<li>DMA 缓冲区应使用对应 DMA API，不能因为 <code>kmalloc</code> 物理连续就绕过设备地址、缓存一致性和掩码约束。</li>
 </ul>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494614&idx=1&sn=d4a6d3974c77eb269864ab6efd39ec40">不懂伙伴系统与 SLUB 分配器，别再说你懂 Linux 内核了</a></p>
+<h2 id="用系统接口观察"><a href="#用系统接口观察" class="headerlink" title="用系统接口观察"></a>用系统接口观察</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/buddyinfo</span><br><span class="line"><span class="built_in">head</span> -n 20 /proc/slabinfo</span><br><span class="line">grep -E <span class="string">&#x27;Slab|SReclaimable|SUnreclaim|Vmalloc&#x27;</span> /proc/meminfo</span><br><span class="line">slabtop -o</span><br></pre></td></tr></table></figure>
+
+<p><code>/proc/buddyinfo</code> 中高 order 数量很少，只能说明当前各 zone 的空闲块分布，不能单独断定已经发生不可恢复的碎片。还要结合分配 order、GFP 标志、zone、水位、回收与规整日志判断。<code>slabtop</code> 展示对象 cache 的当前统计，也不能直接证明某个 cache 泄漏；对象数量增长可能来自正常负载或缓存策略。</p>
+<h2 id="分配失败时的检查顺序"><a href="#分配失败时的检查顺序" class="headerlink" title="分配失败时的检查顺序"></a>分配失败时的检查顺序</h2><ol>
+<li>从日志确认失败的 order、GFP mask、调用栈和 NUMA&#x2F;zone 约束。</li>
+<li>区分“总内存不足”和“有空闲页但缺少满足条件的连续块”。</li>
+<li>检查调用上下文能否睡眠，是否错误使用了原子分配标志。</li>
+<li>对长期大块需求，优先在设计上避免运行期高阶分配，或评估 CMA、预留池和 scatter-gather。</li>
+</ol>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>不同内核版本、NUMA 拓扑、页大小和 SLAB 实现会改变统计字段与快速路径。本文给出的是排查框架；生产结论应保存内核版本、配置、分配栈和当时的内存状态。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/mm/physical_memory.html">Physical Memory</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/mm/slab.html">Slab Allocation</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/core-api/memory-allocation.html">Memory Allocation Guide</a> · <a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494614&idx=1&sn=d4a6d3974c77eb269864ab6efd39ec40">不懂伙伴系统与 SLUB 分配器，别再说你懂 Linux 内核了</a></p>
 
         </div>
 
@@ -281,19 +296,19 @@
             <section class="post-copyright">
                 
                     <p class="copyright-item">
-                        <span>Author:</span>
+                        <span>作者：</span>
                         <span>Quchaosheng</span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>Permalink:</span>
+                        <span>永久链接：</span>
                         <span><a href="https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/">https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/</a></span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>License:</span>
+                        <span>许可协议：</span>
                         <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
                     </p>
                 
@@ -301,9 +316,33 @@
 
             </section>
         
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/alloc-pages-path/">
+                            <span>alloc_pages：物理页面分配如何走到伙伴系统</span>
+                            <time datetime="2026-04-03T06:00:00.000Z">2026-04-03</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/malloc-free-internals/">
+                            <span>malloc 与 free：用户态分配器如何管理堆内存</span>
+                            <time datetime="2026-02-12T06:00:00.000Z">2026-02-12</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/linux-page-cache/">
+                            <span>Page Cache：文件 I/O 为什么常常先经过内存</span>
+                            <time datetime="2026-07-29T09:36:41.000Z">2026-07-29</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
         <section class="post-tags">
             <div>
-                <span>Tag(s):</span>
+                <span>标签：</span>
                 <span class="tag">
                     
                     
@@ -317,9 +356,9 @@
                 </span>
             </div>
             <div>
-                <a href="javascript:window.history.back();">back</a>
+                <a href="javascript:window.history.back();">返回</a>
                 <span>· </span>
-                <a href="/">home</a>
+                <a href="/">首页</a>
             </div>
         </section>
         <section class="post-nav">

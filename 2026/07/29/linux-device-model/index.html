@@ -18,14 +18,14 @@
 
 <title>Linux 设备驱动模型：总线、设备和驱动如何相遇 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="Linux 设备模型用 bus、device、driver 和 class 统一描述硬件及其关系。它把“设备存在”和“谁来驱动”解耦，并通过 sysfs 向用户空间展示拓扑与属性。 匹配流程 设备由固件描述、枚举逻辑或板级代码注册到总线；驱动注册后，总线的 match 规则比较 compatible、ID 表等信息。匹配成功才调用 probe 建立资源...">
+    <meta name="description" content="从 bus、device、driver、class 与 probe 解释 Linux 设备模型，并给出 sysfs 和 uevent 的现场排查顺序。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-device-model/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux 设备驱动模型：总线、设备和驱动如何相遇 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="Linux 设备模型用 bus、device、driver 和 class 统一描述硬件及其关系。它把“设备存在”和“谁来驱动”解耦，并通过 sysfs 向用户空间展示拓扑与属性。 匹配流程 设备由固件描述、枚举逻辑或板级代码注册到总线；驱动注册后，总线的 match 规则比较 compatible、ID 表等信息。匹配成功才调用 probe 建立资源...">
+    <meta property="og:description" content="从 bus、device、driver、class 与 probe 解释 Linux 设备模型，并给出 sysfs 和 uevent 的现场排查顺序。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-device-model/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Linux 设备驱动模型：总线、设备和驱动如何相遇 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="Linux 设备模型用 bus、device、driver 和 class 统一描述硬件及其关系。它把“设备存在”和“谁来驱动”解耦，并通过 sysfs 向用户空间展示拓扑与属性。 匹配流程 设备由固件描述、枚举逻辑或板级代码注册到总线；驱动注册后，总线的 match 规则比较 compatible、ID 表等信息。匹配成功才调用 probe 建立资源...">
+    <meta name="twitter:description" content="从 bus、device、driver、class 与 probe 解释 Linux 设备模型，并给出 sysfs 和 uevent 的现场排查顺序。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -172,9 +172,9 @@
     <div class="tocbot-list">
     </div>
     <div class="tocbot-list-menu">
-        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
-        <a onclick="go_top()">Back to top</a>
-        <a onclick="go_bottom()">Go to bottom</a>
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
     </div>
 </div>
 
@@ -212,7 +212,7 @@
         tocbot.refresh(obj_merge(tocbot_default_config, {
             collapseDepth: expanded ? 1 : DEPTH_MAX
         }));
-        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+        b.innerText = expanded ? '展开全部' : '收起目录';
     }
 
     function go_top() {
@@ -232,6 +232,7 @@
         return target;
     }
 </script>
+
     
 
     
@@ -241,7 +242,7 @@
             
                 <div class="post-meta">
                     
-                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
                     
 
                     
@@ -251,7 +252,7 @@
                     
                     
                         <span class="post-category">
-                    Category:
+                    分类：
                             
                                 <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
                             
@@ -264,16 +265,25 @@
         </header>
 
         <div class="post-content">
-            <p>Linux 设备模型用 bus、device、driver 和 class 统一描述硬件及其关系。它把“设备存在”和“谁来驱动”解耦，并通过 sysfs 向用户空间展示拓扑与属性。</p>
-<h2 id="匹配流程"><a href="#匹配流程" class="headerlink" title="匹配流程"></a>匹配流程</h2><p>设备由固件描述、枚举逻辑或板级代码注册到总线；驱动注册后，总线的 match 规则比较 compatible、ID 表等信息。匹配成功才调用 probe 建立资源、子系统接口和运行状态。</p>
+            <p>驱动已经编译进内核，设备树里也有节点，为什么 <code>probe()</code> 仍然没有执行？Linux 设备模型把“系统中存在一个设备”和“某个驱动愿意管理它”分开注册，再由总线定义的匹配规则连接两者。理解 bus、device、driver 和 class 的关系，比在 <code>probe()</code> 入口盲目加日志更有效。</p>
+<h2 id="四个对象各管什么"><a href="#四个对象各管什么" class="headerlink" title="四个对象各管什么"></a>四个对象各管什么</h2><ul>
+<li><strong>device</strong> 表示一个具体设备实例，携带父子关系、固件节点、资源与生命周期。</li>
+<li><strong>driver</strong> 表示能够管理一类设备的实现，包含匹配表、<code>probe()</code>、<code>remove()</code> 与电源管理回调。</li>
+<li><strong>bus</strong> 定义设备与驱动怎样匹配，例如 platform、PCI、USB、I2C 和 SPI 各有自己的规则。</li>
+<li><strong>class</strong> 按功能向用户空间组织设备，例如 net、block、tty；它不是用于固件匹配的总线。</li>
+</ul>
 <div class="note-flow"><span>注册 device</span><i>→</i><span>注册 driver</span><i>→</i><span>总线执行 match</span><i>→</i><span>调用 probe</span><i>→</i><span>注册 class/子系统接口</span></div>
 
-<h2 id="记忆要点"><a href="#记忆要点" class="headerlink" title="记忆要点"></a>记忆要点</h2><ul>
-<li>bus 负责匹配规则，class 按功能组织设备，两者不是同一维度。</li>
-<li>probe 应正确处理资源申请失败和延迟探测。</li>
-<li>remove 路径必须按相反顺序释放已建立的资源。</li>
-</ul>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247495135&idx=1&sn=aceb59f8174c88b6846b3416a4f1cf6a">从 0 到 1，带你吃透 Linux 设备驱动模型</a></p>
+<div class="note-map"><span><b>固件描述</b><small>DT/ACPI 提供 compatible、资源与依赖</small></span><span><b>bus</b><small>维护 device/driver 并执行 match</small></span><span><b>probe</b><small>申请资源、初始化硬件、注册功能接口</small></span><span><b>class</b><small>按功能形成 /sys/class 视图</small></span><span><b>uevent</b><small>向用户空间报告 add/remove/change</small></span><span><b>引用计数</b><small>约束对象释放与并发访问</small></span></div>
+
+<h2 id="匹配成功之后"><a href="#匹配成功之后" class="headerlink" title="匹配成功之后"></a>匹配成功之后</h2><p>以 platform 设备为例，设备可能来自设备树，驱动通过 <code>of_match_table</code> 声明 compatible。匹配成功只说明两者可以尝试绑定；<code>probe()</code> 仍可能因为时钟、regulator、GPIO、IRQ 或其他供应者尚未就绪而返回 <code>-EPROBE_DEFER</code>。内核会在依赖条件变化后重试，不应把延迟探测直接当成永久错误。</p>
+<p><code>probe()</code> 应按顺序取得资源、配置硬件并注册对外接口。<code>devm_*</code> 可以把部分资源生命周期绑定到 device，减少失败回滚代码，但不能替代硬件停机顺序、工作队列取消和外部引用处理。设备解绑或驱动卸载时，新的 I&#x2F;O 必须先停止，再释放下层资源。</p>
+<h2 id="从-sysfs-排查"><a href="#从-sysfs-排查" class="headerlink" title="从 sysfs 排查"></a>从 sysfs 排查</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 以某个 platform 设备为例</span></span><br><span class="line">dev=/sys/bus/platform/devices/DEVICE_NAME</span><br><span class="line"><span class="built_in">readlink</span> -f <span class="string">&quot;<span class="variable">$dev</span>/driver&quot;</span> 2&gt;/dev/null || <span class="built_in">echo</span> <span class="string">&#x27;尚未绑定驱动&#x27;</span></span><br><span class="line"><span class="built_in">cat</span> <span class="string">&quot;<span class="variable">$dev</span>/modalias&quot;</span> 2&gt;/dev/null</span><br><span class="line"><span class="built_in">cat</span> <span class="string">&quot;<span class="variable">$dev</span>/uevent&quot;</span> 2&gt;/dev/null</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看驱动已经绑定的设备</span></span><br><span class="line"><span class="built_in">ls</span> -l /sys/bus/platform/drivers/DRIVER_NAME/</span><br><span class="line">dmesg -T | grep -i -E <span class="string">&#x27;defer|probe|DEVICE_NAME&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>排查顺序应是：设备是否被枚举、挂在哪条 bus、modalias&#x2F;compatible 是否匹配、驱动模块是否存在、probe 是否返回错误或 defer。<code>/sys/class</code> 中没有节点并不一定说明设备未匹配，也可能是 probe 尚未注册对应功能接口。</p>
+<h2 id="uevent-与自动加载"><a href="#uevent-与自动加载" class="headerlink" title="uevent 与自动加载"></a>uevent 与自动加载</h2><p>设备注册时可产生 uevent，用户空间设备管理器根据 <code>MODALIAS</code> 等信息加载模块并创建设备节点。模块加载成功仍不等于 probe 成功；设备节点存在也不保证硬件已经完成所有运行时初始化。容器或精简系统中，udev 规则和模块自动加载机制还可能被裁剪。</p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文描述通用驱动模型。PCI、USB、I2C、SPI 等总线的枚举、匹配和热插拔细节不同；实际分析必须以对应 bus 文档、目标内核日志和 sysfs 拓扑为准。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/driver-api/driver-model/overview.html">The Linux Kernel Device Model</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/driver-api/infrastructure.html">Device drivers infrastructure</a> · <a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247495135&idx=1&sn=aceb59f8174c88b6846b3416a4f1cf6a">从 0 到 1，带你吃透 Linux 设备驱动模型</a></p>
 
         </div>
 
@@ -281,19 +291,19 @@
             <section class="post-copyright">
                 
                     <p class="copyright-item">
-                        <span>Author:</span>
+                        <span>作者：</span>
                         <span>Quchaosheng</span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>Permalink:</span>
+                        <span>永久链接：</span>
                         <span><a href="https://quchaosheng.github.io/2026/07/29/linux-device-model/">https://quchaosheng.github.io/2026/07/29/linux-device-model/</a></span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>License:</span>
+                        <span>许可协议：</span>
                         <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
                     </p>
                 
@@ -301,9 +311,33 @@
 
             </section>
         
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/device-tree-overlay/">
+                            <span>设备树 Overlay：运行时修改硬件描述</span>
+                            <time datetime="2026-03-09T06:00:00.000Z">2026-03-09</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/embedded-i2c/">
+                            <span>I2C 总线：寻址、时序与故障恢复</span>
+                            <time datetime="2026-05-13T12:00:00.000Z">2026-05-13</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/linux-fasync-sigio/">
+                            <span>fasync 与 SIGIO：Linux 信号驱动异步通知</span>
+                            <time datetime="2026-07-29T08:09:18.000Z">2026-07-29</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
         <section class="post-tags">
             <div>
-                <span>Tag(s):</span>
+                <span>标签：</span>
                 <span class="tag">
                     
                     
@@ -317,17 +351,17 @@
                 </span>
             </div>
             <div>
-                <a href="javascript:window.history.back();">back</a>
+                <a href="javascript:window.history.back();">返回</a>
                 <span>· </span>
-                <a href="/">home</a>
+                <a href="/">首页</a>
             </div>
         </section>
         <section class="post-nav">
             
-                <a class="prev" rel="prev" href="/2026/07/29/linux-cfs-vruntime/">CFS 与 vruntime：Linux 如何分配 CPU 时间</a>
+                <a class="prev" rel="prev" href="/2026/07/29/linux-eevdf-scheduler/">EEVDF：从公平调度到虚拟截止时间</a>
             
             
-            <a class="next" rel="next" href="/2026/07/29/linux-eevdf-scheduler/">EEVDF：从公平调度到虚拟截止时间</a>
+            <a class="next" rel="next" href="/2026/07/29/linux-fasync-sigio/">fasync 与 SIGIO：Linux 信号驱动异步通知</a>
             
         </section>
 

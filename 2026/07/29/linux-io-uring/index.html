@@ -18,14 +18,14 @@
 
 <title>io_uring：用共享环减少异步 I/O 开销 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="io_uring 通过用户态与内核共享的提交环（SQ）和完成环（CQ）批量传递 I&amp;#x2F;O 请求，减少系统调用、数据复制和上下文切换。 请求生命周期 应用填写 SQE 并推进队尾，内核消费请求并执行 I&amp;#x2F;O，完成后写入 CQE。应用读取 CQE 获取结果。批量提交、固定缓冲区和注册文件可进一步减少开销。 应用填写 SQE → 提交到 S...">
+    <meta name="description" content="拆解 io_uring 的 SQ、CQ、SQE 和 CQE，说明批量提交、固定资源、背压以及实际异步能力的边界。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-io-uring/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="io_uring：用共享环减少异步 I/O 开销 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="io_uring 通过用户态与内核共享的提交环（SQ）和完成环（CQ）批量传递 I&amp;#x2F;O 请求，减少系统调用、数据复制和上下文切换。 请求生命周期 应用填写 SQE 并推进队尾，内核消费请求并执行 I&amp;#x2F;O，完成后写入 CQE。应用读取 CQE 获取结果。批量提交、固定缓冲区和注册文件可进一步减少开销。 应用填写 SQE → 提交到 S...">
+    <meta property="og:description" content="拆解 io_uring 的 SQ、CQ、SQE 和 CQE，说明批量提交、固定资源、背压以及实际异步能力的边界。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-io-uring/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="io_uring：用共享环减少异步 I/O 开销 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="io_uring 通过用户态与内核共享的提交环（SQ）和完成环（CQ）批量传递 I&amp;#x2F;O 请求，减少系统调用、数据复制和上下文切换。 请求生命周期 应用填写 SQE 并推进队尾，内核消费请求并执行 I&amp;#x2F;O，完成后写入 CQE。应用读取 CQE 获取结果。批量提交、固定缓冲区和注册文件可进一步减少开销。 应用填写 SQE → 提交到 S...">
+    <meta name="twitter:description" content="拆解 io_uring 的 SQ、CQ、SQE 和 CQE，说明批量提交、固定资源、背压以及实际异步能力的边界。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -172,9 +172,9 @@
     <div class="tocbot-list">
     </div>
     <div class="tocbot-list-menu">
-        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
-        <a onclick="go_top()">Back to top</a>
-        <a onclick="go_bottom()">Go to bottom</a>
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
     </div>
 </div>
 
@@ -212,7 +212,7 @@
         tocbot.refresh(obj_merge(tocbot_default_config, {
             collapseDepth: expanded ? 1 : DEPTH_MAX
         }));
-        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+        b.innerText = expanded ? '展开全部' : '收起目录';
     }
 
     function go_top() {
@@ -232,6 +232,7 @@
         return target;
     }
 </script>
+
     
 
     
@@ -241,7 +242,7 @@
             
                 <div class="post-meta">
                     
-                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
                     
 
                     
@@ -251,7 +252,7 @@
                     
                     
                         <span class="post-category">
-                    Category:
+                    分类：
                             
                                 <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
                             
@@ -264,16 +265,31 @@
         </header>
 
         <div class="post-content">
-            <p><code>io_uring</code> 通过用户态与内核共享的提交环（SQ）和完成环（CQ）批量传递 I&#x2F;O 请求，减少系统调用、数据复制和上下文切换。</p>
-<h2 id="请求生命周期"><a href="#请求生命周期" class="headerlink" title="请求生命周期"></a>请求生命周期</h2><p>应用填写 SQE 并推进队尾，内核消费请求并执行 I&#x2F;O，完成后写入 CQE。应用读取 CQE 获取结果。批量提交、固定缓冲区和注册文件可进一步减少开销。</p>
+            <p>传统的同步 I&#x2F;O 常把“提交操作”和“等待结果”绑在一次系统调用里；高并发程序若为每个请求建立线程，又会付出调度与栈空间成本。<code>io_uring</code> 将提交队列（SQ）和完成队列（CQ）映射到用户态，让应用批量描述请求、批量收割结果。它减少的是进入内核和管理请求的开销，不会让存储设备本身凭空变快。</p>
+<h2 id="四个对象先分清"><a href="#四个对象先分清" class="headerlink" title="四个对象先分清"></a>四个对象先分清</h2><ul>
+<li><strong>SQ</strong>：提交环，保存待处理 SQE 的索引。</li>
+<li><strong>SQE</strong>：提交项，描述操作码、文件、缓冲区、偏移和用户标识。</li>
+<li><strong>CQ</strong>：完成环，保存内核已经完成的 CQE。</li>
+<li><strong>CQE</strong>：完成项，<code>res</code> 表示结果或负的 errno，<code>user_data</code> 用于对应原请求。</li>
+</ul>
 <div class="note-flow"><span>应用填写 SQE</span><i>→</i><span>提交到 SQ</span><i>→</i><span>内核执行 I/O</span><i>→</i><span>结果写入 CQE</span><i>→</i><span>应用收割完成事件</span></div>
 
-<h2 id="记忆要点"><a href="#记忆要点" class="headerlink" title="记忆要点"></a>记忆要点</h2><ul>
-<li>SQ&#x2F;CQ 是通信结构，真正 I&#x2F;O 是否异步仍取决于操作类型和内核支持。</li>
-<li>zero-copy、SQPOLL 等能力有额外约束，不应默认开启。</li>
-<li>使用前必须考虑队列深度、背压、取消和错误处理。</li>
+<div class="note-map"><span><b>SQ head</b><small>内核已经消费到哪里</small></span><span><b>SQ tail</b><small>应用已经发布到哪里</small></span><span><b>SQE</b><small>操作参数与 user_data</small></span><span><b>CQ head</b><small>应用已经收割到哪里</small></span><span><b>CQ tail</b><small>内核已经完成到哪里</small></span><span><b>内存顺序</b><small>发布索引前必须让描述内容可见</small></span></div>
+
+<h2 id="最小观察与能力检查"><a href="#最小观察与能力检查" class="headerlink" title="最小观察与能力检查"></a>最小观察与能力检查</h2><p>生产代码通常使用 <code>liburing</code>，避免手工处理映射、屏障和兼容细节。调试时先确认内核版本和禁用状态，再用 <code>strace</code> 观察 setup、register 和 enter 三类系统调用。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">uname</span> -r</span><br><span class="line"><span class="built_in">cat</span> /proc/sys/kernel/io_uring_disabled 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line">strace -f -e io_uring_setup,io_uring_register,io_uring_enter ./your_app</span><br></pre></td></tr></table></figure>
+
+<p>一个常见事件循环是：准备一批 SQE，调用 <code>io_uring_submit()</code>，再用 <code>io_uring_peek_cqe()</code> 或 <code>io_uring_wait_cqe()</code> 收割完成项。必须检查每个 CQE 的 <code>res</code>，处理短读、取消、超时和部分失败；提交成功只表示请求被接受，不表示 I&#x2F;O 已完成。</p>
+<h2 id="哪些优化有条件"><a href="#哪些优化有条件" class="headerlink" title="哪些优化有条件"></a>哪些优化有条件</h2><ul>
+<li><strong>批量提交</strong>减少系统调用次数，但批次过大可能增加单个请求的排队延迟。</li>
+<li><strong>注册文件和固定缓冲区</strong>减少每次请求的查找、引用与页固定成本，但会占用长期资源，更新和回收也更复杂。</li>
+<li><strong>SQPOLL</strong>由内核线程轮询 SQ，可减少提交系统调用，但持续消耗 CPU，并受权限和部署环境约束。</li>
+<li><strong>链接请求与 multishot</strong>能表达更复杂的操作序列，但需要按目标内核和操作码核对语义。</li>
+<li>某些文件系统或操作可能进入工作线程。接口是异步的，不代表每个操作都由设备原生异步执行。</li>
 </ul>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494637&idx=1&sn=781ea91aebf0ab18a253192b50904eb7">不懂 io_uring，别再说你懂 Linux 内核了</a></p>
+<h2 id="背压不能省略"><a href="#背压不能省略" class="headerlink" title="背压不能省略"></a>背压不能省略</h2><p>队列深度有限。应用发布速度超过设备完成速度时，CQ 必须及时收割，SQ 也可能没有空位。可靠实现需要限制在途请求数、定义超时和取消策略，并在关闭前处理仍在飞行的请求。只比较峰值吞吐而不记录 P99 延迟、CPU 使用率和错误率，很容易得到片面的结论。</p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文不假定 <code>io_uring</code> 一定优于 <code>epoll</code>、线程池或同步 I&#x2F;O。收益取决于内核版本、文件类型、设备、队列深度和负载模型；应在相同请求大小、并发度与数据耐久语义下比较吞吐、尾延迟和 CPU 成本。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/io_uring_setup.2.html">io_uring_setup(2)</a> · <a target="_blank" rel="noopener" href="https://github.com/axboe/liburing">liburing</a> · <a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494637&idx=1&sn=781ea91aebf0ab18a253192b50904eb7">不懂 io_uring，别再说你懂 Linux 内核了</a></p>
 
         </div>
 
@@ -281,19 +297,19 @@
             <section class="post-copyright">
                 
                     <p class="copyright-item">
-                        <span>Author:</span>
+                        <span>作者：</span>
                         <span>Quchaosheng</span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>Permalink:</span>
+                        <span>永久链接：</span>
                         <span><a href="https://quchaosheng.github.io/2026/07/29/linux-io-uring/">https://quchaosheng.github.io/2026/07/29/linux-io-uring/</a></span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>License:</span>
+                        <span>许可协议：</span>
                         <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
                     </p>
                 
@@ -301,9 +317,33 @@
 
             </section>
         
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/linux-numa-memory-access/">
+                            <span>NUMA：CPU 为什么更偏爱本地内存</span>
+                            <time datetime="2026-07-29T08:09:18.000Z">2026-07-29</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/cpu-memory-hierarchy/">
+                            <span>CPU 很快，为什么取数据仍然很慢</span>
+                            <time datetime="2026-07-29T08:09:18.000Z">2026-07-29</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/mutex-vs-spinlock/">
+                            <span>互斥锁与自旋锁：等待时该睡眠还是忙等</span>
+                            <time datetime="2026-02-20T06:00:00.000Z">2026-02-20</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
         <section class="post-tags">
             <div>
-                <span>Tag(s):</span>
+                <span>标签：</span>
                 <span class="tag">
                     
                     
@@ -317,9 +357,9 @@
                 </span>
             </div>
             <div>
-                <a href="javascript:window.history.back();">back</a>
+                <a href="javascript:window.history.back();">返回</a>
                 <span>· </span>
-                <a href="/">home</a>
+                <a href="/">首页</a>
             </div>
         </section>
         <section class="post-nav">

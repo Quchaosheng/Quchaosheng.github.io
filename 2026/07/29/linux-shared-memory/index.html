@@ -18,14 +18,14 @@
 
 <title>Linux 共享内存：少复制不等于零成本 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="共享内存让多个进程把同一组物理页映射到各自虚拟地址空间。数据无需经过内核中转缓冲区反复复制，因此适合传输大块数据，但同步、所有权和生命周期必须由应用设计。 建立与通信 进程通过 POSIX shared memory、System V 接口或共享文件获得同一后备对象，再分别 mmap 。页表建立后，双方读写的是相同物理页；锁、信号量或无锁队列负责协调访...">
+    <meta name="description" content="从 POSIX 共享内存、mmap、缓存一致性和跨进程协议出发，说明少复制通信仍需承担的同步与恢复成本。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-shared-memory/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux 共享内存：少复制不等于零成本 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="共享内存让多个进程把同一组物理页映射到各自虚拟地址空间。数据无需经过内核中转缓冲区反复复制，因此适合传输大块数据，但同步、所有权和生命周期必须由应用设计。 建立与通信 进程通过 POSIX shared memory、System V 接口或共享文件获得同一后备对象，再分别 mmap 。页表建立后，双方读写的是相同物理页；锁、信号量或无锁队列负责协调访...">
+    <meta property="og:description" content="从 POSIX 共享内存、mmap、缓存一致性和跨进程协议出发，说明少复制通信仍需承担的同步与恢复成本。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-shared-memory/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Linux 共享内存：少复制不等于零成本 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="共享内存让多个进程把同一组物理页映射到各自虚拟地址空间。数据无需经过内核中转缓冲区反复复制，因此适合传输大块数据，但同步、所有权和生命周期必须由应用设计。 建立与通信 进程通过 POSIX shared memory、System V 接口或共享文件获得同一后备对象，再分别 mmap 。页表建立后，双方读写的是相同物理页；锁、信号量或无锁队列负责协调访...">
+    <meta name="twitter:description" content="从 POSIX 共享内存、mmap、缓存一致性和跨进程协议出发，说明少复制通信仍需承担的同步与恢复成本。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -172,9 +172,9 @@
     <div class="tocbot-list">
     </div>
     <div class="tocbot-list-menu">
-        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
-        <a onclick="go_top()">Back to top</a>
-        <a onclick="go_bottom()">Go to bottom</a>
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
     </div>
 </div>
 
@@ -212,7 +212,7 @@
         tocbot.refresh(obj_merge(tocbot_default_config, {
             collapseDepth: expanded ? 1 : DEPTH_MAX
         }));
-        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+        b.innerText = expanded ? '展开全部' : '收起目录';
     }
 
     function go_top() {
@@ -232,6 +232,7 @@
         return target;
     }
 </script>
+
     
 
     
@@ -241,7 +242,7 @@
             
                 <div class="post-meta">
                     
-                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
                     
 
                     
@@ -251,7 +252,7 @@
                     
                     
                         <span class="post-category">
-                    Category:
+                    分类：
                             
                                 <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
                             
@@ -264,16 +265,22 @@
         </header>
 
         <div class="post-content">
-            <p>共享内存让多个进程把同一组物理页映射到各自虚拟地址空间。数据无需经过内核中转缓冲区反复复制，因此适合传输大块数据，但同步、所有权和生命周期必须由应用设计。</p>
-<h2 id="建立与通信"><a href="#建立与通信" class="headerlink" title="建立与通信"></a>建立与通信</h2><p>进程通过 POSIX shared memory、System V 接口或共享文件获得同一后备对象，再分别 <code>mmap</code>。页表建立后，双方读写的是相同物理页；锁、信号量或无锁队列负责协调访问。</p>
+            <p>共享内存让多个进程把同一个后备对象映射到各自虚拟地址空间。映射建立后，进程可以直接读写同一组物理页，适合传递图像、传感器帧或大块环形缓冲区。但它只解决“数据放在哪里”，不解决谁能写、什么时候可读、进程崩溃后怎样恢复。</p>
+<h2 id="建立映射的四个步骤"><a href="#建立映射的四个步骤" class="headerlink" title="建立映射的四个步骤"></a>建立映射的四个步骤</h2><p>POSIX 共享内存通常由生产者 <code>shm_open()</code> 创建，通过 <code>ftruncate()</code> 设定大小，再以 <code>MAP_SHARED</code> 调用 <code>mmap()</code>。消费者用约定名称打开同一对象并映射。<code>shm_unlink()</code> 删除名称，但和普通文件一样，已有描述符与映射可以继续存活到最后一个引用释放。</p>
 <div class="note-flow"><span>创建共享对象</span><i>→</i><span>两个进程分别 mmap</span><i>→</i><span>页表指向相同物理页</span><i>→</i><span>同步发布数据</span><i>→</i><span>对端直接读取</span></div>
 
-<h2 id="记忆要点"><a href="#记忆要点" class="headerlink" title="记忆要点"></a>记忆要点</h2><ul>
-<li>“零拷贝”通常指省去进程间数据复制，缓存一致性和页表成本仍存在。</li>
-<li>指针值不能直接跨进程使用，应采用偏移量或固定格式。</li>
-<li>必须定义生产者、消费者、异常退出和对象清理协议。</li>
-</ul>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494326&idx=1&sn=7fbdac5c9294a6dc76a45bda1ccd9f82">拆解 Linux 共享内存原理：“零拷贝”通信的核心机制</a></p>
+<div class="note-map"><span><b>后备对象</b><small>shm_open、memfd 或普通文件</small></span><span><b>各自虚拟地址</b><small>地址可以不同，不能传递裸指针</small></span><span><b>共享物理页</b><small>避免在进程间复制整个负载</small></span><span><b>控制区</b><small>版本、长度、读写索引和状态</small></span><span><b>同步原语</b><small>互斥锁、信号量、futex 或原子变量</small></span><span><b>恢复协议</b><small>处理超时、崩溃与陈旧对象</small></span></div>
+
+<h2 id="“零拷贝”省掉了什么"><a href="#“零拷贝”省掉了什么" class="headerlink" title="“零拷贝”省掉了什么"></a>“零拷贝”省掉了什么</h2><p>相较于管道或 socket 中转大块负载，共享内存可以省去生产者缓冲区到内核缓冲区、再到消费者缓冲区的复制。但首次访问仍可能缺页，多个 CPU 之间仍要维护缓存一致性；同步变量还可能产生 cache line 抖动。若设备 DMA 参与链路，还要另外满足设备映射和缓存一致性要求，不能仅凭共享内存就宣称端到端零拷贝。</p>
+<h2 id="协议比映射更重要"><a href="#协议比映射更重要" class="headerlink" title="协议比映射更重要"></a>协议比映射更重要</h2><p>共享区应使用固定宽度整数和相对偏移量，明确版本、总长度、槽大小以及字节序。生产者先写负载，再以 release 语义发布可见的写索引；消费者以 acquire 语义读取索引后才访问对应槽。若需要进程共享的 pthread mutex&#x2F;condition variable，必须设置 <code>PTHREAD_PROCESS_SHARED</code>，并考虑持锁进程异常退出时的 robust mutex 策略。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">shared_header</span> &#123;</span></span><br><span class="line">    <span class="type">uint32_t</span> magic;</span><br><span class="line">    <span class="type">uint16_t</span> version;</span><br><span class="line">    <span class="type">uint16_t</span> slot_count;</span><br><span class="line">    <span class="keyword">_Atomic</span> <span class="type">uint32_t</span> write_seq;</span><br><span class="line">    <span class="keyword">_Atomic</span> <span class="type">uint32_t</span> read_seq;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>头部还应与高频数据分离并按缓存行对齐，避免生产者和消费者反复写同一缓存行。裸指针不能跨进程保存，因为两个进程的映射基址可能不同；使用相对共享区起点的偏移更稳妥。</p>
+<h2 id="在-Linux-上检查"><a href="#在-Linux-上检查" class="headerlink" title="在 Linux 上检查"></a>在 Linux 上检查</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> -lh /dev/shm</span><br><span class="line">findmnt /dev/shm</span><br><span class="line"><span class="built_in">ls</span> -l /proc/<span class="variable">$PID</span>/fd | grep <span class="string">&#x27;/dev/shm\|memfd&#x27;</span></span><br><span class="line">grep -E <span class="string">&#x27;/dev/shm|memfd&#x27;</span> /proc/<span class="variable">$PID</span>/maps</span><br></pre></td></tr></table></figure>
+
+<p>容量规划要同时考虑 tmpfs 限制、容器 <code>/dev/shm</code> 大小、进程地址空间和锁定内存限制。对象名称存在不代表进程仍健康，启动时需要校验 magic、版本和 owner&#x2F;epoch，而不是盲目复用旧数据。</p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文说明 CPU 进程间共享内存，不覆盖具体 GPU、RDMA 或 DMA-BUF 的同步语义。是否更快必须在相同负载大小、同步策略、NUMA 放置和异常恢复要求下，与 pipe&#x2F;socket 等方案实测比较。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/shm_overview.7.html">shm_overview(7)</a> · <a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/mmap.2.html">mmap(2)</a> · <a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/memfd_create.2.html">memfd_create(2)</a> · <a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494326&idx=1&sn=7fbdac5c9294a6dc76a45bda1ccd9f82">拆解 Linux 共享内存原理：“零拷贝”通信的核心机制</a></p>
 
         </div>
 
@@ -281,19 +288,19 @@
             <section class="post-copyright">
                 
                     <p class="copyright-item">
-                        <span>Author:</span>
+                        <span>作者：</span>
                         <span>Quchaosheng</span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>Permalink:</span>
+                        <span>永久链接：</span>
                         <span><a href="https://quchaosheng.github.io/2026/07/29/linux-shared-memory/">https://quchaosheng.github.io/2026/07/29/linux-shared-memory/</a></span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>License:</span>
+                        <span>许可协议：</span>
                         <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
                     </p>
                 
@@ -301,25 +308,49 @@
 
             </section>
         
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/linux-pipe/">
+                            <span>Linux 管道：内核缓冲区上的字节流 IPC</span>
+                            <time datetime="2026-07-29T09:36:41.000Z">2026-07-29</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/kernel-user-communication/">
+                            <span>内核与用户空间通信：按语义选择接口</span>
+                            <time datetime="2026-04-16T06:00:00.000Z">2026-04-16</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/linux-page-cache/">
+                            <span>Page Cache：文件 I/O 为什么常常先经过内存</span>
+                            <time datetime="2026-07-29T09:36:41.000Z">2026-07-29</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
         <section class="post-tags">
             <div>
-                <span>Tag(s):</span>
+                <span>标签：</span>
                 <span class="tag">
                     
                     
                         <a href="/tag/mmap/"># mmap</a>
                     
-                        <a href="/tag/%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98/"># 共享内存</a>
-                    
                         <a href="/tag/IPC/"># IPC</a>
+                    
+                        <a href="/tag/%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98/"># 共享内存</a>
                     
                         
                 </span>
             </div>
             <div>
-                <a href="javascript:window.history.back();">back</a>
+                <a href="javascript:window.history.back();">返回</a>
                 <span>· </span>
-                <a href="/">home</a>
+                <a href="/">首页</a>
             </div>
         </section>
         <section class="post-nav">
@@ -327,7 +358,7 @@
                 <a class="prev" rel="prev" href="/2026/07/29/linux-rcu/">RCU：读多写少场景下的并发设计</a>
             
             
-            <a class="next" rel="next" href="/2026/07/29/linux-page-fault-walk/">缺页异常与页表遍历：一次内存访问的补救过程</a>
+            <a class="next" rel="next" href="/2026/07/29/riscv-interrupt/">RISC-V 中断：从外设信号到处理函数</a>
             
         </section>
 

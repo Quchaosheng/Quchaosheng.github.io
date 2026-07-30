@@ -1022,6 +1022,56 @@ header .menu label {
 .tag:not(:last-child) a::after {
   content: " / ";
 }
+.related-posts {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e8e8e8;
+}
+.dark-theme .related-posts {
+  border-top-color: #909196;
+}
+.related-posts h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+  line-height: 1.5;
+}
+.related-post-list {
+  display: grid;
+}
+.related-post-list a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid #e8e8e8;
+  color: #161209;
+}
+.dark-theme .related-post-list a {
+  border-bottom-color: #909196;
+  color: #a9a9b3;
+}
+.related-post-list a:hover span {
+  color: #2d96bd;
+}
+.related-post-list a span {
+  min-width: 0;
+  line-height: 1.55;
+}
+.related-post-list a time {
+  color: #a9a9b3;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+.dark-theme .related-post-list a time {
+  color: #87878d;
+}
+@media (max-width: 520px) {
+  .related-post-list a {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+}
 .post-toc {
   position: fixed;
   top: 95px;

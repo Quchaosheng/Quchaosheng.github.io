@@ -18,14 +18,14 @@
 
 <title>缺页异常与页表遍历：一次内存访问的补救过程 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="缺页异常不一定是错误。它表示 MMU 无法按当前页表完成访问，可能因为页面尚未分配、文件页尚未载入、COW 写入，或访问权限确实非法。 内核处理路径 CPU 保存现场进入异常处理，内核先找到对应 VMA，检查地址与权限，再根据 VMA 类型分配匿名页、读取文件页或执行 COW。无法修复时，用户进程通常收到 SIGSEGV 或 SIGBUS 。 TLB...">
+    <meta name="description" content="区分 TLB miss、minor/major fault、COW 与非法访问，并给出 Linux 上观察缺页行为的可靠方法。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-page-fault-walk/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="缺页异常与页表遍历：一次内存访问的补救过程 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="缺页异常不一定是错误。它表示 MMU 无法按当前页表完成访问，可能因为页面尚未分配、文件页尚未载入、COW 写入，或访问权限确实非法。 内核处理路径 CPU 保存现场进入异常处理，内核先找到对应 VMA，检查地址与权限，再根据 VMA 类型分配匿名页、读取文件页或执行 COW。无法修复时，用户进程通常收到 SIGSEGV 或 SIGBUS 。 TLB...">
+    <meta property="og:description" content="区分 TLB miss、minor/major fault、COW 与非法访问，并给出 Linux 上观察缺页行为的可靠方法。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-page-fault-walk/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="缺页异常与页表遍历：一次内存访问的补救过程 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="缺页异常不一定是错误。它表示 MMU 无法按当前页表完成访问，可能因为页面尚未分配、文件页尚未载入、COW 写入，或访问权限确实非法。 内核处理路径 CPU 保存现场进入异常处理，内核先找到对应 VMA，检查地址与权限，再根据 VMA 类型分配匿名页、读取文件页或执行 COW。无法修复时，用户进程通常收到 SIGSEGV 或 SIGBUS 。 TLB...">
+    <meta name="twitter:description" content="区分 TLB miss、minor/major fault、COW 与非法访问，并给出 Linux 上观察缺页行为的可靠方法。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -172,9 +172,9 @@
     <div class="tocbot-list">
     </div>
     <div class="tocbot-list-menu">
-        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
-        <a onclick="go_top()">Back to top</a>
-        <a onclick="go_bottom()">Go to bottom</a>
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
     </div>
 </div>
 
@@ -212,7 +212,7 @@
         tocbot.refresh(obj_merge(tocbot_default_config, {
             collapseDepth: expanded ? 1 : DEPTH_MAX
         }));
-        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+        b.innerText = expanded ? '展开全部' : '收起目录';
     }
 
     function go_top() {
@@ -232,6 +232,7 @@
         return target;
     }
 </script>
+
     
 
     
@@ -241,7 +242,7 @@
             
                 <div class="post-meta">
                     
-                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
                     
 
                     
@@ -251,7 +252,7 @@
                     
                     
                         <span class="post-category">
-                    Category:
+                    分类：
                             
                                 <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
                             
@@ -264,16 +265,24 @@
         </header>
 
         <div class="post-content">
-            <p>缺页异常不一定是错误。它表示 MMU 无法按当前页表完成访问，可能因为页面尚未分配、文件页尚未载入、COW 写入，或访问权限确实非法。</p>
-<h2 id="内核处理路径"><a href="#内核处理路径" class="headerlink" title="内核处理路径"></a>内核处理路径</h2><p>CPU 保存现场进入异常处理，内核先找到对应 VMA，检查地址与权限，再根据 VMA 类型分配匿名页、读取文件页或执行 COW。无法修复时，用户进程通常收到 <code>SIGSEGV</code> 或 <code>SIGBUS</code>。</p>
-<div class="note-flow"><span>TLB 未命中</span><i>→</i><span>页表遍历失败</span><i>→</i><span>进入缺页处理</span><i>→</i><span>验证 VMA 与权限</span><i>→</i><span>补页或发送信号</span></div>
+            <p>缺页异常（page fault）不等于程序出错。MMU 无法按当前页表完成访问时，CPU 把控制权交给内核；内核可能分配匿名页、从文件页缓存建立映射、执行 COW，也可能判定地址或权限非法并发送信号。按需分页正是利用可修复的 fault，避免程序启动时为尚未访问的区域立即准备全部物理页。</p>
+<h2 id="先区分-TLB-miss"><a href="#先区分-TLB-miss" class="headerlink" title="先区分 TLB miss"></a>先区分 TLB miss</h2><p>TLB miss 通常由硬件页表遍历解决，不一定进入内核；page fault 则表示遍历结果无法满足这次访问，例如页表项尚未建立、页面不在内存、写入只读 COW 映射或权限检查失败。把 perf 中的 TLB miss 数直接当成缺页次数，会混淆两个不同层次。</p>
+<div class="note-flow"><span>内存访问无法完成</span><i>→</i><span>CPU 进入异常入口</span><i>→</i><span>内核查找 VMA</span><i>→</i><span>验证地址与权限</span><i>→</i><span>补页、COW 或发送信号</span></div>
 
-<h2 id="记忆要点"><a href="#记忆要点" class="headerlink" title="记忆要点"></a>记忆要点</h2><ul>
-<li>minor fault 不需磁盘 I&#x2F;O，major fault 通常需要读取外部存储。</li>
-<li>VMA 描述一段虚拟地址范围的合法用途，页表记录具体页面映射。</li>
-<li>demand paging 让程序只为真正访问的页面付出成本。</li>
+<div class="note-map"><span><b>VMA</b><small>描述地址区间的合法用途与权限</small></span><span><b>页表项</b><small>记录具体页面映射和硬件状态</small></span><span><b>匿名页</b><small>首次触碰时分配，常先映射共享零页</small></span><span><b>文件映射</b><small>可能从 page cache 或存储取得页面</small></span><span><b>COW</b><small>私有写入时建立新的可写页面</small></span><span><b>信号</b><small>无法修复时通常产生 SIGSEGV/SIGBUS</small></span></div>
+
+<h2 id="minor-与-major-的含义"><a href="#minor-与-major-的含义" class="headerlink" title="minor 与 major 的含义"></a>minor 与 major 的含义</h2><p>minor fault 不需要为页面发起存储 I&#x2F;O，例如匿名页首次分配、已有 page cache 的文件页建立 PTE、或某些 COW 情况。major fault 通常意味着需要等待后备存储读入页面。二者都是进程记账分类，不直接等于“快”和“慢”的固定时间；NUMA、内存回收、锁竞争和存储设备都会改变代价。</p>
+<h2 id="用同一工作负载观察"><a href="#用同一工作负载观察" class="headerlink" title="用同一工作负载观察"></a>用同一工作负载观察</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/usr/bin/time -v ./your_app 2&gt;&amp;1 | grep -E <span class="string">&#x27;Major|Minor&#x27;</span></span><br><span class="line">perf <span class="built_in">stat</span> -e page-faults,minor-faults,major-faults -- ./your_app</span><br><span class="line"></span><br><span class="line">pid=1234</span><br><span class="line">awk <span class="string">&#x27;&#123;print &quot;minflt=&quot; $10, &quot;majflt=&quot; $12&#125;&#x27;</span> /proc/<span class="variable">$pid</span>/stat</span><br></pre></td></tr></table></figure>
+
+<p><code>/proc/&lt;pid&gt;/stat</code> 的字段位置固定但命令名可能包含空格和括号，生产脚本不宜用上面这种简单 awk 解析；更可靠的采集程序应按 proc 文档处理完整格式。对延迟敏感任务，还应记录 fault 发生的阶段和调用栈，而不只看进程退出后的累计次数。</p>
+<h2 id="从-fault-类型回到根因"><a href="#从-fault-类型回到根因" class="headerlink" title="从 fault 类型回到根因"></a>从 fault 类型回到根因</h2><ul>
+<li>启动阶段 minor fault 很多，可能只是按需建立匿名页或装入共享库，不必立即优化。</li>
+<li>稳态控制循环仍发生 fault，需要检查是否预触页、是否动态扩展堆栈、映射是否被回收，以及是否错误依赖按需分配。</li>
+<li>major fault 增长要检查文件访问、内存压力、page cache 与 swap，而不是只调高线程优先级。</li>
+<li><code>SIGSEGV</code> 可能来自地址不存在或权限不符；<code>SIGBUS</code> 还可能与截断后的文件映射等对象错误相关。</li>
 </ul>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494630&idx=1&sn=a62e73e92a27290032f4c1c7f8887b3a">不懂缺页异常与页表遍历，别再说你懂 Linux 内核了</a></p>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>累计 fault 计数不能定位具体源代码，也不能单独证明内存不足。严谨分析应保存内核版本、映射、内存压力、page cache&#x2F;swap 状态，并使用 perf&#x2F;ftrace&#x2F;eBPF 等工具关联 fault 与调用路径。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/mm/page_tables.html">Page tables</a> · <a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/proc_pid_stat.5.html">proc_pid_stat(5)</a> · <a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/getrusage.2.html">getrusage(2)</a> · <a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494630&idx=1&sn=a62e73e92a27290032f4c1c7f8887b3a">不懂缺页异常与页表遍历，别再说你懂 Linux 内核了</a></p>
 
         </div>
 
@@ -281,19 +290,19 @@
             <section class="post-copyright">
                 
                     <p class="copyright-item">
-                        <span>Author:</span>
+                        <span>作者：</span>
                         <span>Quchaosheng</span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>Permalink:</span>
+                        <span>永久链接：</span>
                         <span><a href="https://quchaosheng.github.io/2026/07/29/linux-page-fault-walk/">https://quchaosheng.github.io/2026/07/29/linux-page-fault-walk/</a></span>
                     </p>
                 
                 
                     <p class="copyright-item">
-                        <span>License:</span>
+                        <span>许可协议：</span>
                         <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
                     </p>
                 
@@ -301,9 +310,33 @@
 
             </section>
         
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/linux-mmu-address-translation/">
+                            <span>MMU：虚拟地址如何找到物理内存</span>
+                            <time datetime="2026-07-29T08:09:18.000Z">2026-07-29</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/riscv-kvm-virtualization/">
+                            <span>RISC-V KVM：Host、Guest 与两阶段地址翻译</span>
+                            <time datetime="2026-03-24T06:00:00.000Z">2026-03-24</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/linux-page-cache/">
+                            <span>Page Cache：文件 I/O 为什么常常先经过内存</span>
+                            <time datetime="2026-07-29T09:36:41.000Z">2026-07-29</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
         <section class="post-tags">
             <div>
-                <span>Tag(s):</span>
+                <span>标签：</span>
                 <span class="tag">
                     
                     
@@ -317,17 +350,17 @@
                 </span>
             </div>
             <div>
-                <a href="javascript:window.history.back();">back</a>
+                <a href="javascript:window.history.back();">返回</a>
                 <span>· </span>
-                <a href="/">home</a>
+                <a href="/">首页</a>
             </div>
         </section>
         <section class="post-nav">
             
-                <a class="prev" rel="prev" href="/2026/07/29/linux-shared-memory/">Linux 共享内存：少复制不等于零成本</a>
+                <a class="prev" rel="prev" href="/2026/07/29/linux-numa-memory-access/">NUMA：CPU 为什么更偏爱本地内存</a>
             
             
-            <a class="next" rel="next" href="/2026/07/29/riscv-interrupt/">RISC-V 中断：从外设信号到处理函数</a>
+            <a class="next" rel="next" href="/2026/07/29/linux-rcu/">RCU：读多写少场景下的并发设计</a>
             
         </section>
 
