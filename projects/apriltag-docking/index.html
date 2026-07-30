@@ -18,7 +18,7 @@
 
 <title>AprilTag Docking Demo | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="将 AprilTag 观测、置信门、Guard 和 Nav2 Docking 串成可复现的 Gazebo 停靠流程。">
+    <meta name="description" content="在 Gazebo 中集成 AprilTag 观测校验、Guard 和 Nav2 Docking 的可复现停靠流程。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/projects/apriltag-docking/">
 <meta property="og:locale" content="zh_CN">
@@ -175,7 +175,7 @@
         <h2 class="post-title">AprilTag Docking Demo</h2>
         
         <section class="post-content">
-            <div class="page-lead"><p class="section-kicker">项目说明</p><p>AprilTag Docking Demo 在 Gazebo 中让 TurtleBot3 靠近充电桩。连续看到 AprilTag 后，任务才会交给 Nav2 Docking 做最后接近；低置信、多 Tag、位姿跳变、Guard 失效和取消都会走明确的处理分支。</p></div>
+            <div class="page-lead"><p class="section-kicker">项目说明</p><p>AprilTag Docking Demo 在 Gazebo 中为 TurtleBot3 构建充电桩停靠流程。连续确认 AprilTag 观测后，任务交由 Nav2 Docking 完成最终接近；低置信、多 Tag、位姿跳变、Guard 失效和取消都有明确的处理分支。</p></div>
 
 <figure class="project-hero-image"><img src="/image/projects/apriltag-docking.png" alt="Gazebo 中的 AprilTag 视觉停靠演示"></figure>
 
