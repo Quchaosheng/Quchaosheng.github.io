@@ -20,8 +20,6 @@ description: 理解有锁队列与无锁队列的取舍，掌握 CAS、ABA、内
 
 <div class="note-flow"><span>生产者准备数据</span><i>→</i><span>原子竞争写入位置</span><i>→</i><span>发布槽位可读状态</span><i>→</i><span>消费者原子获取位置</span><i>→</i><span>读取并释放槽位</span></div>
 
-<div class="note-map"><span><b>SPSC</b><small>单生产者单消费者；有界环形队列最易证明正确，常用于实时数据通道</small></span><span><b>MPSC</b><small>多个生产者争用写入位置；要明确发布顺序和队满策略</small></span><span><b>MPMC</b><small>最复杂；位置竞争、槽位状态和回收都需要成熟算法或库</small></span><span><b>CAS</b><small>更新索引/指针的工具，不自动保证 payload 发布和对象生命周期</small></span><span><b>内存回收</b><small>链表结构需处理 ABA、hazard pointer、epoch 或延迟回收</small></span><span><b>背压</b><small>队满时阻塞、丢新、丢旧或降级是业务语义，不能留空</small></span></div>
-
 ## 2. CAS 是无锁队列的基础
 
 CAS（Compare-And-Swap）会原子地执行：“当当前值仍等于 expected 时，把它改成 desired；否则报告失败。”C++ 中常见接口是 `compare_exchange_weak` 与 `compare_exchange_strong`。
@@ -80,12 +78,6 @@ ABA 指一个位置的值从 A 变为 B，之后又变回 A。CAS 只看见“�
 4. 对象复用时设计内存回收方案，不能只关注 CAS；
 5. 使用 ThreadSanitizer、压力测试和不同 CPU 架构验证；
 6. 优先选用经过验证的并发容器，而非手写通用 MPMC 队列。
-
-## 7. 如何验证而不是只做微基准
-
-无锁队列的测试要同时覆盖正确性与性能：在不同核心数、不同生产消费比例、队空/队满切换、对象复用和长时间运行下检查序号是否丢失、重复或乱序；用 ThreadSanitizer 检查数据竞争；用性能计数器观察 CAS 失败、cache miss 和跨核迁移。只在单核空载下跑出更高吞吐，无法证明它在真实竞争中优于 mutex 队列。
-
-对实时场景还要记录队列中的消息年龄。一个永远不丢包但积压 500 ms 的队列，可能比明确丢弃过期状态更糟。
 
 **结论：无锁不是没有代价，而是把等待成本转化为算法、内存序和生命周期管理成本。只有在正确性可验证且性能数据支持时，才值得采用。**
 
