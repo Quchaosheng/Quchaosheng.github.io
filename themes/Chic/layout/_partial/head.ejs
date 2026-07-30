@@ -8,9 +8,6 @@
 <% if(config.subtitle){ %>
     <meta name="subtitle" content="<%- config.subtitle %>">
 <% } %>
-<% if(config.description){ %>
-    <meta name="description" content="<%- config.description %>">
-<% } %>
 <% if(config.keywords){ %>
     <meta name="keywords" content="<%- config.keywords %>">
 <% } %>
@@ -30,8 +27,63 @@ if (is_archive()){
 } else if (is_tag()){
     title = __('tag') + ': ' + page.tag;
 }
+
+function cleanMetaText(value) {
+    var text = String(value || '')
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return text.length > 180 ? text.slice(0, 177).trim() + '...' : text;
+}
+
+function absoluteAssetUrl(path) {
+    if (!path) {
+        return '';
+    }
+
+    return /^[a-z][a-z\d+.-]*:\/\//i.test(path) ? path : full_url_for(path);
+}
+
+function canonicalUrlForPage(currentPage) {
+    var url = currentPage.permalink || full_url_for(currentPage.path || '/');
+    return String(url).replace(/\/index\.html$/, '/');
+}
+
+var pageTitle = title ? title + ' | ' + config.title : config.title;
+var pageDescription = cleanMetaText(page.description || page.excerpt || page.content || config.description);
+var shareImageUrl = absoluteAssetUrl(page.cover || theme.share_image);
+var canonicalUrl = canonicalUrlForPage(page);
+var openGraphType = page.layout === 'post' ? 'article' : 'website';
+var openGraphLocale = String(config.language || 'zh-CN').replace('-', '_');
 %>
-<title><% if (title){ %><%= title %> | <% } %><%= config.title %></title>
+<title><%= pageTitle %></title>
+<% if (pageDescription){ %>
+    <meta name="description" content="<%= pageDescription %>">
+<% } %>
+<link rel="canonical" href="<%= canonicalUrl %>">
+<meta property="og:locale" content="<%= openGraphLocale %>">
+<meta property="og:type" content="<%= openGraphType %>">
+<meta property="og:title" content="<%= pageTitle %>">
+<% if (pageDescription){ %>
+    <meta property="og:description" content="<%= pageDescription %>">
+<% } %>
+<meta property="og:url" content="<%= canonicalUrl %>">
+<meta property="og:site_name" content="<%= config.title %>">
+<% if (shareImageUrl){ %>
+    <meta property="og:image" content="<%= shareImageUrl %>">
+    <meta property="og:image:alt" content="<%= title || config.title %>">
+<% } %>
+<meta name="twitter:card" content="<%= shareImageUrl ? 'summary_large_image' : 'summary' %>">
+<meta name="twitter:title" content="<%= pageTitle %>">
+<% if (pageDescription){ %>
+    <meta name="twitter:description" content="<%= pageDescription %>">
+<% } %>
+<% if (shareImageUrl){ %>
+    <meta name="twitter:image" content="<%= shareImageUrl %>">
+<% } %>
 
 <%# favicon %>
 <% if (theme.favicon){ %>

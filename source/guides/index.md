@@ -1,0 +1,12 @@
+---
+title: 核心文章
+date: 2026-07-30 16:10:00
+layout: page
+description: 面向 Linux 实时性、AI 机器人和嵌入式交付的十篇核心技术文章。
+---
+
+<div class="page-lead"><p class="section-kicker">CORE GUIDES</p><p>这十篇不是按发布时间挑的，而是按“解决工程问题时最常反复回来的基础问题”挑的。先从这里进入，再按[学习路径](/paths/)扩展到完整专题。</p></div>
+
+<div class="resource-list"><article class="resource-item"><p class="section-kicker">01 · REAL-TIME LINUX</p><h3><a href="/2026/07/30/linux-preempt-rt/">PREEMPT_RT：Linux 怎样变成可抢占的实时内核</a></h3><p>理解 RT 内核改变了什么、还保留哪些不可抢占路径，以及为什么它不是硬实时保证。</p></article><article class="resource-item"><p class="section-kicker">02 · REAL-TIME LINUX</p><h3><a href="/2026/07/30/linux-cpu-isolation/">CPU 隔离：为实时任务留出安静的核心</a></h3><p>把 CPU、IRQ、RCU、workqueue 和后台负载的归属设计成可验证的资源布局。</p></article><article class="resource-item"><p class="section-kicker">03 · MEASUREMENT</p><h3><a href="/2026/07/30/cyclictest-latency/">cyclictest：怎样测量 Linux 实时调度延迟</a></h3><p>从周期、亲和性和尾延迟出发，建立可以复测的系统唤醒基线。</p></article><article class="resource-item"><p class="section-kicker">04 · DIAGNOSIS</p><h3><a href="/2026/07/30/linux-osnoise-tracer/">osnoise tracer：把实时抖动拆成可解释的噪声</a></h3><p>将延迟尖峰关联到 IRQ、softirq、调度、NMI/SMI 或其他系统干扰。</p></article><article class="resource-item"><p class="section-kicker">05 · ROBOT PLATFORM</p><h3><a href="/2026/07/30/jetson-robot-deployment/">Jetson 机器人部署：功耗、算力与实时控制怎样分工</a></h3><p>把 GPU 推理、ROS 2 运行时与 MCU/RT 控制放到合适的责任边界上。</p></article><article class="resource-item"><p class="section-kicker">06 · ROBOT DATA PIPELINE</p><h3><a href="/2026/07/30/isaac-ros-nitros-zero-copy/">Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU</a></h3><p>理解少拷贝带来的吞吐优势，以及缓冲区生命周期、数据年龄和同步的代价。</p></article><article class="resource-item"><p class="section-kicker">07 · ROBOT INFERENCE</p><h3><a href="/2026/07/30/tensorrt-robot-inference/">TensorRT 机器人推理：从训练模型到稳定延迟</a></h3><p>不只看 engine 吞吐，而是把预处理、队列、推理、后处理和控制消费串成端到端指标。</p></article><article class="resource-item"><p class="section-kicker">08 · BUILD CONTRACT</p><h3><a href="/2026/07/29/cmake-cross-compilation/">CMake 交叉编译：工具链文件决定目标环境</a></h3><p>防止构建过程误用宿主机依赖，把 sysroot、编译器和查找规则固化为工程契约。</p></article><article class="resource-item"><p class="section-kicker">09 · SYSTEM DELIVERY</p><h3><a href="/2026/07/29/buildroot-system-image/">Buildroot：生成可复现的嵌入式 Linux 系统镜像</a></h3><p>从 defconfig、外部树和 package 组织可重建的交付物，而不是一次性的本机镜像。</p></article><article class="resource-item"><p class="section-kicker">10 · DEVICE PROTOCOL</p><h3><a href="/2026/07/29/embedded-can/">CAN 总线：仲裁、错误处理与可靠通信</a></h3><p>在协议、错误状态、bus-off 和恢复策略层面理解真实设备通信的约束。</p></article></div>
+
+这些文章的共同原则是：先拆分系统边界，再用数据验证；所有看似“快一点”或“跑通了”的描述，都要说明环境与适用范围。

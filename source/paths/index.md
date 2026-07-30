@@ -15,4 +15,4 @@ layout: page
 
 <section class="learning-path"><p class="section-kicker">PATH 03 · EMBEDDED DELIVERY</p><h2>嵌入式系统：从构建产物到故障恢复</h2><p class="path-summary">可交付的嵌入式系统不是一段能编译的程序，而是一套能交叉构建、通信、升级、故障恢复并持续复现的产物。</p><div class="note-flow"><span>声明目标工具链</span><i>→</i><span>生成系统镜像</span><i>→</i><span>选择任务模型</span><i>→</i><span>建立总线协议</span><i>→</i><span>设计恢复路径</span></div><ol class="path-steps"><li><a href="/2026/07/29/cmake-cross-compilation/">CMake 交叉编译：工具链文件决定目标环境</a><span>避免配置阶段悄悄混入宿主机库。</span></li><li><a href="/2026/07/29/buildroot-system-image/">Buildroot：生成可复现的嵌入式 Linux 系统镜像</a><span>把工具链、boot、内核、rootfs 和服务收敛为产物。</span></li><li><a href="/2026/07/29/embedded-rtos-selection/">嵌入式 RTOS 选型：不要只比较功能列表</a><span>从实时性、生态、内存、调试与团队约束取舍。</span></li><li><a href="/2026/07/29/embedded-can/">CAN 总线：仲裁、错误处理与可靠通信</a><span>理解优先级、错误状态和总线恢复。</span></li><li><a href="/2026/07/29/embedded-watchdog/">看门狗：让系统从不可恢复故障中自动重启</a><span>让健康监督而非盲目喂狗决定是否复位。</span></li></ol></section>
 
-路径之外的资料入口见[精选阅读](/reading/)；需要按主题自由浏览时可回到[技术地图](/technology/)。
+路径之外的资料入口见[精选阅读](/reading/)；想先掌握最常用的十篇内容，可进入[核心文章](/guides/)；需要按主题自由浏览时可回到[技术地图](/technology/)。

@@ -2,6 +2,8 @@
 title: RoboTraceOpt
 date: 2026-07-30 15:10:00
 layout: page
+description: 面向 ROS 2 的跨层运行时追踪、证据图诊断与受约束配置优化项目。
+cover: /image/projects/robotraceopt.png
 ---
 
 <div class="page-lead">

@@ -45,6 +45,7 @@ date_format: YYYY-MM-DD
 time_format: HH:mm:ss
 
 # Assets
+share_image: /image/projects/robotraceopt.png
 stylesheets:
   - /css/style.css
 
