@@ -18,14 +18,14 @@
 
 <title>eBPF 程序生命周期：加载、验证、挂载与通信 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="eBPF 让受限程序在内核事件点执行。用户态加载字节码，Verifier 验证控制流、边界与指针安全，通过后由解释器或 JIT 执行，并通过 Map 与用户态交换状态。 编译 eBPF 对象 → bpf 系统调用加载 → Verifier 静态验证 → JIT 并挂载到 Hook → 事件触发并通过 Map/RingBuf 输出 程序类型决定可用上下文...">
+    <meta name="description" content="eBPF 让受限程序在内核事件点执行。用户态加载字节码，Verifier 逐条验证控制流、边界和指针安全；通过后内核可以解释执行或 JIT 编译，并通过 Map、perf buffer 或 ring buffer 与用户态交换数据。它适合观测和受限处理，但不是把任意 C 代码搬进内核。 编译 eBPF 对象 → bpf 系统调用加载 → Verifie...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/ebpf-program-lifecycle/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="eBPF 程序生命周期：加载、验证、挂载与通信 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="eBPF 让受限程序在内核事件点执行。用户态加载字节码，Verifier 验证控制流、边界与指针安全，通过后由解释器或 JIT 执行，并通过 Map 与用户态交换状态。 编译 eBPF 对象 → bpf 系统调用加载 → Verifier 静态验证 → JIT 并挂载到 Hook → 事件触发并通过 Map/RingBuf 输出 程序类型决定可用上下文...">
+    <meta property="og:description" content="eBPF 让受限程序在内核事件点执行。用户态加载字节码，Verifier 逐条验证控制流、边界和指针安全；通过后内核可以解释执行或 JIT 编译，并通过 Map、perf buffer 或 ring buffer 与用户态交换数据。它适合观测和受限处理，但不是把任意 C 代码搬进内核。 编译 eBPF 对象 → bpf 系统调用加载 → Verifie...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/ebpf-program-lifecycle/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="eBPF 程序生命周期：加载、验证、挂载与通信 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="eBPF 让受限程序在内核事件点执行。用户态加载字节码，Verifier 验证控制流、边界与指针安全，通过后由解释器或 JIT 执行，并通过 Map 与用户态交换状态。 编译 eBPF 对象 → bpf 系统调用加载 → Verifier 静态验证 → JIT 并挂载到 Hook → 事件触发并通过 Map/RingBuf 输出 程序类型决定可用上下文...">
+    <meta name="twitter:description" content="eBPF 让受限程序在内核事件点执行。用户态加载字节码，Verifier 逐条验证控制流、边界和指针安全；通过后内核可以解释执行或 JIT 编译，并通过 Map、perf buffer 或 ring buffer 与用户态交换数据。它适合观测和受限处理，但不是把任意 C 代码搬进内核。 编译 eBPF 对象 → bpf 系统调用加载 → Verifie...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,10 +264,14 @@
         </header>
 
         <div class="post-content">
-            <p>eBPF 让受限程序在内核事件点执行。用户态加载字节码，Verifier 验证控制流、边界与指针安全，通过后由解释器或 JIT 执行，并通过 Map 与用户态交换状态。</p>
+            <p>eBPF 让受限程序在内核事件点执行。用户态加载字节码，Verifier 逐条验证控制流、边界和指针安全；通过后内核可以解释执行或 JIT 编译，并通过 Map、perf buffer 或 ring buffer 与用户态交换数据。它适合观测和受限处理，但不是把任意 C 代码搬进内核。</p>
 <div class="note-flow"><span>编译 eBPF 对象</span><i>→</i><span>bpf 系统调用加载</span><i>→</i><span>Verifier 静态验证</span><i>→</i><span>JIT 并挂载到 Hook</span><i>→</i><span>事件触发并通过 Map/RingBuf 输出</span></div>
 
-<p>程序类型决定可用上下文、Helper 与挂载位置。Map 的并发语义、对象 pinning、版本兼容和采样开销都是工程设计的一部分；Verifier 通过只代表“可证明安全”，不代表业务逻辑正确。</p>
+<figure class="note-visual"><figcaption><span>对象图</span>程序类型决定上下文，Map 决定数据怎样跨越用户态和内核态。</figcaption><div class="note-map"><span><b>ELF 对象</b><small>包含程序段、Map 定义、BTF 和重定位信息。</small></span><span><b>program type</b><small>决定可访问的上下文、Helper 和可挂载位置。</small></span><span><b>Verifier</b><small>证明每条路径安全结束，限制循环、边界和指针使用。</small></span><span><b>JIT</b><small>把通过验证的指令编译为本机代码，降低运行开销。</small></span><span><b>Map</b><small>保存计数、配置或状态，必须明确并发和生命周期语义。</small></span><span><b>事件输出</b><small>高频事件应批量或采样，避免观测本身成为负载。</small></span></div></figure>
+
+<h2 id="先选-Hook-和数据模型，再写程序"><a href="#先选-Hook-和数据模型，再写程序" class="headerlink" title="先选 Hook 和数据模型，再写程序"></a>先选 Hook 和数据模型，再写程序</h2><p>要观察函数调用、网络包、调度事件还是用户态探针，会决定使用 tracepoint、kprobe、fentry&#x2F;fexit、XDP 或 uprobe 等不同入口。入口一旦确定，再列出真正需要的字段和采样频率。把所有数据都塞进 Map、每个事件都打印，通常会先把性能和可读性拖垮。</p>
+<p>Map 也不是普通全局变量。哈希、数组、per-CPU、ring buffer 等类型各有内存、锁和用户态读取语义。对长期运行的工具，要考虑对象 pinning、进程退出后的清理和内核版本差异；对诊断工具，要给丢失事件和 map 满容量留出可观测指标。</p>
+<h2 id="Verifier-通过不代表诊断结论正确"><a href="#Verifier-通过不代表诊断结论正确" class="headerlink" title="Verifier 通过不代表诊断结论正确"></a>Verifier 通过不代表诊断结论正确</h2><p>Verifier 只证明程序在它能分析的条件下不会进行不安全访问。它不保证你选的 Hook 正好覆盖了问题，也不保证时间戳、进程身份和采样率足以支持业务归因。发布前应在已知工作负载下核对事件数量、延迟和输出的关联关系，再把它用在真正的故障场景。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://tinylab.org/ebpf-part1/">eBPF 程序构成与通信</a></p>
 
         </div>

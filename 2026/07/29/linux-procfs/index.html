@@ -18,14 +18,14 @@
 
 <title>procfs：把内核运行状态投影成文件 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它暴露进程、内存、CPU、网络与内核参数状态，是排障和观测的重要入口。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 /proc/PID/status 、 maps 、 smaps 用于进程诊断； /proc/meminfo 、 s...">
+    <meta name="description" content="procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它把进程、内存、CPU、网络和内核参数投影成一组文件，因此排障时可以用普通文件工具观察系统。但它不是一个稳定的数据库快照：你读到第一行和最后一行之间，系统状态仍可能已经变化。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 观测图 不...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-procfs/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="procfs：把内核运行状态投影成文件 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它暴露进程、内存、CPU、网络与内核参数状态，是排障和观测的重要入口。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 /proc/PID/status 、 maps 、 smaps 用于进程诊断； /proc/meminfo 、 s...">
+    <meta property="og:description" content="procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它把进程、内存、CPU、网络和内核参数投影成一组文件，因此排障时可以用普通文件工具观察系统。但它不是一个稳定的数据库快照：你读到第一行和最后一行之间，系统状态仍可能已经变化。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 观测图 不...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-procfs/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="procfs：把内核运行状态投影成文件 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它暴露进程、内存、CPU、网络与内核参数状态，是排障和观测的重要入口。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 /proc/PID/status 、 maps 、 smaps 用于进程诊断； /proc/meminfo 、 s...">
+    <meta name="twitter:description" content="procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它把进程、内存、CPU、网络和内核参数投影成一组文件，因此排障时可以用普通文件工具观察系统。但它不是一个稳定的数据库快照：你读到第一行和最后一行之间，系统状态仍可能已经变化。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 观测图 不...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,10 +264,14 @@
         </header>
 
         <div class="post-content">
-            <p>procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它暴露进程、内存、CPU、网络与内核参数状态，是排障和观测的重要入口。</p>
+            <p>procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它把进程、内存、CPU、网络和内核参数投影成一组文件，因此排障时可以用普通文件工具观察系统。但它不是一个稳定的数据库快照：你读到第一行和最后一行之间，系统状态仍可能已经变化。</p>
 <div class="note-flow"><span>用户读取 /proc 文件</span><i>→</i><span>VFS 路由到 procfs</span><i>→</i><span>内核回调收集状态</span><i>→</i><span>格式化为文本返回</span></div>
 
-<p><code>/proc/PID/status</code>、<code>maps</code>、<code>smaps</code> 用于进程诊断；<code>/proc/meminfo</code>、<code>stat</code>、<code>interrupts</code> 用于系统观察。procfs 是瞬时视图，采集工具应处理读取期间状态变化。</p>
+<figure class="note-visual"><figcaption><span>观测图</span>不同 `/proc` 文件回答的是不同层次的问题，读之前先确定想验证什么。</figcaption><div class="note-map"><span><b>/proc/PID/status</b><small>查看线程数、状态、能力和内存概况。</small></span><span><b>/proc/PID/maps</b><small>观察虚拟地址区域、文件映射和匿名内存。</small></span><span><b>/proc/PID/smaps</b><small>补充每段的 RSS、PSS、共享和脏页信息。</small></span><span><b>/proc/meminfo</b><small>从系统视角看内存总量、缓存、回收和可用量。</small></span><span><b>/proc/interrupts</b><small>比较各 CPU 和设备的中断分布，发现异常热点。</small></span><span><b>/proc/sys</b><small>部分文件可写，修改前要确认范围和恢复方式。</small></span></div></figure>
+
+<h2 id="读数要和采样时间一起保存"><a href="#读数要和采样时间一起保存" class="headerlink" title="读数要和采样时间一起保存"></a>读数要和采样时间一起保存</h2><p>排查内存增长时，只读一次 <code>status</code> 很难区分泄漏、缓存增长和短时峰值。应按固定间隔保存同一组字段，并同时记录进程重启、负载变化和系统总量。读取 <code>maps</code>、<code>smaps</code> 这类大文件时还要注意进程可能正在创建或释放映射，工具要能容忍内容在读取期间改变。</p>
+<p>对于高频采样，反复解析很大的文本文件本身也会带来开销。先用粗粒度指标锁定时间窗口，再深入读取具体 PID 或 subsystem 的细节，比把所有 <code>/proc</code> 文件无差别轮询更稳妥。</p>
+<h2 id="可写节点要像配置变更一样对待"><a href="#可写节点要像配置变更一样对待" class="headerlink" title="可写节点要像配置变更一样对待"></a>可写节点要像配置变更一样对待</h2><p><code>/proc/sys</code> 下的部分接口会直接改变内核参数。脚本在写入前应保存旧值、说明影响范围，并提供恢复路径。把调优命令和观测命令混在同一段脚本里，很容易让一次排查变成不可解释的系统状态变化。</p>
 <p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=MzkzNDk2NTUwOQ==&mid=2247485423&idx=1&sn=e1b8af580820dee654e7c89b74732223">proc 虚拟文件系统</a></p>
 
         </div>

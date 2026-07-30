@@ -44,7 +44,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/"/>
     <published>2026-07-26T06:00:00.000Z</published>
     <updated>2026-07-26T06:00:00.000Z</updated>
-    <summary type="html">训练模型在电脑上能跑，不代表它放到机器人上就稳定。TensorRT 会解析 ONNX 等模型，融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine。FP16 和 INT8 往往能减小计算量和带宽，但还要测持续输入、温度变化和其他节点抢资源时，结果会不会变慢或过期。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 engine → 预分配并预热推理 → 测量端到端延迟与精度 从模型文件到 engine 的四个关口 导出正确 ：固定 opset、输入名称、坐标约定和前后处理。很多“推理精度下降”其实是 RGB&amp;#x...</summary>
+    <summary type="html">训练模型在电脑上能跑，不代表它放到机器人上就稳定。TensorRT 会解析 ONNX 等模型，融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine。FP16 和 INT8 往往能减小计算量和带宽，但还要测持续输入、温度变化和其他节点抢资源时，结果会不会变慢或过期。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 engine → 预分配并预热推理 → 测量端到端延迟与精度 时延图 模型、engine、缓冲区和队列要一起看，单独缩短 GPU 时间不等于感知结果更及时。 ONNX 输入契约 opset、形状、颜色、...</summary>
   </entry>
   <entry>
     <title>Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU</title>
@@ -52,7 +52,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/isaac-ros-nitros-zero-copy/"/>
     <published>2026-07-25T06:00:00.000Z</published>
     <updated>2026-07-25T06:00:00.000Z</updated>
-    <summary type="html">机器人视觉链路里，模型本身只跑几毫秒，结果却晚很多才出来，很常见。时间通常花在图像从驱动到 ROS 消息、颜色转换、CPU 内存和 GPU 内存之间的复制与排队上。Isaac ROS 的 NITROS 用 ROS 2 类型适配和 GXF 让兼容节点协商数据格式，尽量让图像和张量留在加速内存里继续处理。 相机产生图像 → NITROS 协商兼容格式 → 缓冲区留在加速内存 → GPU 节点连续处理 → 只在边界转换数据 普通链路为什么容易慢 一个典型的非加速链路是：相机驱动将帧写入 CPU 内存，发布 sensor_msgs/Image ；订阅者收到...</summary>
+    <summary type="html">机器人视觉链路里，模型本身只跑几毫秒，结果却晚很多才出来，很常见。时间通常花在图像从驱动到 ROS 消息、颜色转换、CPU 内存和 GPU 内存之间的复制与排队上。Isaac ROS 的 NITROS 用 ROS 2 类型适配和 GXF 让兼容节点协商数据格式，尽量让图像和张量留在加速内存里继续处理。 相机产生图像 → NITROS 协商兼容格式 → 缓冲区留在加速内存 → GPU 节点连续处理 → 只在边界转换数据 数据图 判断少拷贝是否成立，要沿着每个缓冲区检查位置、格式、所有权和同步点。 相机输出 先确认原始帧位于哪里、是什么格式、由谁拥有。...</summary>
   </entry>
   <entry>
     <title>Jetson 机器人部署：功耗、算力与实时控制怎样分工</title>
@@ -60,7 +60,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/"/>
     <published>2026-07-24T06:00:00.000Z</published>
     <updated>2026-07-24T06:00:00.000Z</updated>
-    <summary type="html">Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。 选择 JetPack 与功耗模式 → 部署模型和 ROS 2 节点 → 测量 CPU/GPU/内存负载 → 分离推理与实时控制 → 在温度稳定后复测长尾 Jetson 上实际要争抢哪些资源 推理不只占 GPU。摄像头采集和图...</summary>
+    <summary type="html">Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。 选择 JetPack 与功耗模式 → 部署模型和 ROS 2 节点 → 测量 CPU/GPU/内存负载 → 分离推理与实时控制 → 在温度稳定后复测长尾 资源图 Jetson 是感知和任务平台，实时控制与安全链路应有更确定的...</summary>
   </entry>
   <entry>
     <title>NVIDIA Physical AI 技术栈：机器人从模型到执行器要经过什么</title>

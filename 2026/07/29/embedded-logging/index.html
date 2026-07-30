@@ -18,14 +18,14 @@
 
 <title>嵌入式日志系统：在可观测性与实时性之间取舍 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="日志要提供等级、模块、时间戳和输出后端，同时避免在中断或实时路径中格式化和阻塞发送。常用方案是快速写入环形缓冲区，再由后台任务输出到串口、Flash 或网络。 业务产生结构化日志 → 按等级过滤 → 写入内存缓冲区 → 后台批量输出 → 主机解析与检索 参考： EasyLogger">
+    <meta name="description" content="日志要帮助人还原故障，而不是在故障时再制造一次超时。它应带有等级、模块、时间和必要上下文，同时避免在中断或实时路径里格式化长字符串、等待串口 DMA 或阻塞网络。常用做法是前台快速写入有界缓冲区，后台任务再批量输出。 业务产生结构化日志 → 按等级过滤 → 写入内存缓冲区 → 后台批量输出 → 主机解析与检索 日志链路 采集路径有界，输出路径可丢弃或降...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-logging/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="嵌入式日志系统：在可观测性与实时性之间取舍 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="日志要提供等级、模块、时间戳和输出后端，同时避免在中断或实时路径中格式化和阻塞发送。常用方案是快速写入环形缓冲区，再由后台任务输出到串口、Flash 或网络。 业务产生结构化日志 → 按等级过滤 → 写入内存缓冲区 → 后台批量输出 → 主机解析与检索 参考： EasyLogger">
+    <meta property="og:description" content="日志要帮助人还原故障，而不是在故障时再制造一次超时。它应带有等级、模块、时间和必要上下文，同时避免在中断或实时路径里格式化长字符串、等待串口 DMA 或阻塞网络。常用做法是前台快速写入有界缓冲区，后台任务再批量输出。 业务产生结构化日志 → 按等级过滤 → 写入内存缓冲区 → 后台批量输出 → 主机解析与检索 日志链路 采集路径有界，输出路径可丢弃或降...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-logging/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="嵌入式日志系统：在可观测性与实时性之间取舍 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="日志要提供等级、模块、时间戳和输出后端，同时避免在中断或实时路径中格式化和阻塞发送。常用方案是快速写入环形缓冲区，再由后台任务输出到串口、Flash 或网络。 业务产生结构化日志 → 按等级过滤 → 写入内存缓冲区 → 后台批量输出 → 主机解析与检索 参考： EasyLogger">
+    <meta name="twitter:description" content="日志要帮助人还原故障，而不是在故障时再制造一次超时。它应带有等级、模块、时间和必要上下文，同时避免在中断或实时路径里格式化长字符串、等待串口 DMA 或阻塞网络。常用做法是前台快速写入有界缓冲区，后台任务再批量输出。 业务产生结构化日志 → 按等级过滤 → 写入内存缓冲区 → 后台批量输出 → 主机解析与检索 日志链路 采集路径有界，输出路径可丢弃或降...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,9 +264,14 @@
         </header>
 
         <div class="post-content">
-            <p>日志要提供等级、模块、时间戳和输出后端，同时避免在中断或实时路径中格式化和阻塞发送。常用方案是快速写入环形缓冲区，再由后台任务输出到串口、Flash 或网络。</p>
+            <p>日志要帮助人还原故障，而不是在故障时再制造一次超时。它应带有等级、模块、时间和必要上下文，同时避免在中断或实时路径里格式化长字符串、等待串口 DMA 或阻塞网络。常用做法是前台快速写入有界缓冲区，后台任务再批量输出。</p>
 <div class="note-flow"><span>业务产生结构化日志</span><i>→</i><span>按等级过滤</span><i>→</i><span>写入内存缓冲区</span><i>→</i><span>后台批量输出</span><i>→</i><span>主机解析与检索</span></div>
 
+<figure class="note-visual"><figcaption><span>日志链路</span>采集路径有界，输出路径可丢弃或降级，二者不要互相阻塞。</figcaption><div class="note-map"><span><b>事件来源</b><small>任务、中断和驱动只写最小必要字段。</small></span><span><b>等级过滤</b><small>调试信息可按模块关闭，故障记录应保留。</small></span><span><b>编码方式</b><small>事件 ID 加参数通常比每次格式化字符串更轻。</small></span><span><b>环形缓冲</b><small>容量固定，必须定义满时丢新、丢旧或覆盖策略。</small></span><span><b>后台输出</b><small>串口、Flash 和网络都有独立的速率与失败处理。</small></span><span><b>丢失统计</b><small>记录被丢的条数，否则看不出日志是否已经失真。</small></span></div></figure>
+
+<h2 id="在实时路径上只记录事实"><a href="#在实时路径上只记录事实" class="headerlink" title="在实时路径上只记录事实"></a>在实时路径上只记录事实</h2><p>例如记录“状态机从 A 转到 B”“传输超时”“队列长度达到阈值”，比在中断里 <code>printf</code> 一段长文本更可靠。结构化事件可以保存事件 ID、时间戳、任务号和少量参数，主机端再根据字典还原为可读文本。这样缓冲区占用可估算，日志格式也能随固件版本管理。</p>
+<p>如果必须保存字符串，应限制最大长度，并避免把未初始化内存、敏感内容或大块二进制数据直接写进日志。高频路径可以采用采样或聚合，例如每秒汇总一次丢包数，而不是每丢一包就输出一行。</p>
+<h2 id="缓冲区满时的策略要提前决定"><a href="#缓冲区满时的策略要提前决定" class="headerlink" title="缓冲区满时的策略要提前决定"></a>缓冲区满时的策略要提前决定</h2><p>日志后台变慢很常见：串口没有连接、Flash 正在擦除、网络断开或主机没有读取。此时前台不能无限等待。调试日志通常可以丢弃，错误和复位原因需要优先保留；无论策略是什么，都应暴露丢失计数和当前占用，避免看到“系统一切正常”却不知道关键日志早已被覆盖。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://github.com/armink/EasyLogger">EasyLogger</a></p>
 
         </div>

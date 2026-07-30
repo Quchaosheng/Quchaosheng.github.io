@@ -18,14 +18,14 @@
 
 <title>嵌入式 Flash 存储：擦写约束、掉电安全与磨损均衡 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="Flash 写入前需要擦除，擦除粒度大且寿命有限。可靠参数存储应采用追加记录、版本号、校验和与双区切换，避免掉电留下半条有效数据。 生成新配置记录 → 写入数据与校验 → 原子提交有效标志 → 启动时扫描最新版本 → 后台回收旧扇区 参考： EasyFlash">
+    <meta name="description" content="Flash 不是可以随意覆盖的 RAM。写入前通常需要按扇区擦除，擦除粒度比一条配置大得多，且每个扇区的擦写次数有限。可靠存储要同时处理三件事：掉电时不能丢掉旧值，反复更新时不能把少数扇区磨坏，启动时要能判断哪条记录可信。 生成新配置记录 → 写入数据与校验 → 原子提交有效标志 → 启动时扫描最新版本 → 后台回收旧扇区 记录图 新记录先完整写入，旧...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-flash-storage/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="嵌入式 Flash 存储：擦写约束、掉电安全与磨损均衡 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="Flash 写入前需要擦除，擦除粒度大且寿命有限。可靠参数存储应采用追加记录、版本号、校验和与双区切换，避免掉电留下半条有效数据。 生成新配置记录 → 写入数据与校验 → 原子提交有效标志 → 启动时扫描最新版本 → 后台回收旧扇区 参考： EasyFlash">
+    <meta property="og:description" content="Flash 不是可以随意覆盖的 RAM。写入前通常需要按扇区擦除，擦除粒度比一条配置大得多，且每个扇区的擦写次数有限。可靠存储要同时处理三件事：掉电时不能丢掉旧值，反复更新时不能把少数扇区磨坏，启动时要能判断哪条记录可信。 生成新配置记录 → 写入数据与校验 → 原子提交有效标志 → 启动时扫描最新版本 → 后台回收旧扇区 记录图 新记录先完整写入，旧...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-flash-storage/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="嵌入式 Flash 存储：擦写约束、掉电安全与磨损均衡 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="Flash 写入前需要擦除，擦除粒度大且寿命有限。可靠参数存储应采用追加记录、版本号、校验和与双区切换，避免掉电留下半条有效数据。 生成新配置记录 → 写入数据与校验 → 原子提交有效标志 → 启动时扫描最新版本 → 后台回收旧扇区 参考： EasyFlash">
+    <meta name="twitter:description" content="Flash 不是可以随意覆盖的 RAM。写入前通常需要按扇区擦除，擦除粒度比一条配置大得多，且每个扇区的擦写次数有限。可靠存储要同时处理三件事：掉电时不能丢掉旧值，反复更新时不能把少数扇区磨坏，启动时要能判断哪条记录可信。 生成新配置记录 → 写入数据与校验 → 原子提交有效标志 → 启动时扫描最新版本 → 后台回收旧扇区 记录图 新记录先完整写入，旧...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,9 +264,14 @@
         </header>
 
         <div class="post-content">
-            <p>Flash 写入前需要擦除，擦除粒度大且寿命有限。可靠参数存储应采用追加记录、版本号、校验和与双区切换，避免掉电留下半条有效数据。</p>
+            <p>Flash 不是可以随意覆盖的 RAM。写入前通常需要按扇区擦除，擦除粒度比一条配置大得多，且每个扇区的擦写次数有限。可靠存储要同时处理三件事：掉电时不能丢掉旧值，反复更新时不能把少数扇区磨坏，启动时要能判断哪条记录可信。</p>
 <div class="note-flow"><span>生成新配置记录</span><i>→</i><span>写入数据与校验</span><i>→</i><span>原子提交有效标志</span><i>→</i><span>启动时扫描最新版本</span><i>→</i><span>后台回收旧扇区</span></div>
 
+<figure class="note-visual"><figcaption><span>记录图</span>新记录先完整写入，旧记录在确认后才变成可回收空间。</figcaption><div class="note-map"><span><b>记录头</b><small>包含类型、版本、长度和序号，支持启动时排序。</small></span><span><b>payload</b><small>按明确格式保存，避免依赖编译器布局。</small></span><span><b>校验</b><small>确认内容在掉电或存储错误后仍可识别。</small></span><span><b>提交位</b><small>最后写入，表示整条记录已经完整落盘。</small></span><span><b>双区选择</b><small>至少保留一个可用区，避免先擦唯一好数据。</small></span><span><b>垃圾回收</b><small>在安全时机搬迁有效记录，再擦除旧扇区。</small></span></div></figure>
+
+<h2 id="写入顺序决定掉电后的结果"><a href="#写入顺序决定掉电后的结果" class="headerlink" title="写入顺序决定掉电后的结果"></a>写入顺序决定掉电后的结果</h2><p>一条记录可以按“头部、数据、CRC、提交位”的顺序写入。任何一步掉电，启动扫描都应把它当作未完成记录并继续使用上一条有效值。不要通过先擦除旧扇区来腾空间，也不要在擦除完成前就更新“最新记录”的指针。</p>
+<p>若底层 Flash 只能把位从 1 写成 0，提交位还可以设计为单向改变；这一特性让提交比反复覆盖更可靠。具体位布局要按照芯片编程粒度和 ECC 行为验证，不能只在仿真里假设它成立。</p>
+<h2 id="寿命问题靠分散写入解决"><a href="#寿命问题靠分散写入解决" class="headerlink" title="寿命问题靠分散写入解决"></a>寿命问题靠分散写入解决</h2><p>高频计数器、日志和配置不能都压在同一个扇区。追加日志、轮换扇区和按需合并可以把磨损分散出去。记录启动时还应统计坏块、CRC 失败和回收次数；这些数据能帮助区分“程序写错”与“存储开始退化”。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://github.com/armink/EasyFlash">EasyFlash</a></p>
 
         </div>

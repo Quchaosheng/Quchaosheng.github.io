@@ -267,6 +267,8 @@
             <p>训练模型在电脑上能跑，不代表它放到机器人上就稳定。TensorRT 会解析 ONNX 等模型，融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine。FP16 和 INT8 往往能减小计算量和带宽，但还要测持续输入、温度变化和其他节点抢资源时，结果会不会变慢或过期。</p>
 <div class="note-flow"><span>导出 ONNX 模型</span><i>→</i><span>校验算子与精度</span><i>→</i><span>构建目标设备 engine</span><i>→</i><span>预分配并预热推理</span><i>→</i><span>测量端到端延迟与精度</span></div>
 
+<figure class="note-visual"><figcaption><span>时延图</span>模型、engine、缓冲区和队列要一起看，单独缩短 GPU 时间不等于感知结果更及时。</figcaption><div class="note-map"><span><b>ONNX 输入契约</b><small>opset、形状、颜色、归一化和后处理必须与训练保持一致。</small></span><span><b>目标 engine</b><small>与 GPU 架构、TensorRT、CUDA 和优化 profile 一起固定版本。</small></span><span><b>预分配缓冲</b><small>启动时建立 context、stream 和输入输出内存，避免每帧动态分配。</small></span><span><b>异步执行</b><small>用明确 stream 依赖连接预处理、推理和后处理，避免隐式同步。</small></span><span><b>队列策略</b><small>持续输入时要决定丢旧帧、限队列还是让结果逐渐过期。</small></span><span><b>端到端时间</b><small>同时记录采集、入队、推理完成和消费时刻，得到真正的 frame age。</small></span></div></figure>
+
 <h2 id="从模型文件到-engine-的四个关口"><a href="#从模型文件到-engine-的四个关口" class="headerlink" title="从模型文件到 engine 的四个关口"></a>从模型文件到 engine 的四个关口</h2><p><strong>导出正确</strong>：固定 opset、输入名称、坐标约定和前后处理。很多“推理精度下降”其实是 RGB&#x2F;BGR、归一化、letterbox 或 NMS 参数和训练时不一致。</p>
 <p><strong>形状可控</strong>：如果模型有动态 batch 或动态分辨率，构建 engine 时需要为输入设置优化 profile。profile 覆盖的形状越宽，运行时适应性越高，但可能牺牲特定尺寸的最优 kernel。机器人若只使用一种相机分辨率，固定形状通常更容易获得稳定时延。</p>
 <p><strong>精度可验</strong>：FP16 通常是较稳妥的第一步。INT8 需要有代表性的校准数据，且要分别统计关键类别的漏检、误检和距离&#x2F;姿态误差；不能只比较一个总体 mAP。</p>

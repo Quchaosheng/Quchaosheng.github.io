@@ -18,14 +18,14 @@
 
 <title>产测接口：让每块板子都能快速证明自己正常 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="产测固件应提供可自动化命令，依次检测电源、时钟、存储、通信和关键外设，并输出机器可解析结果、序列号与校准数据。 扫描设备身份 → 执行分项自检 → 采集测量与错误码 → 写入序列号/校准值 → 上传结果并锁定量产配置 产测命令与售后诊断可复用底层能力，但量产后危险操作必须鉴权或关闭。参考： letter-shell">
+    <meta name="description" content="产测不是让操作员逐条看串口输出，而是让每块板子走过同一套可追溯流程：识别硬件版本，检查供电、时钟、存储、通信和关键外设，记录测量值和错误码，再写入序列号与校准数据。结果必须能被工具稳定解析，才能发现批次问题和追踪售后故障。 扫描设备身份 → 执行分项自检 → 采集测量与错误码 → 写入序列号/校准值 → 上传结果并锁定量产配置 产测图 把测试命令、原始...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/manufacturing-test-interface/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="产测接口：让每块板子都能快速证明自己正常 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="产测固件应提供可自动化命令，依次检测电源、时钟、存储、通信和关键外设，并输出机器可解析结果、序列号与校准数据。 扫描设备身份 → 执行分项自检 → 采集测量与错误码 → 写入序列号/校准值 → 上传结果并锁定量产配置 产测命令与售后诊断可复用底层能力，但量产后危险操作必须鉴权或关闭。参考： letter-shell">
+    <meta property="og:description" content="产测不是让操作员逐条看串口输出，而是让每块板子走过同一套可追溯流程：识别硬件版本，检查供电、时钟、存储、通信和关键外设，记录测量值和错误码，再写入序列号与校准数据。结果必须能被工具稳定解析，才能发现批次问题和追踪售后故障。 扫描设备身份 → 执行分项自检 → 采集测量与错误码 → 写入序列号/校准值 → 上传结果并锁定量产配置 产测图 把测试命令、原始...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/manufacturing-test-interface/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="产测接口：让每块板子都能快速证明自己正常 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="产测固件应提供可自动化命令，依次检测电源、时钟、存储、通信和关键外设，并输出机器可解析结果、序列号与校准数据。 扫描设备身份 → 执行分项自检 → 采集测量与错误码 → 写入序列号/校准值 → 上传结果并锁定量产配置 产测命令与售后诊断可复用底层能力，但量产后危险操作必须鉴权或关闭。参考： letter-shell">
+    <meta name="twitter:description" content="产测不是让操作员逐条看串口输出，而是让每块板子走过同一套可追溯流程：识别硬件版本，检查供电、时钟、存储、通信和关键外设，记录测量值和错误码，再写入序列号与校准数据。结果必须能被工具稳定解析，才能发现批次问题和追踪售后故障。 扫描设备身份 → 执行分项自检 → 采集测量与错误码 → 写入序列号/校准值 → 上传结果并锁定量产配置 产测图 把测试命令、原始...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,10 +264,15 @@
         </header>
 
         <div class="post-content">
-            <p>产测固件应提供可自动化命令，依次检测电源、时钟、存储、通信和关键外设，并输出机器可解析结果、序列号与校准数据。</p>
+            <p>产测不是让操作员逐条看串口输出，而是让每块板子走过同一套可追溯流程：识别硬件版本，检查供电、时钟、存储、通信和关键外设，记录测量值和错误码，再写入序列号与校准数据。结果必须能被工具稳定解析，才能发现批次问题和追踪售后故障。</p>
 <div class="note-flow"><span>扫描设备身份</span><i>→</i><span>执行分项自检</span><i>→</i><span>采集测量与错误码</span><i>→</i><span>写入序列号/校准值</span><i>→</i><span>上传结果并锁定量产配置</span></div>
 
-<p>产测命令与售后诊断可复用底层能力，但量产后危险操作必须鉴权或关闭。参考：<a target="_blank" rel="noopener" href="https://github.com/NevermindZZT/letter-shell">letter-shell</a></p>
+<figure class="note-visual"><figcaption><span>产测图</span>把测试命令、原始测量和最终判定分层保存。</figcaption><div class="note-map"><span><b>身份读取</b><small>硬件版本、UID 和固件版本决定应执行哪套测试。</small></span><span><b>测试治具</b><small>供电、继电器、通信和传感器模拟要可控、可校准。</small></span><span><b>分项命令</b><small>每个命令只检查一类能力，并返回稳定错误码。</small></span><span><b>原始数据</b><small>保存电压、频率、ADC 值等测量，不只保存 pass/fail。</small></span><span><b>校准记录</b><small>写入后要读回核对，并绑定序列号和版本。</small></span><span><b>结果上传</b><small>将治具版本、时间和测试日志与设备身份一起归档。</small></span></div></figure>
+
+<h2 id="输出格式必须适合机器读取"><a href="#输出格式必须适合机器读取" class="headerlink" title="输出格式必须适合机器读取"></a>输出格式必须适合机器读取</h2><p>命令返回应有稳定字段，例如测试名、状态、错误码、测量值、单位和版本。人可读的说明可以附在后面，但不能是唯一结果。把“电压正常”改成 <code>supply_mv=4987 limit_low=4700 limit_high=5300 result=PASS</code>，后续才能统计分布和追查阈值变化。</p>
+<p>测试也要区分“无法测试”“治具错误”和“产品不合格”。否则治具接触不良会被记成板子故障，数据越积越多也无法使用。</p>
+<h2 id="量产接口不等于永久后门"><a href="#量产接口不等于永久后门" class="headerlink" title="量产接口不等于永久后门"></a>量产接口不等于永久后门</h2><p>产测与售后诊断可以复用底层读写能力，但擦除、校准覆盖、输出驱动和安全配置等危险操作必须有权限、物理条件或一次性开关。量产后应缩小可执行命令集合，并记录任何维护模式的进入与退出。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://github.com/NevermindZZT/letter-shell">letter-shell</a></p>
 
         </div>
 

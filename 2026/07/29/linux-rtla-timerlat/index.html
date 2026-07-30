@@ -18,14 +18,14 @@
 
 <title>rtla timerlat：定位实时系统的唤醒延迟 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="timerlat tracer 周期性设置定时器，测量定时器到期到中断处理、再到实时线程真正运行之间的延迟，从而区分 IRQ 延迟与线程调度延迟。 设置周期定时器 → 定时器到期 → 记录 IRQ 延迟 → 唤醒 timerlat 线程 → 记录线程延迟并追踪干扰源 测试前应固定 CPU、设置实时优先级并控制频率调节等变量。发现尖峰后结合 osnois...">
+    <meta name="description" content="timerlat tracer 周期性设置定时器，测量定时器到期到中断处理、再到实时线程真正运行之间的延迟。它把“线程醒晚了”拆成两段：IRQ 延迟说明硬件事件和中断处理是否迟到，线程延迟说明唤醒后又在调度器和其他工作里等了多久。 设置周期定时器 → 定时器到期 → 记录 IRQ 延迟 → 唤醒 timerlat 线程 → 记录线程延迟并追踪干扰源 延...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-rtla-timerlat/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="rtla timerlat：定位实时系统的唤醒延迟 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="timerlat tracer 周期性设置定时器，测量定时器到期到中断处理、再到实时线程真正运行之间的延迟，从而区分 IRQ 延迟与线程调度延迟。 设置周期定时器 → 定时器到期 → 记录 IRQ 延迟 → 唤醒 timerlat 线程 → 记录线程延迟并追踪干扰源 测试前应固定 CPU、设置实时优先级并控制频率调节等变量。发现尖峰后结合 osnois...">
+    <meta property="og:description" content="timerlat tracer 周期性设置定时器，测量定时器到期到中断处理、再到实时线程真正运行之间的延迟。它把“线程醒晚了”拆成两段：IRQ 延迟说明硬件事件和中断处理是否迟到，线程延迟说明唤醒后又在调度器和其他工作里等了多久。 设置周期定时器 → 定时器到期 → 记录 IRQ 延迟 → 唤醒 timerlat 线程 → 记录线程延迟并追踪干扰源 延...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-rtla-timerlat/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="rtla timerlat：定位实时系统的唤醒延迟 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="timerlat tracer 周期性设置定时器，测量定时器到期到中断处理、再到实时线程真正运行之间的延迟，从而区分 IRQ 延迟与线程调度延迟。 设置周期定时器 → 定时器到期 → 记录 IRQ 延迟 → 唤醒 timerlat 线程 → 记录线程延迟并追踪干扰源 测试前应固定 CPU、设置实时优先级并控制频率调节等变量。发现尖峰后结合 osnois...">
+    <meta name="twitter:description" content="timerlat tracer 周期性设置定时器，测量定时器到期到中断处理、再到实时线程真正运行之间的延迟。它把“线程醒晚了”拆成两段：IRQ 延迟说明硬件事件和中断处理是否迟到，线程延迟说明唤醒后又在调度器和其他工作里等了多久。 设置周期定时器 → 定时器到期 → 记录 IRQ 延迟 → 唤醒 timerlat 线程 → 记录线程延迟并追踪干扰源 延...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,10 +264,13 @@
         </header>
 
         <div class="post-content">
-            <p>timerlat tracer 周期性设置定时器，测量定时器到期到中断处理、再到实时线程真正运行之间的延迟，从而区分 IRQ 延迟与线程调度延迟。</p>
+            <p>timerlat tracer 周期性设置定时器，测量定时器到期到中断处理、再到实时线程真正运行之间的延迟。它把“线程醒晚了”拆成两段：IRQ 延迟说明硬件事件和中断处理是否迟到，线程延迟说明唤醒后又在调度器和其他工作里等了多久。</p>
 <div class="note-flow"><span>设置周期定时器</span><i>→</i><span>定时器到期</span><i>→</i><span>记录 IRQ 延迟</span><i>→</i><span>唤醒 timerlat 线程</span><i>→</i><span>记录线程延迟并追踪干扰源</span></div>
 
-<p>测试前应固定 CPU、设置实时优先级并控制频率调节等变量。发现尖峰后结合 osnoise、ftrace、IRQ 统计判断干扰来自长中断、不可抢占区、调度竞争还是固件活动。</p>
+<figure class="note-visual"><figcaption><span>延迟图</span>先判断尖峰发生在中断前还是线程被唤醒后，再决定追踪方向。</figcaption><div class="note-map"><span><b>理想到期点</b><small>测试的时间基准，后续差值都从这里计算。</small></span><span><b>IRQ 延迟</b><small>到期到相关中断处理开始的差，指向中断屏蔽或硬件干扰。</small></span><span><b>线程延迟</b><small>中断唤醒到测试线程实际运行的差，指向调度和竞争。</small></span><span><b>CPU 亲和性</b><small>固定观测 CPU，避免迁移把不同核心的噪声混在一起。</small></span><span><b>追踪阈值</b><small>超过阈值才保留详细 trace，避免长期采集淹没磁盘。</small></span><span><b>关联记录</b><small>同时保存 IRQ、调度、温度、频率和业务负载信息。</small></span></div></figure>
+
+<h2 id="两个数字指向不同的排查路径"><a href="#两个数字指向不同的排查路径" class="headerlink" title="两个数字指向不同的排查路径"></a>两个数字指向不同的排查路径</h2><p>若 IRQ 延迟本身很大，优先检查硬中断被屏蔽、长中断、固件活动、深度 idle 退出或不可抢占路径。若 IRQ 延迟正常而线程延迟很大，关注实时优先级、CPU 隔离、锁竞争、软中断、后台线程和运行队列。把两者混成一个“最大延迟”会让排查只能靠猜。</p>
+<h2 id="测量条件要冻结，阈值要能解释"><a href="#测量条件要冻结，阈值要能解释" class="headerlink" title="测量条件要冻结，阈值要能解释"></a>测量条件要冻结，阈值要能解释</h2><p>测试前记录内核版本、PREEMPT_RT 状态、启动参数、测试 CPU、IRQ 分布、频率 governor 和负载。长期运行时只在超出阈值后触发 trace，并保留尖峰前后的时间窗口。发现一次异常后，修改一个变量、在相同工况复测，才能判断它是否真的削掉了尾延迟。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://tinylab.org/linux-rtla-2/">rtla timerlat 延迟测试原理</a></p>
 
         </div>

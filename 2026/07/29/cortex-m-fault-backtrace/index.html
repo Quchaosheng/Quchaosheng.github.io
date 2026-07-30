@@ -18,14 +18,14 @@
 
 <title>Cortex-M 故障回溯：从 HardFault 找到出错代码 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="异常入口会把部分寄存器压栈。故障处理程序读取栈帧、SCB 故障状态寄存器和链接地址，再结合 ELF 符号恢复调用路径。 CPU 进入 HardFault → 识别 MSP/PSP 栈帧 → 保存寄存器和故障状态 → 地址映射到符号 → 复现并修复根因 参考： CmBacktrace">
+    <meta name="description" content="HardFault 不是根因，而是 Cortex-M 无法继续执行时交给你的最后一份现场。异常入口会自动保存一部分寄存器；故障处理程序只要把这份栈帧、SCB 状态寄存器和固件版本保存下来，通常就能把“设备偶尔死机”缩小到具体的指令地址和访问类型。 CPU 进入 HardFault → 识别 MSP/PSP 栈帧 → 保存寄存器和故障状态 → 地址映射到...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/cortex-m-fault-backtrace/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Cortex-M 故障回溯：从 HardFault 找到出错代码 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="异常入口会把部分寄存器压栈。故障处理程序读取栈帧、SCB 故障状态寄存器和链接地址，再结合 ELF 符号恢复调用路径。 CPU 进入 HardFault → 识别 MSP/PSP 栈帧 → 保存寄存器和故障状态 → 地址映射到符号 → 复现并修复根因 参考： CmBacktrace">
+    <meta property="og:description" content="HardFault 不是根因，而是 Cortex-M 无法继续执行时交给你的最后一份现场。异常入口会自动保存一部分寄存器；故障处理程序只要把这份栈帧、SCB 状态寄存器和固件版本保存下来，通常就能把“设备偶尔死机”缩小到具体的指令地址和访问类型。 CPU 进入 HardFault → 识别 MSP/PSP 栈帧 → 保存寄存器和故障状态 → 地址映射到...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/cortex-m-fault-backtrace/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Cortex-M 故障回溯：从 HardFault 找到出错代码 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="异常入口会把部分寄存器压栈。故障处理程序读取栈帧、SCB 故障状态寄存器和链接地址，再结合 ELF 符号恢复调用路径。 CPU 进入 HardFault → 识别 MSP/PSP 栈帧 → 保存寄存器和故障状态 → 地址映射到符号 → 复现并修复根因 参考： CmBacktrace">
+    <meta name="twitter:description" content="HardFault 不是根因，而是 Cortex-M 无法继续执行时交给你的最后一份现场。异常入口会自动保存一部分寄存器；故障处理程序只要把这份栈帧、SCB 状态寄存器和固件版本保存下来，通常就能把“设备偶尔死机”缩小到具体的指令地址和访问类型。 CPU 进入 HardFault → 识别 MSP/PSP 栈帧 → 保存寄存器和故障状态 → 地址映射到...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -168,6 +168,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -199,9 +264,17 @@
         </header>
 
         <div class="post-content">
-            <p>异常入口会把部分寄存器压栈。故障处理程序读取栈帧、SCB 故障状态寄存器和链接地址，再结合 ELF 符号恢复调用路径。</p>
+            <p>HardFault 不是根因，而是 Cortex-M 无法继续执行时交给你的最后一份现场。异常入口会自动保存一部分寄存器；故障处理程序只要把这份栈帧、SCB 状态寄存器和固件版本保存下来，通常就能把“设备偶尔死机”缩小到具体的指令地址和访问类型。</p>
 <div class="note-flow"><span>CPU 进入 HardFault</span><i>→</i><span>识别 MSP/PSP 栈帧</span><i>→</i><span>保存寄存器和故障状态</span><i>→</i><span>地址映射到符号</span><i>→</i><span>复现并修复根因</span></div>
 
+<figure class="note-visual"><figcaption><span>故障现场</span>先保存能定位问题的最小集合，再考虑打印日志。</figcaption><div class="note-map"><span><b>stacked PC</b><small>异常发生前后正在执行的位置，是符号化的起点。</small></span><span><b>LR 与 xPSR</b><small>帮助判断调用返回位置和异常执行状态。</small></span><span><b>CFSR</b><small>区分内存管理、总线和用法错误。</small></span><span><b>HFSR</b><small>说明 HardFault 是否由其他可配置故障升级而来。</small></span><span><b>BFAR/MMFAR</b><small>当对应状态位有效时，记录发生错误的地址。</small></span><span><b>固件标识</b><small>没有 ELF、版本和构建信息，地址很难可靠还原。</small></span></div></figure>
+
+<h2 id="先判断异常使用了哪一个栈"><a href="#先判断异常使用了哪一个栈" class="headerlink" title="先判断异常使用了哪一个栈"></a>先判断异常使用了哪一个栈</h2><p>线程模式可能使用 PSP，异常和启动代码常用 MSP。HardFault 包装函数需要根据 <code>EXC_RETURN</code> 判断自动压栈的寄存器帧来自哪个栈，再把其中的 <code>pc</code>、<code>lr</code>、<code>xpsr</code> 复制到可靠的存储区域。只打印处理函数自己的调用栈，往往看不到真正出错的任务。</p>
+<p>保存后可以用与固件完全匹配的 ELF 解析地址：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">arm-none-eabi-addr2line -e firmware.elf -f -C 0x08001234</span><br></pre></td></tr></table></figure>
+
+<p>地址、优化级别和符号文件必须对应同一次构建。若使用了 bootloader 或链接脚本重定位，也要先确认记录的 PC 是逻辑地址还是实际映射地址。</p>
+<h2 id="异常处理路径越短越好"><a href="#异常处理路径越短越好" class="headerlink" title="异常处理路径越短越好"></a>异常处理路径越短越好</h2><p>故障处理程序不应申请堆内存、等待锁、访问可能已经坏掉的外设驱动，也不要依赖串口日志一定能发出去。更稳妥的是把寄存器、状态和少量栈内容写进保留 RAM 或预先准备好的 Flash 槽，随后复位；下一次启动再把转储上传并符号化。这样一次二次故障不会把唯一的线索冲掉。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://github.com/armink/CmBacktrace">CmBacktrace</a></p>
 
         </div>
