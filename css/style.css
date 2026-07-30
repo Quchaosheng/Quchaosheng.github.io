@@ -1689,6 +1689,51 @@ body.dark-theme .highlight .code .meta {
 .dark-theme .note-flow i {
   color: #91c3a5;
 }
+.note-map {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border-top: 3px solid #78a58d;
+  background: rgba(120,165,141,0.06);
+}
+.note-map span {
+  display: flex;
+  min-height: 5.3rem;
+  box-sizing: border-box;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(92,141,113,0.28);
+  border-radius: 4px;
+  background: rgba(255,255,255,0.72);
+  line-height: 1.45;
+}
+.note-map b {
+  margin-bottom: 0.3rem;
+  color: #087f5b;
+  font-size: 0.9em;
+}
+.note-map small {
+  color: #a9a9b3;
+  font-size: 0.78em;
+  line-height: 1.5;
+}
+.dark-theme .note-map {
+  border-color: #91c3a5;
+  background: rgba(145,195,165,0.08);
+}
+.dark-theme .note-map span {
+  border-color: rgba(145,195,165,0.35);
+  background: rgba(255,255,255,0.045);
+}
+.dark-theme .note-map b {
+  color: #91c3a5;
+}
+.dark-theme .note-map small {
+  color: #87878d;
+}
 .dark-theme .archive-intro {
   border-color: #909196;
 }
@@ -1746,6 +1791,9 @@ body.dark-theme .highlight .code .meta {
   .note-flow i {
     justify-content: center;
     transform: rotate(90deg);
+  }
+  .note-map {
+    grid-template-columns: 1fr;
   }
 }
 .copy-code-button {

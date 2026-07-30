@@ -146,6 +146,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -177,10 +242,24 @@
         </header>
 
         <div class="post-content">
-            <p>cyclictest 使用高优先级线程周期睡眠，比较计划唤醒时间与实际运行时间，统计最小、平均和最大延迟。</p>
+            <p><code>cyclictest</code> 是 Linux 实时测试里最常见的起点。它创建周期线程，记录计划唤醒时刻与线程真正恢复执行时刻的偏差。这个偏差覆盖了定时器到期、中断处理、调度器选择、CPU 被占用以及部分系统噪声，因此比单纯测一段用户态函数更接近“实时线程有没有按时醒来”。但它仍只是测量工具，不等于业务任务的端到端截止期证明。</p>
 <div class="note-flow"><span>设置实时优先级与 CPU</span><i>→</i><span>绝对时间睡眠</span><i>→</i><span>定时器到期唤醒</span><i>→</i><span>计算实际偏差</span><i>→</i><span>长期记录最大值</span></div>
 
-<p>测试必须同时施加 CPU、内存、I&#x2F;O 与网络压力；一次空闲测试的漂亮数字没有代表性。参考：<a target="_blank" rel="noopener" href="https://git.kernel.org/pub/scm/utils/rt-tests/rt-tests.git/">rt-tests</a></p>
+<h2 id="它测到的数值是什么"><a href="#它测到的数值是什么" class="headerlink" title="它测到的数值是什么"></a>它测到的数值是什么</h2><p>若本次理应在 <code>T_expected</code> 醒来，实际开始执行的时刻是 <code>T_actual</code>，则可粗略写成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">latency = T_actual - T_expected</span><br></pre></td></tr></table></figure>
+
+<p>最小值说明系统在顺利时的表现，平均值说明典型负载，最大值和直方图尾部则暴露最坏情况。实时工程通常优先关心后两者：一次 2 ms 尖峰就可能让 1 kHz 控制任务错过两个周期，即使平均延迟只有 10 微秒。</p>
+<div class="note-map"><span><b>周期</b><small>测试线程多久被期望唤醒一次，例如 1 ms</small></span><span><b>优先级</b><small>决定测试线程与普通工作谁先得到 CPU</small></span><span><b>亲和性</b><small>决定测试在什么 CPU 上观测系统噪声</small></span><span><b>运行时长</b><small>越长越可能捕获低频固件和热相关尖峰</small></span><span><b>直方图</b><small>观察长尾分布，避免只盯一条最大值</small></span><span><b>对照负载</b><small>CPU、内存、I/O、网络同时施压才有参考价值</small></span></div>
+
+<h2 id="一条可复现的起步命令"><a href="#一条可复现的起步命令" class="headerlink" title="一条可复现的起步命令"></a>一条可复现的起步命令</h2><p>先明确测试 CPU、周期、运行时长和日志路径。下面示例将单个测试线程固定到 CPU 2、优先级设为 90、间隔设为 1000 微秒，并运行十分钟；参数必须按你的 CPU 规划与权限限制调整。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> cyclictest -p 90 -t 1 -a 2 -i 1000 -D 10m -m -h 100</span><br></pre></td></tr></table></figure>
+
+<p><code>-m</code> 会尝试锁定测试进程内存，可能因 <code>RLIMIT_MEMLOCK</code> 失败；<code>-h</code> 生成直方图，便于观察尾部。运行前应记录内核版本、PREEMPT_RT 状态、启动参数、功耗模式、CPU 亲和性、IRQ 布局和当前温度，否则两次数字没有可比性。</p>
+<h2 id="别让空闲测试骗过你"><a href="#别让空闲测试骗过你" class="headerlink" title="别让空闲测试骗过你"></a>别让空闲测试骗过你</h2><p>一轮完整测试至少应有四组：空闲基线、CPU 压力、内存&#x2F;页回收压力、网络和磁盘 I&#x2F;O 压力；有 GPU 或相机的机器人还要加入实际推理和采集负载。每组都跑到足以覆盖定时任务、温控和后台维护周期，并保留原始直方图。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">发现尖峰</span><br><span class="line">  -&gt; 记录发生时刻和 CPU</span><br><span class="line">  -&gt; 关联 /proc/interrupts、ftrace、rtla osnoise/timerlat</span><br><span class="line">  -&gt; 判断来自 IRQ、锁、缺页、频率、固件还是应用自身</span><br><span class="line">  -&gt; 修改一个变量后在同一负载下复测</span><br></pre></td></tr></table></figure>
+
+<p>如果 <code>cyclictest</code> 最大值下降了，业务仍可能超时，因为业务还包含传感器、队列、算法和执行器。反过来，<code>cyclictest</code> 出现尖峰也不等于业务必定失败。它的价值是提供可重复的“系统唤醒延迟”证据，并把问题缩小到可追踪的时间窗口。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://git.kernel.org/pub/scm/utils/rt-tests/rt-tests.git/">rt-tests</a> · <a target="_blank" rel="noopener" href="https://manpages.debian.org/testing/rt-tests/cyclictest.8.en.html">cyclictest man page</a></p>
 
         </div>
 

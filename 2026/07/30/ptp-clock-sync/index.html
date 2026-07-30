@@ -146,6 +146,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -177,10 +242,22 @@
         </header>
 
         <div class="post-content">
-            <p>PTP 通过 Sync、Follow_Up、Delay_Req 和 Delay_Resp 消息估计主从时钟偏差与链路延迟。硬件时间戳可在 MAC&#x2F;PHY 附近记录收发时刻，减少软件栈抖动。</p>
+            <p>分布式实时系统不只需要每台设备“走得很准”，还需要所有设备对“现在几点”有相同理解。相机曝光、伺服控制、TSN 门控和多传感器融合都依赖共同时间轴。PTP（IEEE 1588）通过同步与延迟测量消息估计从时钟相对主时钟的偏差；若网卡支持硬件时间戳，收发时刻会在 MAC&#x2F;PHY 附近记录，能避开操作系统调度与协议栈抖动。</p>
 <div class="note-flow"><span>选择 Grandmaster</span><i>→</i><span>交换同步与延迟消息</span><i>→</i><span>硬件记录时间戳</span><i>→</i><span>估计 offset/path delay</span><i>→</i><span>伺服算法调整 PHC/系统钟</span></div>
 
-<p>Linux 常用 <code>ptp4l</code> 同步 PHC、<code>phc2sys</code> 再同步系统时钟。参考：<a target="_blank" rel="noopener" href="https://github.com/richardcochran/linuxptp">linuxptp</a></p>
+<h2 id="四个时间戳怎样得到偏差"><a href="#四个时间戳怎样得到偏差" class="headerlink" title="四个时间戳怎样得到偏差"></a>四个时间戳怎样得到偏差</h2><p>在常见的双向延迟测量里，主机发送 Sync 时刻为 <code>t1</code>，从机收到时刻为 <code>t2</code>；从机发送 Delay_Req 为 <code>t3</code>，主机收到为 <code>t4</code>。在链路往返近似对称时，可以用下式估计平均链路时延和主从 offset：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mean_path_delay = ((t2 - t1) + (t4 - t3)) / 2</span><br><span class="line">offset_from_master = (t2 - t1) - mean_path_delay</span><br></pre></td></tr></table></figure>
+
+<p>真实网络未必完全对称，所以链路配置、交换机行为、光电转换和时间戳位置都会影响结果。硬件时间戳不能消除物理不对称，却能消除大量软件排队噪声，是微秒级目标的重要基础。</p>
+<div class="note-map"><span><b>Grandmaster</b><small>按 BMCA 选出的参考时钟，提供全网时间基准</small></span><span><b>PHC</b><small>网卡的 PTP Hardware Clock，独立于系统 CLOCK_REALTIME</small></span><span><b>ptp4l</b><small>在网络端口间运行 PTP 协议并校准 PHC</small></span><span><b>phc2sys</b><small>在 PHC 与系统时钟之间传递已同步时间</small></span><span><b>硬件时间戳</b><small>在靠近收发器的位置记录时刻，减少软件抖动</small></span><span><b>监控</b><small>持续观察 offset、频率调整和锁定状态，而非只看启动成功</small></span></div>
+
+<h2 id="Linux-上的基本检查和启动顺序"><a href="#Linux-上的基本检查和启动顺序" class="headerlink" title="Linux 上的基本检查和启动顺序"></a>Linux 上的基本检查和启动顺序</h2><p>先确认网卡及驱动是否暴露硬件时间戳能力，再启动 PTP 协议，最后按需求把 PHC 同步到系统时钟。接口名、主从角色和域号要按网络设计配置，下面只是单端口实验的起点。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ethtool -T eth0</span><br><span class="line"><span class="built_in">sudo</span> ptp4l -i eth0 -m -H</span><br><span class="line"><span class="built_in">sudo</span> phc2sys -s eth0 -c CLOCK_REALTIME -w</span><br></pre></td></tr></table></figure>
+
+<p><code>ethtool -T</code> 用于查看时间戳能力；<code>ptp4l</code> 负责网络侧同步；<code>phc2sys</code> 常用于将网卡 PHC 与系统时钟关联。生产系统还应以配置文件固定 profile、domain、transport 与日志级别，而不是靠命令行临时试出来。</p>
+<h2 id="哪些现象说明-PTP-没有真正“锁住”"><a href="#哪些现象说明-PTP-没有真正“锁住”" class="headerlink" title="哪些现象说明 PTP 没有真正“锁住”"></a>哪些现象说明 PTP 没有真正“锁住”</h2><p>只要看到服务启动，不等于时间已经可靠。应持续记录 offset 的均值、标准差和最大值，观察 servo 是否频繁从锁定状态退回；还要检查网卡是否退回软件时间戳、交换机是否支持所需 PTP profile，以及系统负载升高后 offset 是否恶化。</p>
+<p>多网卡设备尤其要明确哪一块 PHC 是时间源。若相机、EtherCAT、TSN 网卡各自有时钟，却没有统一同步关系，日志看上去都带“正确时间戳”，实际仍然无法对齐。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://github.com/richardcochran/linuxptp">linuxptp</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/driver-api/ptp.html">Linux PTP hardware clock infrastructure</a></p>
 
         </div>
 
