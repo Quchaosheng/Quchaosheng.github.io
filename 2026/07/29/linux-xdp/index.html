@@ -146,6 +146,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -159,7 +224,7 @@
 
                     
                         <span class="post-time">
-                        Date: <a href="#">2026-07-29&nbsp;&nbsp;13:42:00</a>
+                        Date: <a href="#">2026-06-30&nbsp;&nbsp;09:30:00</a>
                         </span>
                     
                     
@@ -177,11 +242,19 @@
         </header>
 
         <div class="post-content">
-            <p>XDP 允许 eBPF 程序在驱动接收路径的早期处理报文，可选择丢弃、放行、重定向或交给 socket，从而避免无效流量进入完整协议栈。</p>
+            <p>许多无效流量在进入完整网络栈之前就已经可以判断，例如明显不需要的包、简单 ACL、DDoS 特征或可直接转发的报文。XDP 让 eBPF 程序在驱动接收路径的早期访问包数据，并返回明确动作：丢弃、放行、从同一设备发回、重定向到另一设备&#x2F;CPU&#x2F;AF_XDP socket。越早做出决定，就越能省掉 skb 分配、协议解析和 socket 查找等后续成本。</p>
 <div class="note-flow"><span>网卡收到报文</span><i>→</i><span>XDP eBPF 程序</span><i>→</i><span>DROP/PASS/REDIRECT</span><i>→</i><span>必要时进入协议栈</span></div>
 
-<p>XDP 适合 DDoS 过滤、负载均衡和高速转发。其能力受驱动模式影响：native XDP 性能最佳，generic XDP 兼容性更好但路径更靠后。程序必须通过 verifier 校验。</p>
-<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=MzkzNDk2NTUwOQ==&mid=2247485563&idx=1&sn=37489204d5d0b016566914c4a7f736b8">XDP 与 Linux 内核网络栈</a></p>
+<h2 id="XDP-的动作与运行位置"><a href="#XDP-的动作与运行位置" class="headerlink" title="XDP 的动作与运行位置"></a>XDP 的动作与运行位置</h2><p>常见返回值包括 <code>XDP_DROP</code>（丢弃）、<code>XDP_PASS</code>（进入普通网络栈）、<code>XDP_TX</code>（从同一接口发回）和 <code>XDP_REDIRECT</code>（转发到其他设备、CPU 或用户态队列）。native&#x2F;driver 模式在驱动最早路径运行，性能最好但要求驱动支持；generic 模式兼容性更好但路径更靠后；某些网卡还支持硬件 offload，能力和限制更严格。</p>
+<div class="note-map"><span><b>native XDP</b><small>在驱动早期执行；高性能；依赖网卡驱动能力</small></span><span><b>generic XDP</b><small>兼容路径更广；通常性能较低，适合开发/验证</small></span><span><b>hardware offload</b><small>在网卡执行；限制更多，需硬件和驱动明确支持</small></span><span><b>DROP</b><small>尽早丢无效包，节省后续协议栈与 CPU</small></span><span><b>PASS</b><small>交给常规栈，保持现有 socket/路由语义</small></span><span><b>REDIRECT/XSK</b><small>高效转发或交给用户态 fast path，需设计缓冲与背压</small></span></div>
+
+<h2 id="verifier-为什么是-XDP-的前提"><a href="#verifier-为什么是-XDP-的前提" class="headerlink" title="verifier 为什么是 XDP 的前提"></a>verifier 为什么是 XDP 的前提</h2><p>eBPF 程序会由 verifier 验证：所有包访问必须有边界检查，控制流不能无限循环，指针类型与 helper 调用必须合法。它限制了你能写什么，也让内核可以在运行前拒绝明显不安全的程序。实际开发中，解析 Ethernet&#x2F;IP&#x2F;UDP 时每推进一次指针都要检查 <code>data_end</code>，不能把用户输入包当作可信结构。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (data + <span class="keyword">sizeof</span>(<span class="keyword">struct</span> ethhdr) &gt; data_end)</span><br><span class="line">    <span class="keyword">return</span> XDP_DROP;</span><br><span class="line"><span class="comment">/* 再逐层检查 IP、UDP 头与长度，才读取字段 */</span></span><br></pre></td></tr></table></figure>
+
+<p>加载命令、section 名称与工具链会随 libbpf&#x2F;iproute2 版本变化，但验证思路不变：先在测试接口上 attach，再用计数器&#x2F;trace 验证每种 action，最后才考虑部署到承载真实流量的端口。</p>
+<h2 id="什么时候不该用-XDP"><a href="#什么时候不该用-XDP" class="headerlink" title="什么时候不该用 XDP"></a>什么时候不该用 XDP</h2><p>若业务需要完整 TCP 状态、复杂应用协议、加密解密或与现有 socket 语义深度耦合，XDP 未必是正确层次。把大量业务逻辑塞进 eBPF 会降低可维护性，也让排障变复杂。它最适合尽早做简单、明确、可验证的分类与转发决策，然后把需要复杂处理的包 <code>PASS</code> 给后续系统。</p>
+<p>评估时同时看每秒处理包数、CPU、丢包、错误 action 和端到端业务延迟。XDP 的成功不是“跑得比协议栈快”，而是以更少资源完成了应该在最前面完成的工作。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/bpf/prog_xdp.html">XDP</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/bpf/verifier.html">eBPF verifier</a></p>
 
         </div>
 

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>DeepStream 多相机机器人：视频流怎样批量进入 AI 管线 | Quchaosheng&#39;s Notes</title>
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/tag">标签</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/tag">标签</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">DeepStream 多相机机器人：视频流怎样批量进入 AI 管线</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">2026-07-30&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    Category:
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>当机器人同时挂着前视、侧视、深度或鱼眼相机时，逐路手写“解码、缩放、推理、跟踪、发布 ROS 2 消息”很快会变成难以维护的管线。DeepStream 基于 GStreamer 组织这些阶段，可将硬件解码、GPU 预处理、TensorRT 推理、跟踪和元数据传递串起来。它擅长多流吞吐，但机器人更在意每条视频从采集到被决策模块消费时已经“老了多久”。</p>
+<div class="note-flow"><span>多路相机采集</span><i>→</i><span>硬件解码与预处理</span><i>→</i><span>组批进入 TensorRT</span><i>→</i><span>目标跟踪与元数据</span><i>→</i><span>ROS 2 节点消费结果</span></div>
+
+<h2 id="DeepStream-管线里有哪些关键部件"><a href="#DeepStream-管线里有哪些关键部件" class="headerlink" title="DeepStream 管线里有哪些关键部件"></a>DeepStream 管线里有哪些关键部件</h2><p>在典型 GStreamer 图中，source 负责输入，解码器将压缩视频变成帧，<code>nvstreammux</code> 汇聚多路帧，<code>nvinfer</code> 执行 TensorRT 推理，<code>nvtracker</code> 在帧间保持目标 ID，后续组件再做显示、编码或消息输出。每个组件都可能有自己的队列和缓存策略。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">camera / RTSP source</span><br><span class="line">  -&gt; hardware decoder</span><br><span class="line">  -&gt; nvstreammux (batch, timeout)</span><br><span class="line">  -&gt; nvinfer (TensorRT engine)</span><br><span class="line">  -&gt; nvtracker / custom postprocess</span><br><span class="line">  -&gt; ROS 2 bridge (objects, original timestamp)</span><br></pre></td></tr></table></figure>
+
+<p>对机器人来说，最值得盯住的是 <code>nvstreammux</code> 的批大小与等待超时。较大的 batch 可能提高 GPU 利用率，却会让一条已经到达的前视帧等待其他相机；这是视频分析服务可以接受、移动机器人却常常不能接受的取舍。</p>
+<h2 id="不要只量吞吐量"><a href="#不要只量吞吐量" class="headerlink" title="不要只量吞吐量"></a>不要只量吞吐量</h2><p>至少区分三个指标：</p>
+<ul>
+<li><strong>吞吐量</strong>：每秒处理多少帧，适合评估资源上限。</li>
+<li><strong>推理延迟</strong>：帧进入模型到得到网络输出的时间。</li>
+<li><strong>感知年龄</strong>：控制或规划使用结果时，距原始相机曝光已过去的时间。</li>
+</ul>
+<p>例如 30 FPS 的系统可能每帧推理只需 12 ms，但若 pipeline 累积了 8 帧，规划器拿到的其实是 250 ms 前的世界。对移动底盘而言，这比模型快慢更危险。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">perception_age = planner_consume_time - camera_capture_stamp</span><br><span class="line">pipeline_wait  = inference_start - camera_capture_stamp</span><br></pre></td></tr></table></figure>
+
+<p>所有进入 ROS 2 的检测、跟踪和深度结果都应保留原始采集时间戳，而不是只在发布时填 <code>now()</code>。否则日志会把“旧帧很快发布”误判成“新帧很快处理”。</p>
+<h2 id="与机器人控制层的边界"><a href="#与机器人控制层的边界" class="headerlink" title="与机器人控制层的边界"></a>与机器人控制层的边界</h2><p>ROS 2 bridge 最好发布结构化、有限的语义信息，例如目标类别、2D&#x2F;3D 位置、置信度、帧号和时间戳。任务层再根据对象年龄、置信度和当前地图决定是否执行动作。控制器不直接依赖视频管线存活：当相机&#x2F;DeepStream 进程异常时，应获得明确的失效状态，进入低速、暂停或停车策略。</p>
+<p>多相机校准也不可省略。相机间的外参、曝光时间和时钟不同步，会让跟踪器把同一目标看成两个目标，或让后续三维融合出现错位。先用单相机跑通时间戳和失效处理，再增加 batch 和更多传感器，排障成本会低很多。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.nvidia.com/metropolis/deepstream/dev-guide/">DeepStream SDK Documentation</a> · <a target="_blank" rel="noopener" href="https://gstreamer.freedesktop.org/documentation/application-development/">GStreamer Application Development Manual</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>Permalink:</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/30/deepstream-multicamera-robot/">https://quchaosheng.github.io/2026/07/30/deepstream-multicamera-robot/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>License:</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/DeepStream/"># DeepStream</a>
+                    
+                        <a href="/tag/GStreamer/"># GStreamer</a>
+                    
+                        <a href="/tag/%E5%A4%9A%E7%9B%B8%E6%9C%BA/"># 多相机</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/30/nvidia-groot-robot-foundation-model/">NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/30/isaac-ros-vslam-nvblox/">Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>
