@@ -1,6 +1,6 @@
 ---
 title: 嵌入式 Bootloader：安全升级与失败回滚
-date: 2026-07-13 20:20:00
+date: 2026-06-15 14:00:00
 permalink: /2026/07/29/embedded-bootloader-update/
 categories: [技术, 嵌入式]
 tags: [Bootloader, OTA, 回滚]

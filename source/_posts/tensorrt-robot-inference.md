@@ -1,6 +1,6 @@
 ---
 title: TensorRT 机器人推理：从训练模型到稳定延迟
-date: 2026-07-29 09:30:00
+date: 2026-07-26 14:00:00
 permalink: /2026/07/30/tensorrt-robot-inference/
 categories: [技术, AI机器人]
 tags: [TensorRT, ONNX, 推理优化]

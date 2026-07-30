@@ -1,6 +1,6 @@
 ---
 title: 嵌入式驱动分层：BSP、HAL 与设备服务
-date: 2026-07-20 20:20:00
+date: 2026-07-04 14:00:00
 permalink: /2026/07/29/embedded-driver-layering/
 categories: [技术, 嵌入式]
 tags: [BSP, HAL, 驱动架构]

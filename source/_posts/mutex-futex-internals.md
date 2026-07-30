@@ -1,6 +1,6 @@
 ---
 title: mutex 底层：无竞争走原子操作，有竞争才用 futex
-date: 2026-06-25 20:20:00
+date: 2026-04-27 14:00:00
 permalink: /2026/07/29/mutex-futex-internals/
 categories: [技术, C-C++]
 tags: [mutex, futex, 线程同步]

@@ -1,6 +1,6 @@
 ---
 title: CMA：为大块连续物理内存保留弹性空间
-date: 2026-07-08 14:10:00
+date: 2026-05-31 20:00:00
 permalink: /2026/07/29/linux-cma/
 categories: [技术, 嵌入式Linux]
 tags: [CMA, 内存规整, DMA]

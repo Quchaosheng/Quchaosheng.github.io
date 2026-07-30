@@ -1,6 +1,6 @@
 ---
 title: Cortex-M 故障回溯：从 HardFault 找到出错代码
-date: 2026-07-12 14:10:00
+date: 2026-06-11 14:00:00
 permalink: /2026/07/29/cortex-m-fault-backtrace/
 categories: [技术, 嵌入式]
 tags: [HardFault, Cortex-M, CmBacktrace]

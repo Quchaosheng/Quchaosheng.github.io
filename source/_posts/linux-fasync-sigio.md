@@ -1,6 +1,6 @@
 ---
 title: fasync 与 SIGIO：Linux 信号驱动异步通知
-date: 2026-06-23 14:10:00
+date: 2026-04-21 14:00:00
 permalink: /2026/07/29/linux-fasync-sigio/
 categories: [技术, 嵌入式Linux]
 tags: [fasync, SIGIO, 字符设备]

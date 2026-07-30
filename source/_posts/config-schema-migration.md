@@ -1,6 +1,6 @@
 ---
 title: 设备参数版本迁移：固件升级后怎样保住旧配置
-date: 2026-07-19 14:10:00
+date: 2026-06-30 14:00:00
 permalink: /2026/07/29/config-schema-migration/
 categories: [技术, 嵌入式]
 tags: [配置, 版本迁移, Flash]

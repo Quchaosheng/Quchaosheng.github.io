@@ -1,6 +1,6 @@
 ---
 title: alloc_pages：物理页面分配如何走到伙伴系统
-date: 2026-07-06 20:20:00
+date: 2026-05-27 14:00:00
 permalink: /2026/07/29/alloc-pages-path/
 categories: [技术, Linux内核]
 tags: [alloc_pages, 伙伴系统, GFP]

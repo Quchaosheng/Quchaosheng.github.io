@@ -1,6 +1,6 @@
 ---
 title: spinlock、rwlock 与 seqlock：内核锁的读写取舍
-date: 2026-07-10 09:30:00
+date: 2026-06-05 14:00:00
 permalink: /2026/07/29/kernel-spin-rw-seqlock/
 categories: [技术, Linux内核]
 tags: [spinlock, rwlock, seqlock]

@@ -1,6 +1,6 @@
 ---
 title: 为什么栈的内存分配通常比堆更快？
-date: 2026-06-16 09:30:00
+date: 2026-04-01 14:00:00
 permalink: /2026/07/29/why-stack-allocation-is-faster-than-heap/
 categories:
   - 技术

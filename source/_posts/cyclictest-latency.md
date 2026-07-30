@@ -1,6 +1,6 @@
 ---
 title: cyclictest：怎样测量 Linux 实时调度延迟
-date: 2026-07-23 14:10:00
+date: 2026-07-11 14:00:00
 permalink: /2026/07/30/cyclictest-latency/
 categories: [技术, Linux实时]
 tags: [cyclictest, 延迟测试, rt-tests]

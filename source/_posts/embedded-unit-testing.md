@@ -1,6 +1,6 @@
 ---
 title: 嵌入式单元测试：把硬件依赖隔离在边界之外
-date: 2026-07-13 14:10:00
+date: 2026-06-14 14:00:00
 permalink: /2026/07/29/embedded-unit-testing/
 categories: [技术, 嵌入式]
 tags: [单元测试, Unity, Mock]

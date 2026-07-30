@@ -1,6 +1,6 @@
 ---
 title: Ftrace：Linux 内核函数跟踪是怎样工作的
-date: 2026-07-04 20:20:00
+date: 2026-05-22 10:00:00
 permalink: /2026/07/29/linux-ftrace/
 categories: [技术, Linux内核]
 tags: [Ftrace, tracefs, 可观测性]

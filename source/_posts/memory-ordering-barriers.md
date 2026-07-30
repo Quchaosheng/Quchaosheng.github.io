@@ -1,6 +1,6 @@
 ---
 title: 内存屏障与内存序：多核程序如何建立顺序
-date: 2026-06-26 20:20:00
+date: 2026-04-30 14:00:00
 permalink: /2026/07/29/memory-ordering-barriers/
 categories: [技术, C-C++]
 tags: [内存屏障, 内存序, 原子操作]

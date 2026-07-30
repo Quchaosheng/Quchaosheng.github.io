@@ -1,6 +1,6 @@
 ---
 title: Jetson 机器人部署：功耗、算力与实时控制怎样分工
-date: 2026-07-28 14:10:00
+date: 2026-07-24 14:00:00
 permalink: /2026/07/30/jetson-robot-deployment/
 categories: [技术, AI机器人]
 tags: [Jetson, JetPack, CUDA]

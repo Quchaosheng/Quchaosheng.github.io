@@ -1,6 +1,6 @@
 ---
 title: 优先级反转与 rtmutex：低优先级任务为什么会挡住实时任务
-date: 2026-07-22 09:30:00
+date: 2026-07-07 14:00:00
 permalink: /2026/07/30/priority-inversion-rtmutex/
 categories: [技术, Linux实时]
 tags: [优先级反转, rtmutex, 优先级继承]

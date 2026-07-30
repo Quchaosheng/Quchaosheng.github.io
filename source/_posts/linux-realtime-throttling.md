@@ -1,6 +1,6 @@
 ---
 title: Linux 实时节流：SCHED_FIFO 为什么会突然让出 CPU
-date: 2026-07-25 14:10:00
+date: 2026-07-16 14:00:00
 permalink: /2026/07/30/linux-realtime-throttling/
 categories: [技术, Linux实时]
 tags: [SCHED_FIFO, 实时节流, sched_rt_runtime_us]

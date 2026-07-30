@@ -1,6 +1,6 @@
 ---
 title: 设备树调试：从 compatible 到驱动 probe
-date: 2026-06-22 20:20:00
+date: 2026-04-19 14:00:00
 permalink: /2026/07/29/device-tree-debugging/
 categories: [技术, 嵌入式Linux]
 tags: [设备树, DTS, 驱动调试]

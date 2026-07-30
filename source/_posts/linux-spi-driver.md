@@ -1,6 +1,6 @@
 ---
 title: Linux SPI 驱动：控制器、设备与传输
-date: 2026-06-21 20:20:00
+date: 2026-04-17 14:00:00
 permalink: /2026/07/29/linux-spi-driver/
 categories: [技术, 嵌入式Linux]
 tags: [SPI, 设备驱动, 设备树]

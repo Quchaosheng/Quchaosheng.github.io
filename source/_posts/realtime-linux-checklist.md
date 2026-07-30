@@ -1,6 +1,6 @@
 ---
 title: Linux 实时系统落地检查清单
-date: 2026-07-24 14:10:00
+date: 2026-07-13 20:00:00
 permalink: /2026/07/30/realtime-linux-checklist/
 categories: [技术, Linux实时]
 tags: [实时Linux, 调优, 验证]

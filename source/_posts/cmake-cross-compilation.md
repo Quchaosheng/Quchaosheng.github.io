@@ -1,6 +1,6 @@
 ---
 title: CMake 交叉编译：工具链文件决定目标环境
-date: 2026-07-20 09:30:00
+date: 2026-07-02 14:00:00
 permalink: /2026/07/29/cmake-cross-compilation/
 categories: [技术, 工具链]
 tags: [CMake, 交叉编译, Toolchain]

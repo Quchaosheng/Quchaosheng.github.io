@@ -1,6 +1,6 @@
 ---
 title: RISC-V 中断：从外设信号到处理函数
-date: 2026-06-23 09:30:00
+date: 2026-04-20 14:00:00
 permalink: /2026/07/29/riscv-interrupt/
 categories: [技术, 嵌入式Linux]
 tags: [RISC-V, 中断, PLIC]

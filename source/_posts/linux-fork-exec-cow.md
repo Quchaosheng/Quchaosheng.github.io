@@ -1,6 +1,6 @@
 ---
 title: fork、exec 与 COW：进程是怎样创建的
-date: 2026-06-17 20:20:00
+date: 2026-04-06 14:00:00
 permalink: /2026/07/29/linux-fork-exec-cow/
 categories: [技术, Linux内核]
 tags: [fork, exec, COW, 进程]

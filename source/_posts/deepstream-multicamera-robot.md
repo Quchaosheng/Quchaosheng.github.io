@@ -1,6 +1,6 @@
 ---
 title: DeepStream 多相机机器人：视频流怎样批量进入 AI 管线
-date: 2026-07-30 09:30:00
+date: 2026-07-29 14:00:00
 permalink: /2026/07/30/deepstream-multicamera-robot/
 categories: [技术, AI机器人]
 tags: [DeepStream, GStreamer, 多相机]

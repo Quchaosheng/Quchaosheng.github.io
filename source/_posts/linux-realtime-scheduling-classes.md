@@ -1,6 +1,6 @@
 ---
 title: Linux 实时调度：SCHED_FIFO、RR 与 DEADLINE
-date: 2026-07-21 20:20:00
+date: 2026-07-06 14:00:00
 permalink: /2026/07/30/linux-realtime-scheduling-classes/
 categories: [技术, Linux实时]
 tags: [SCHED_FIFO, SCHED_RR, SCHED_DEADLINE]

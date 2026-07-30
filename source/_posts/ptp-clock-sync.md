@@ -1,6 +1,6 @@
 ---
 title: PTP 时间同步：让分布式设备共享微秒级时间
-date: 2026-07-23 20:20:00
+date: 2026-07-12 14:00:00
 permalink: /2026/07/30/ptp-clock-sync/
 categories: [技术, Linux实时]
 tags: [PTP, PHC, 时间同步]

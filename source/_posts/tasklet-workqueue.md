@@ -1,6 +1,6 @@
 ---
 title: Tasklet 与工作队列：中断下半部怎样选
-date: 2026-07-09 20:20:00
+date: 2026-06-04 14:00:00
 permalink: /2026/07/29/tasklet-workqueue/
 categories: [技术, Linux内核]
 tags: [工作队列, Tasklet, 中断]

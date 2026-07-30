@@ -1,6 +1,6 @@
 ---
 title: C++20 线程池：任务队列、工作线程与停止协议
-date: 2026-06-24 20:20:00
+date: 2026-04-25 14:00:00
 permalink: /2026/07/29/cpp20-thread-pool/
 categories: [技术, C-C++]
 tags: [线程池, C++20, 并发]

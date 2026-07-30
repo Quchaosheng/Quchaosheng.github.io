@@ -1,6 +1,6 @@
 ---
 title: NUMA：CPU 为什么更偏爱本地内存
-date: 2026-06-16 14:10:00
+date: 2026-04-02 14:00:00
 permalink: /2026/07/29/linux-numa-memory-access/
 categories: [技术, Linux内核]
 tags: [NUMA, 内存管理, 性能]

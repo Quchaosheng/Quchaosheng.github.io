@@ -1,6 +1,6 @@
 ---
 title: 看门狗：让系统从不可恢复故障中自动重启
-date: 2026-07-16 09:30:00
+date: 2026-06-21 14:00:00
 permalink: /2026/07/29/embedded-watchdog/
 categories: [技术, 嵌入式]
 tags: [看门狗, 可靠性, 故障恢复]

@@ -1,6 +1,6 @@
 ---
 title: 实时 Linux 抖动分析：从现象定位不可抢占区
-date: 2026-07-05 14:10:00
+date: 2026-05-23 14:00:00
 permalink: /2026/07/29/realtime-linux-latency/
 categories: [技术, Linux实时]
 tags: [实时Linux, 延迟, Ftrace]

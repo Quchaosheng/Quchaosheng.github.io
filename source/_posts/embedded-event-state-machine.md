@@ -1,6 +1,6 @@
 ---
 title: 事件驱动状态机：让裸机程序摆脱超级循环
-date: 2026-07-11 20:20:00
+date: 2026-06-09 20:00:00
 permalink: /2026/07/29/embedded-event-state-machine/
 categories: [技术, 嵌入式]
 tags: [状态机, 事件驱动, 裸机]

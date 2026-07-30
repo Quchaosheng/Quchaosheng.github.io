@@ -1,6 +1,6 @@
 ---
 title: 嵌入式静态分析：在运行前发现危险路径
-date: 2026-07-20 14:10:00
+date: 2026-07-03 14:00:00
 permalink: /2026/07/29/embedded-static-analysis/
 categories: [技术, 工具链]
 tags: [Cppcheck, 静态分析, MISRA]

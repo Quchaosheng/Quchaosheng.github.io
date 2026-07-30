@@ -1,6 +1,6 @@
 ---
 title: shared_ptr 的线程安全边界：控制块安全，对象未必安全
-date: 2026-06-27 09:30:00
+date: 2026-05-01 14:00:00
 permalink: /2026/07/29/shared-ptr-thread-safety/
 categories: [技术, C-C++]
 tags: [智能指针, shared_ptr, 线程安全]

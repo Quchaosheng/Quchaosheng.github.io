@@ -1,6 +1,6 @@
 ---
 title: Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界
-date: 2026-07-29 14:10:00
+date: 2026-07-27 14:00:00
 permalink: /2026/07/30/isaac-sim-sim-to-real/
 categories: [技术, AI机器人]
 tags: [Isaac Sim, Sim-to-Real, 合成数据]

@@ -1,6 +1,6 @@
 ---
 title: CFS 与 vruntime：Linux 如何分配 CPU 时间
-date: 2026-06-17 09:30:00
+date: 2026-04-04 14:00:00
 permalink: /2026/07/29/linux-cfs-vruntime/
 categories: [技术, Linux内核]
 tags: [CFS, 调度器, 红黑树]

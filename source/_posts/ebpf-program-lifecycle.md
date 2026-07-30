@@ -1,6 +1,6 @@
 ---
 title: eBPF 程序生命周期：加载、验证、挂载与通信
-date: 2026-07-05 09:30:00
+date: 2026-05-22 20:00:00
 permalink: /2026/07/29/ebpf-program-lifecycle/
 categories: [技术, Linux内核]
 tags: [eBPF, Verifier, BPF Map]

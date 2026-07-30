@@ -1,6 +1,6 @@
 ---
 title: 容器里的实时任务：cgroup、权限和 CPU 配额如何共同生效
-date: 2026-07-26 20:20:00
+date: 2026-07-20 14:00:00
 permalink: /2026/07/30/realtime-cgroup-containers/
 categories: [技术, Linux实时]
 tags: [cgroup, 容器, CAP_SYS_NICE]

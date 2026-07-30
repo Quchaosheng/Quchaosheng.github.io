@@ -1,6 +1,6 @@
 ---
 title: 伙伴系统与 SLUB：Linux 内核怎样分配内存
-date: 2026-06-18 09:30:00
+date: 2026-04-07 14:00:00
 permalink: /2026/07/29/linux-buddy-slub/
 categories: [技术, Linux内核]
 tags: [伙伴系统, SLUB, 内存分配]

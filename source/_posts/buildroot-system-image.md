@@ -1,6 +1,6 @@
 ---
 title: Buildroot：生成可复现的嵌入式 Linux 系统镜像
-date: 2026-07-16 20:20:00
+date: 2026-06-23 14:00:00
 permalink: /2026/07/29/buildroot-system-image/
 categories: [技术, 嵌入式Linux]
 tags: [Buildroot, 根文件系统, 交叉编译]

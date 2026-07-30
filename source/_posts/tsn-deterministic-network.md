@@ -1,6 +1,6 @@
 ---
 title: TSN：以太网怎样提供确定性时延
-date: 2026-07-24 09:30:00
+date: 2026-07-13 10:00:00
 permalink: /2026/07/30/tsn-deterministic-network/
 categories: [技术, Linux实时]
 tags: [TSN, 确定性网络, PTP]

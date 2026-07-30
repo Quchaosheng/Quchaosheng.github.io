@@ -1,6 +1,6 @@
 ---
 title: Linux 信号：异步事件如何送达进程
-date: 2026-06-27 20:20:00
+date: 2026-05-03 14:00:00
 permalink: /2026/07/29/linux-process-signals/
 categories: [技术, Linux内核]
 tags: [信号, 进程, 异步]

@@ -1,6 +1,6 @@
 ---
 title: 产测接口：让每块板子都能快速证明自己正常
-date: 2026-07-21 09:30:00
+date: 2026-07-05 10:00:00
 permalink: /2026/07/29/manufacturing-test-interface/
 categories: [技术, 嵌入式]
 tags: [产测, 自检, 可追溯性]

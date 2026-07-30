@@ -1,6 +1,6 @@
 ---
 title: LVGL 渲染流程：脏区、绘制缓冲与显示刷新
-date: 2026-07-17 20:20:00
+date: 2026-06-26 10:00:00
 permalink: /2026/07/29/lvgl-rendering/
 categories: [技术, 嵌入式GUI]
 tags: [LVGL, GUI, 显示]

@@ -1,6 +1,6 @@
 ---
 title: 设备树 Overlay：运行时修改硬件描述
-date: 2026-07-01 14:10:00
+date: 2026-05-13 14:00:00
 permalink: /2026/07/29/device-tree-overlay/
 categories: [技术, 嵌入式Linux]
 tags: [设备树, Overlay, 驱动]

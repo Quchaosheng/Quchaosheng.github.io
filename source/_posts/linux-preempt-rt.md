@@ -1,6 +1,6 @@
 ---
 title: PREEMPT_RT：Linux 怎样变成可抢占的实时内核
-date: 2026-07-21 14:10:00
+date: 2026-07-05 20:00:00
 permalink: /2026/07/30/linux-preempt-rt/
 categories: [技术, Linux实时]
 tags: [PREEMPT_RT, 抢占, 实时Linux]
