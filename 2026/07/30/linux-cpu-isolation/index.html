@@ -146,6 +146,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -177,10 +242,20 @@
         </header>
 
         <div class="post-content">
-            <p>实时 CPU 隔离通常组合 cpuset&#x2F;亲和性、<code>nohz_full</code>、<code>rcu_nocbs</code>、IRQ 迁移和 housekeeping CPU，使调度 Tick、RCU 回调与普通任务远离实时核心。</p>
+            <p>将实时线程绑到一个 CPU 并不意味着这个 CPU 变安静了。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能在它上面运行。CPU 隔离是一组协同配置：把普通负载和内核杂务集中到 housekeeping CPU，把真正需要低抖动的线程、其内存与必要设备路径留在实时 CPU，并持续验证还剩下什么噪声。</p>
 <div class="note-flow"><span>划分实时与 housekeeping CPU</span><i>→</i><span>迁移 IRQ 和内核线程</span><i>→</i><span>配置 nohz_full/rcu_nocbs</span><i>→</i><span>绑定实时任务</span><i>→</i><span>追踪残余干扰</span></div>
 
-<p><code>isolcpus</code> 不是万能开关；workqueue、定时器、内存回收和固件仍可能造成抖动。参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/timers/no_hz.html">Housekeeping</a></p>
+<h2 id="隔离的对象比“进程”多得多"><a href="#隔离的对象比“进程”多得多" class="headerlink" title="隔离的对象比“进程”多得多"></a>隔离的对象比“进程”多得多</h2><p><code>nohz_full</code> 让满足条件的 CPU 尽可能停止周期调度 tick；<code>rcu_nocbs</code> 将 RCU 回调从指定 CPU 卸载到其他 CPU；cpuset&#x2F;cgroup 和 <code>taskset</code> 则用来约束应用线程。它们各自解决不同的噪声来源，缺一项都可能让测试中留下规律性的尖峰。</p>
+<div class="note-map"><span><b>实时 CPU</b><small>控制线程、必要驱动路径、已锁定的资源</small></span><span><b>housekeeping CPU</b><small>系统服务、日志、网络后台、RCU 与 workqueue</small></span><span><b>nohz_full</b><small>尽量减少无任务时的周期 tick 干扰</small></span><span><b>rcu_nocbs</b><small>将 RCU callback 扔给指定的非实时 CPU</small></span><span><b>IRQ 布局</b><small>把无关设备中断从实时 CPU 移走</small></span><span><b>应用亲和性</b><small>明确每个关键线程在哪个 CPU 上运行</small></span></div>
+
+<p>一个常见的启动参数思路是让 CPU 0–1 做 housekeeping，CPU 2–3 承担实时负载，例如 <code>nohz_full=2-3 rcu_nocbs=2-3</code>。是否还需要 <code>isolcpus</code>、如何设置 IRQ 默认亲和性，取决于内核版本、cgroup 管理方式和设备拓扑；不要直接复制别人的完整命令行就上生产。</p>
+<h2 id="从“绑定”开始，而不是从启动参数开始"><a href="#从“绑定”开始，而不是从启动参数开始" class="headerlink" title="从“绑定”开始，而不是从启动参数开始"></a>从“绑定”开始，而不是从启动参数开始</h2><p>先画出 CPU 规划：哪些线程必须准时、哪些中断必须靠近设备、哪些服务可以接受延迟。然后用 <code>taskset</code> 或 cpuset 把关键线程固定，使用 <code>ps</code> 查看它们是否真的停在预期 CPU，再处理 IRQ 和后台核。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看线程调度类、实时优先级与当前所在 CPU</span></span><br><span class="line">ps -eLo pid,tid,psr,cls,rtprio,<span class="built_in">comm</span> | <span class="built_in">sort</span> -k3,3n</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看每个 CPU 收到的中断，排查实时核上不该出现的设备</span></span><br><span class="line"><span class="built_in">cat</span> /proc/interrupts</span><br></pre></td></tr></table></figure>
+
+<p>CPU 亲和性不是永久承诺。热插拔、容器 cgroup、服务重启、<code>irqbalance</code> 或启动脚本都可能改变布局。把这些检查纳入开机自检和性能回归，远比手工调通一次可靠。</p>
+<h2 id="为什么隔离后还会有尖峰"><a href="#为什么隔离后还会有尖峰" class="headerlink" title="为什么隔离后还会有尖峰"></a>为什么隔离后还会有尖峰</h2><p>隔离不能消除共享 LLC、内存带宽、SMI、深度 C-state、DMA 竞争和设备固件。它也不能让一个实时线程在自己的 CPU 上无限计算而不影响系统。正确做法是先用隔离削掉可控噪声，再用 <code>rtla osnoise</code>、ftrace、<code>/proc/interrupts</code> 和业务日志解释剩余尖峰。</p>
+<p>验收时要在正常负载、网络满载、磁盘 I&#x2F;O、内存压力和热稳定状态下都复测。实时 CPU 真正“安静”的标准不是看起来没有普通进程，而是关键任务的最长唤醒&#x2F;执行时间在所有预期工况下都可接受。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/timers/no_hz.html">NO_HZ: The Linux Kernel Tick</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/RCU/rcu_nocb.html">RCU NO-CBs</a></p>
 
         </div>
 
