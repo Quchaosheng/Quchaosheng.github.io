@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>嵌入式崩溃转储：复位后仍能还原现场 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="异常发生时应在最短路径保存复位原因、寄存器、栈片段、任务信息和固件版本到保留 RAM 或预擦除 Flash，下一次启动再上传解析。 异常/看门狗触发 → 冻结最小现场 → 写入带 CRC 的转储槽 → 系统复位 → 启动后读取、上传并符号化 异常路径不可依赖锁、堆和复杂驱动。参考： CmBacktrace">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-crash-dump/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="嵌入式崩溃转储：复位后仍能还原现场 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="异常发生时应在最短路径保存复位原因、寄存器、栈片段、任务信息和固件版本到保留 RAM 或预擦除 Flash，下一次启动再上传解析。 异常/看门狗触发 → 冻结最小现场 → 写入带 CRC 的转储槽 → 系统复位 → 启动后读取、上传并符号化 异常路径不可依赖锁、堆和复杂驱动。参考： CmBacktrace">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-crash-dump/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="嵌入式崩溃转储：复位后仍能还原现场">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="嵌入式崩溃转储：复位后仍能还原现场 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="异常发生时应在最短路径保存复位原因、寄存器、栈片段、任务信息和固件版本到保留 RAM 或预擦除 Flash，下一次启动再上传解析。 异常/看门狗触发 → 冻结最小现场 → 写入带 CRC 的转储槽 → 系统复位 → 启动后读取、上传并符号化 异常路径不可依赖锁、堆和复杂驱动。参考： CmBacktrace">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

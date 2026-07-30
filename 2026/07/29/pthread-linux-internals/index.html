@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>pthread 底层：线程创建、同步与退出 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="在 Linux 中，进程和线程最终都以 task 形式被内核调度；pthread 是用户态线程库，为你封装了创建参数、线程栈、TLS、取消、join&amp;#x2F;detach、mutex&amp;#x2F;condition variable 等高层语义。 pthread_create() 并不是简单“复制当前函数继续跑”，它会建立新任务所需的栈和线程局部存储，...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/pthread-linux-internals/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pthread 底层：线程创建、同步与退出 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="在 Linux 中，进程和线程最终都以 task 形式被内核调度；pthread 是用户态线程库，为你封装了创建参数、线程栈、TLS、取消、join&amp;#x2F;detach、mutex&amp;#x2F;condition variable 等高层语义。 pthread_create() 并不是简单“复制当前函数继续跑”，它会建立新任务所需的栈和线程局部存储，...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/pthread-linux-internals/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="pthread 底层：线程创建、同步与退出">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="pthread 底层：线程创建、同步与退出 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="在 Linux 中，进程和线程最终都以 task 形式被内核调度；pthread 是用户态线程库，为你封装了创建参数、线程栈、TLS、取消、join&amp;#x2F;detach、mutex&amp;#x2F;condition variable 等高层语义。 pthread_create() 并不是简单“复制当前函数继续跑”，它会建立新任务所需的栈和线程局部存储，...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

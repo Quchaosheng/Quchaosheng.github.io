@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>事件驱动状态机：让裸机程序摆脱超级循环 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="事件驱动架构把中断、定时器和输入转换为事件，由状态机根据当前状态执行短小动作，避免在一个循环中堆叠阻塞延时和隐式状态。 中断/定时器产生事件 → 事件入队 → 调度器分发 → 状态机执行转换 → 输出动作并等待下一事件 参考： EFSM">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-event-state-machine/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="事件驱动状态机：让裸机程序摆脱超级循环 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="事件驱动架构把中断、定时器和输入转换为事件，由状态机根据当前状态执行短小动作，避免在一个循环中堆叠阻塞延时和隐式状态。 中断/定时器产生事件 → 事件入队 → 调度器分发 → 状态机执行转换 → 输出动作并等待下一事件 参考： EFSM">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-event-state-machine/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="事件驱动状态机：让裸机程序摆脱超级循环">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="事件驱动状态机：让裸机程序摆脱超级循环 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="事件驱动架构把中断、定时器和输入转换为事件，由状态机根据当前状态执行短小动作，避免在一个循环中堆叠阻塞延时和隐式状态。 中断/定时器产生事件 → 事件入队 → 调度器分发 → 状态机执行转换 → 输出动作并等待下一事件 参考： EFSM">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 设备驱动模型：总线、设备和驱动如何相遇 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="Linux 设备模型用 bus、device、driver 和 class 统一描述硬件及其关系。它把“设备存在”和“谁来驱动”解耦，并通过 sysfs 向用户空间展示拓扑与属性。 匹配流程 设备由固件描述、枚举逻辑或板级代码注册到总线；驱动注册后，总线的 match 规则比较 compatible、ID 表等信息。匹配成功才调用 probe 建立资源...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-device-model/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 设备驱动模型：总线、设备和驱动如何相遇 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="Linux 设备模型用 bus、device、driver 和 class 统一描述硬件及其关系。它把“设备存在”和“谁来驱动”解耦，并通过 sysfs 向用户空间展示拓扑与属性。 匹配流程 设备由固件描述、枚举逻辑或板级代码注册到总线；驱动注册后，总线的 match 规则比较 compatible、ID 表等信息。匹配成功才调用 probe 建立资源...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-device-model/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 设备驱动模型：总线、设备和驱动如何相遇">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 设备驱动模型：总线、设备和驱动如何相遇 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="Linux 设备模型用 bus、device、driver 和 class 统一描述硬件及其关系。它把“设备存在”和“谁来驱动”解耦，并通过 sysfs 向用户空间展示拓扑与属性。 匹配流程 设备由固件描述、枚举逻辑或板级代码注册到总线；驱动注册后，总线的 match 规则比较 compatible、ID 表等信息。匹配成功才调用 probe 建立资源...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

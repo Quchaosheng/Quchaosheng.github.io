@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 网络发送链路：从 socket 到网卡描述符 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="应用调用 sendmsg() 后，数据并不会立刻从网线发出。它要先进入 socket 发送缓冲区，被 TCP&amp;#x2F;UDP、IP 和邻居子系统逐层补充元数据与协议头，经过 qdisc 排队&amp;#x2F;整形，最终由网卡驱动的 ndo_start_xmit 把 DMA 描述符提交给硬件。发送端的延迟、突发和丢包同样是分层发生的：应用返回快，不代表包已经...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-network-transmit-path/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 网络发送链路：从 socket 到网卡描述符 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="应用调用 sendmsg() 后，数据并不会立刻从网线发出。它要先进入 socket 发送缓冲区，被 TCP&amp;#x2F;UDP、IP 和邻居子系统逐层补充元数据与协议头，经过 qdisc 排队&amp;#x2F;整形，最终由网卡驱动的 ndo_start_xmit 把 DMA 描述符提交给硬件。发送端的延迟、突发和丢包同样是分层发生的：应用返回快，不代表包已经...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-network-transmit-path/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 网络发送链路：从 socket 到网卡描述符">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 网络发送链路：从 socket 到网卡描述符 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="应用调用 sendmsg() 后，数据并不会立刻从网线发出。它要先进入 socket 发送缓冲区，被 TCP&amp;#x2F;UDP、IP 和邻居子系统逐层补充元数据与协议头，经过 qdisc 排队&amp;#x2F;整形，最终由网卡驱动的 ndo_start_xmit 把 DMA 描述符提交给硬件。发送端的延迟、突发和丢包同样是分层发生的：应用返回快，不代表包已经...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

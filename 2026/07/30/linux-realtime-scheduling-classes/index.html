@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 实时调度：SCHED_FIFO、RR 与 DEADLINE | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="在实时系统里，“优先级更高”不是完整答案。你还要说明任务会运行多久、多久出现一次、能否被同级任务轮换，以及它超时后如何让出 CPU。Linux 提供 SCHED_FIFO 、 SCHED_RR 和 SCHED_DEADLINE 三种主要实时策略：它们服务于不同的任务模型，用错策略比不设实时优先级更危险。 任务进入可运行状态 → 比较调度类与实时优先级...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/linux-realtime-scheduling-classes/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 实时调度：SCHED_FIFO、RR 与 DEADLINE | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="在实时系统里，“优先级更高”不是完整答案。你还要说明任务会运行多久、多久出现一次、能否被同级任务轮换，以及它超时后如何让出 CPU。Linux 提供 SCHED_FIFO 、 SCHED_RR 和 SCHED_DEADLINE 三种主要实时策略：它们服务于不同的任务模型，用错策略比不设实时优先级更危险。 任务进入可运行状态 → 比较调度类与实时优先级...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/linux-realtime-scheduling-classes/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 实时调度：SCHED_FIFO、RR 与 DEADLINE">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 实时调度：SCHED_FIFO、RR 与 DEADLINE | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="在实时系统里，“优先级更高”不是完整答案。你还要说明任务会运行多久、多久出现一次、能否被同级任务轮换，以及它超时后如何让出 CPU。Linux 提供 SCHED_FIFO 、 SCHED_RR 和 SCHED_DEADLINE 三种主要实时策略：它们服务于不同的任务模型，用错策略比不设实时优先级更危险。 任务进入可运行状态 → 比较调度类与实时优先级...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

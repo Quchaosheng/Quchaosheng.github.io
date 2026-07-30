@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>rtla timerlat：定位实时系统的唤醒延迟 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="timerlat tracer 周期性设置定时器，测量定时器到期到中断处理、再到实时线程真正运行之间的延迟，从而区分 IRQ 延迟与线程调度延迟。 设置周期定时器 → 定时器到期 → 记录 IRQ 延迟 → 唤醒 timerlat 线程 → 记录线程延迟并追踪干扰源 测试前应固定 CPU、设置实时优先级并控制频率调节等变量。发现尖峰后结合 osnois...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-rtla-timerlat/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="rtla timerlat：定位实时系统的唤醒延迟 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="timerlat tracer 周期性设置定时器，测量定时器到期到中断处理、再到实时线程真正运行之间的延迟，从而区分 IRQ 延迟与线程调度延迟。 设置周期定时器 → 定时器到期 → 记录 IRQ 延迟 → 唤醒 timerlat 线程 → 记录线程延迟并追踪干扰源 测试前应固定 CPU、设置实时优先级并控制频率调节等变量。发现尖峰后结合 osnois...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-rtla-timerlat/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="rtla timerlat：定位实时系统的唤醒延迟">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="rtla timerlat：定位实时系统的唤醒延迟 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="timerlat tracer 周期性设置定时器，测量定时器到期到中断处理、再到实时线程真正运行之间的延迟，从而区分 IRQ 延迟与线程调度延迟。 设置周期定时器 → 定时器到期 → 记录 IRQ 延迟 → 唤醒 timerlat 线程 → 记录线程延迟并追踪干扰源 测试前应固定 CPU、设置实时优先级并控制频率调节等变量。发现尖峰后结合 osnois...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

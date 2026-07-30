@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>CAN 总线：仲裁、错误处理与可靠通信 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="CAN 用消息 ID 表示优先级与含义。多个节点同时发送时，显性位覆盖隐性位，ID 更小的帧赢得无破坏仲裁，其他节点停止发送并稍后重试。 多个节点同时发送 → 逐位仲裁 → 最高优先级继续 → CRC/ACK 校验 → 错误计数与重发 终端电阻、位时序、采样点和总线负载决定可靠性。节点会依据错误计数进入 error-active、error-passi...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-can/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CAN 总线：仲裁、错误处理与可靠通信 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="CAN 用消息 ID 表示优先级与含义。多个节点同时发送时，显性位覆盖隐性位，ID 更小的帧赢得无破坏仲裁，其他节点停止发送并稍后重试。 多个节点同时发送 → 逐位仲裁 → 最高优先级继续 → CRC/ACK 校验 → 错误计数与重发 终端电阻、位时序、采样点和总线负载决定可靠性。节点会依据错误计数进入 error-active、error-passi...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-can/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="CAN 总线：仲裁、错误处理与可靠通信">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CAN 总线：仲裁、错误处理与可靠通信 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="CAN 用消息 ID 表示优先级与含义。多个节点同时发送时，显性位覆盖隐性位，ID 更小的帧赢得无破坏仲裁，其他节点停止发送并稍后重试。 多个节点同时发送 → 逐位仲裁 → 最高优先级继续 → CRC/ACK 校验 → 错误计数与重发 终端电阻、位时序、采样点和总线负载决定可靠性。节点会依据错误计数进入 error-active、error-passi...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

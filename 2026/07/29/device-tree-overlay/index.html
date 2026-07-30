@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>设备树 Overlay：运行时修改硬件描述 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="一块主板可能接不同扩展板，或者同一产品在出厂后才决定启用某个外设。为每种组合维护完整 DTB 很快会重复且难以维护。设备树 Overlay（DTBO）提供增量描述：它通过 fragment 找到基础树中的目标节点，添加子节点、修改属性或启用&amp;#x2F;禁用节点；内核&amp;#x2F;Bootloader 在合适阶段将其合并到基础 DTB。它适合硬件组合变化，...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/device-tree-overlay/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="设备树 Overlay：运行时修改硬件描述 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="一块主板可能接不同扩展板，或者同一产品在出厂后才决定启用某个外设。为每种组合维护完整 DTB 很快会重复且难以维护。设备树 Overlay（DTBO）提供增量描述：它通过 fragment 找到基础树中的目标节点，添加子节点、修改属性或启用&amp;#x2F;禁用节点；内核&amp;#x2F;Bootloader 在合适阶段将其合并到基础 DTB。它适合硬件组合变化，...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/device-tree-overlay/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="设备树 Overlay：运行时修改硬件描述">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="设备树 Overlay：运行时修改硬件描述 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="一块主板可能接不同扩展板，或者同一产品在出厂后才决定启用某个外设。为每种组合维护完整 DTB 很快会重复且难以维护。设备树 Overlay（DTBO）提供增量描述：它通过 fragment 找到基础树中的目标节点，添加子节点、修改属性或启用&amp;#x2F;禁用节点；内核&amp;#x2F;Bootloader 在合适阶段将其合并到基础 DTB。它适合硬件组合变化，...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

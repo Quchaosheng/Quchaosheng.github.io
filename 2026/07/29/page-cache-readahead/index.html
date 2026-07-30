@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Page Cache 预读：内核如何提前猜中下一次读取 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="读取文件并不总是马上访问磁盘。Linux 先在 Page Cache 中查找页面：命中时数据直接从内存复制给应用；未命中时才向文件系统和块层发起 I&amp;#x2F;O。预读（readahead）利用“顺序读的下一个页面很可能也会被读”的规律，提前把未来页面异步放进 Page Cache，把一次次小 I&amp;#x2F;O 合成更高效的批量读取。 读取页面未命中...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/page-cache-readahead/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Page Cache 预读：内核如何提前猜中下一次读取 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="读取文件并不总是马上访问磁盘。Linux 先在 Page Cache 中查找页面：命中时数据直接从内存复制给应用；未命中时才向文件系统和块层发起 I&amp;#x2F;O。预读（readahead）利用“顺序读的下一个页面很可能也会被读”的规律，提前把未来页面异步放进 Page Cache，把一次次小 I&amp;#x2F;O 合成更高效的批量读取。 读取页面未命中...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/page-cache-readahead/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Page Cache 预读：内核如何提前猜中下一次读取">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Page Cache 预读：内核如何提前猜中下一次读取 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="读取文件并不总是马上访问磁盘。Linux 先在 Page Cache 中查找页面：命中时数据直接从内存复制给应用；未命中时才向文件系统和块层发起 I&amp;#x2F;O。预读（readahead）利用“顺序读的下一个页面很可能也会被读”的规律，提前把未来页面异步放进 Page Cache，把一次次小 I&amp;#x2F;O 合成更高效的批量读取。 读取页面未命中...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

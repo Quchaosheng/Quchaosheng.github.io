@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>嵌入式 Bootloader：安全升级与失败回滚 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="可靠升级系统使用签名验证、版本与防回滚策略、A&amp;#x2F;B 镜像或恢复分区。Bootloader 只启动已验证镜像，并通过启动计数或应用确认判断是否回滚。 下载到非活动分区 → 校验哈希与签名 → 标记待试启动 → 应用自检并确认 → 失败则回滚旧镜像 参考： OpenBLT">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-bootloader-update/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="嵌入式 Bootloader：安全升级与失败回滚 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="可靠升级系统使用签名验证、版本与防回滚策略、A&amp;#x2F;B 镜像或恢复分区。Bootloader 只启动已验证镜像，并通过启动计数或应用确认判断是否回滚。 下载到非活动分区 → 校验哈希与签名 → 标记待试启动 → 应用自检并确认 → 失败则回滚旧镜像 参考： OpenBLT">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-bootloader-update/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="嵌入式 Bootloader：安全升级与失败回滚">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="嵌入式 Bootloader：安全升级与失败回滚 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="可靠升级系统使用签名验证、版本与防回滚策略、A&amp;#x2F;B 镜像或恢复分区。Bootloader 只启动已验证镜像，并通过启动计数或应用确认判断是否回滚。 下载到非活动分区 → 校验哈希与签名 → 标记待试启动 → 应用自检并确认 → 失败则回滚旧镜像 参考： OpenBLT">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

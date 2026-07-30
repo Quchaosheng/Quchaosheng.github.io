@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>嵌入式单元测试：把硬件依赖隔离在边界之外 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="可测试固件应把业务逻辑与寄存器、时钟和 I&amp;#x2F;O 隔离，通过接口注入模拟依赖。大部分测试在主机高速运行，少量硬件在环测试验证真实时序。 拆分纯逻辑与硬件适配 → 为依赖建立 Mock → 主机运行单元测试 → 目标板集成测试 → CI 汇总覆盖与回归 参考： Unity">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-unit-testing/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="嵌入式单元测试：把硬件依赖隔离在边界之外 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="可测试固件应把业务逻辑与寄存器、时钟和 I&amp;#x2F;O 隔离，通过接口注入模拟依赖。大部分测试在主机高速运行，少量硬件在环测试验证真实时序。 拆分纯逻辑与硬件适配 → 为依赖建立 Mock → 主机运行单元测试 → 目标板集成测试 → CI 汇总覆盖与回归 参考： Unity">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-unit-testing/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="嵌入式单元测试：把硬件依赖隔离在边界之外">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="嵌入式单元测试：把硬件依赖隔离在边界之外 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="可测试固件应把业务逻辑与寄存器、时钟和 I&amp;#x2F;O 隔离，通过接口注入模拟依赖。大部分测试在主机高速运行，少量硬件在环测试验证真实时序。 拆分纯逻辑与硬件适配 → 为依赖建立 Mock → 主机运行单元测试 → 目标板集成测试 → CI 汇总覆盖与回归 参考： Unity">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

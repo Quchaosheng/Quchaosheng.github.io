@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>XDP：在网络栈最前面处理数据包 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="许多无效流量在进入完整网络栈之前就已经可以判断，例如明显不需要的包、简单 ACL、DDoS 特征或可直接转发的报文。XDP 让 eBPF 程序在驱动接收路径的早期访问包数据，并返回明确动作：丢弃、放行、从同一设备发回、重定向到另一设备&amp;#x2F;CPU&amp;#x2F;AF_XDP socket。越早做出决定，就越能省掉 skb 分配、协议解析和 socke...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-xdp/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="XDP：在网络栈最前面处理数据包 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="许多无效流量在进入完整网络栈之前就已经可以判断，例如明显不需要的包、简单 ACL、DDoS 特征或可直接转发的报文。XDP 让 eBPF 程序在驱动接收路径的早期访问包数据，并返回明确动作：丢弃、放行、从同一设备发回、重定向到另一设备&amp;#x2F;CPU&amp;#x2F;AF_XDP socket。越早做出决定，就越能省掉 skb 分配、协议解析和 socke...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-xdp/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="XDP：在网络栈最前面处理数据包">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="XDP：在网络栈最前面处理数据包 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="许多无效流量在进入完整网络栈之前就已经可以判断，例如明显不需要的包、简单 ACL、DDoS 特征或可直接转发的报文。XDP 让 eBPF 程序在驱动接收路径的早期访问包数据，并返回明确动作：丢弃、放行、从同一设备发回、重定向到另一设备&amp;#x2F;CPU&amp;#x2F;AF_XDP socket。越早做出决定，就越能省掉 skb 分配、协议解析和 socke...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

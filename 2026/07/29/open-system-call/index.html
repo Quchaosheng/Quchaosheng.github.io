@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>open 系统调用：路径怎样变成文件描述符 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="openat 从系统调用入口进入 VFS，完成路径解析、权限检查与文件对象创建，最后把 struct file 安装到进程文件描述符表。 用户传入路径和 flags → 复制参数并分配 fd → VFS 路径查找 → 创建/打开 inode → 安装 file 并返回 fd fd 是进程表中的整数索引； struct file 表示一次打开实例；ino...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/open-system-call/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="open 系统调用：路径怎样变成文件描述符 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="openat 从系统调用入口进入 VFS，完成路径解析、权限检查与文件对象创建，最后把 struct file 安装到进程文件描述符表。 用户传入路径和 flags → 复制参数并分配 fd → VFS 路径查找 → 创建/打开 inode → 安装 file 并返回 fd fd 是进程表中的整数索引； struct file 表示一次打开实例；ino...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/open-system-call/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="open 系统调用：路径怎样变成文件描述符">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="open 系统调用：路径怎样变成文件描述符 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="openat 从系统调用入口进入 VFS，完成路径解析、权限检查与文件对象创建，最后把 struct file 安装到进程文件描述符表。 用户传入路径和 flags → 复制参数并分配 fd → VFS 路径查找 → 创建/打开 inode → 安装 file 并返回 fd fd 是进程表中的整数索引； struct file 表示一次打开实例；ino...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

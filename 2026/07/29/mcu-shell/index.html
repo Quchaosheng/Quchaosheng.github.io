@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>MCU Shell：给嵌入式设备一个可诊断入口 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="MCU Shell 通过串口或网络提供命令注册、参数解析和输出，可在不重新烧录固件的情况下检查状态、修改临时参数和执行自检。 接收命令行 → 分词与参数校验 → 查找命令表 → 执行受控诊断 → 格式化返回结果 量产设备必须设置权限与超时，危险命令不可默认开放。参考： letter-shell">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/mcu-shell/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MCU Shell：给嵌入式设备一个可诊断入口 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="MCU Shell 通过串口或网络提供命令注册、参数解析和输出，可在不重新烧录固件的情况下检查状态、修改临时参数和执行自检。 接收命令行 → 分词与参数校验 → 查找命令表 → 执行受控诊断 → 格式化返回结果 量产设备必须设置权限与超时，危险命令不可默认开放。参考： letter-shell">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/mcu-shell/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="MCU Shell：给嵌入式设备一个可诊断入口">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MCU Shell：给嵌入式设备一个可诊断入口 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="MCU Shell 通过串口或网络提供命令注册、参数解析和输出，可在不重新烧录固件的情况下检查状态、修改临时参数和执行自检。 接收命令行 → 分词与参数校验 → 查找命令表 → 执行受控诊断 → 格式化返回结果 量产设备必须设置权限与超时，危险命令不可默认开放。参考： letter-shell">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

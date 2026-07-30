@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>RISC-V SBI：固件与操作系统之间的统一接口 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="SBI 类似操作系统与机器态固件之间的 ABI。S 模式内核通过 ecall 请求 M 模式执行其无权直接完成的操作，避免每个内核绑定具体平台实现。 内核准备扩展 ID 与参数 → 执行 ecall → M 模式固件分发请求 → 操作硬件 → 返回错误码与结果 常见扩展包括 BASE、TIME、IPI、RFENCE、HSM、SRST。SBI 不是设备驱...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/riscv-sbi/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RISC-V SBI：固件与操作系统之间的统一接口 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="SBI 类似操作系统与机器态固件之间的 ABI。S 模式内核通过 ecall 请求 M 模式执行其无权直接完成的操作，避免每个内核绑定具体平台实现。 内核准备扩展 ID 与参数 → 执行 ecall → M 模式固件分发请求 → 操作硬件 → 返回错误码与结果 常见扩展包括 BASE、TIME、IPI、RFENCE、HSM、SRST。SBI 不是设备驱...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/riscv-sbi/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="RISC-V SBI：固件与操作系统之间的统一接口">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RISC-V SBI：固件与操作系统之间的统一接口 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="SBI 类似操作系统与机器态固件之间的 ABI。S 模式内核通过 ecall 请求 M 模式执行其无权直接完成的操作，避免每个内核绑定具体平台实现。 内核准备扩展 ID 与参数 → 执行 ecall → M 模式固件分发请求 → 操作硬件 → 返回错误码与结果 常见扩展包括 BASE、TIME、IPI、RFENCE、HSM、SRST。SBI 不是设备驱...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

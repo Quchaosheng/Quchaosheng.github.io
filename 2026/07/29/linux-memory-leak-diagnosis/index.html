@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 内存泄漏排查：先分清是哪一种内存增长 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="“内存占用变大”不等于“发生泄漏”。进程 RSS 增长可能来自真正不可达的堆对象、仍被引用的缓存、内存映射、线程栈、共享内存，或分配器尚未归还的空闲页。排查第一步是确定增长属于哪一类。 诊断路径 先用系统指标确认增长进程和时间段，再分析 /proc/&amp;lt;pid&amp;gt;/smaps 区分匿名页、文件映射与共享页。能复现时使用 ASan、LSan、Va...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-memory-leak-diagnosis/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 内存泄漏排查：先分清是哪一种内存增长 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="“内存占用变大”不等于“发生泄漏”。进程 RSS 增长可能来自真正不可达的堆对象、仍被引用的缓存、内存映射、线程栈、共享内存，或分配器尚未归还的空闲页。排查第一步是确定增长属于哪一类。 诊断路径 先用系统指标确认增长进程和时间段，再分析 /proc/&amp;lt;pid&amp;gt;/smaps 区分匿名页、文件映射与共享页。能复现时使用 ASan、LSan、Va...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-memory-leak-diagnosis/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 内存泄漏排查：先分清是哪一种内存增长">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 内存泄漏排查：先分清是哪一种内存增长 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="“内存占用变大”不等于“发生泄漏”。进程 RSS 增长可能来自真正不可达的堆对象、仍被引用的缓存、内存映射、线程栈、共享内存，或分配器尚未归还的空闲页。排查第一步是确定增长属于哪一类。 诊断路径 先用系统指标确认增长进程和时间段，再分析 /proc/&amp;lt;pid&amp;gt;/smaps 区分匿名页、文件映射与共享页。能复现时使用 ASan、LSan、Va...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

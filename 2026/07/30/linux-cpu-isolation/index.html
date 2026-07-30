@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>CPU 隔离：为实时任务留出安静的核心 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="将实时线程绑到一个 CPU 并不意味着这个 CPU 变安静了。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能在它上面运行。CPU 隔离是一组协同配置：把普通负载和内核杂务集中到 housekeeping CPU，把真正需要低抖动的线程、其内存与必要设备路径留在实时 CPU，并持续验证还剩下什么噪声。 划分实...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/linux-cpu-isolation/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CPU 隔离：为实时任务留出安静的核心 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="将实时线程绑到一个 CPU 并不意味着这个 CPU 变安静了。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能在它上面运行。CPU 隔离是一组协同配置：把普通负载和内核杂务集中到 housekeeping CPU，把真正需要低抖动的线程、其内存与必要设备路径留在实时 CPU，并持续验证还剩下什么噪声。 划分实...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/linux-cpu-isolation/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="CPU 隔离：为实时任务留出安静的核心">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CPU 隔离：为实时任务留出安静的核心 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="将实时线程绑到一个 CPU 并不意味着这个 CPU 变安静了。调度 tick、RCU 回调、workqueue、IRQ、内存回收、内核线程和固件活动都可能在它上面运行。CPU 隔离是一组协同配置：把普通负载和内核杂务集中到 housekeeping CPU，把真正需要低抖动的线程、其内存与必要设备路径留在实时 CPU，并持续验证还剩下什么噪声。 划分实...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

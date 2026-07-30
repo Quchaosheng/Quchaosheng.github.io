@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>实时 Linux 抖动分析：从现象定位不可抢占区 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="实时系统关注最坏延迟，而不是平均吞吐。抖动可能来自长 IRQ、软中断、关闭抢占、锁竞争、缺页、频率变化、SMI 或其他 CPU 的共享资源干扰。 cyclictest/rtla 捕获尖峰 → 锁定 CPU 与时间窗口 → Ftrace 记录 IRQ/调度/osnoise → 定位最长阻塞路径 → 修改并重复最坏值验证 测试应预热并锁定内存，配置实时优先...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/realtime-linux-latency/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="实时 Linux 抖动分析：从现象定位不可抢占区 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="实时系统关注最坏延迟，而不是平均吞吐。抖动可能来自长 IRQ、软中断、关闭抢占、锁竞争、缺页、频率变化、SMI 或其他 CPU 的共享资源干扰。 cyclictest/rtla 捕获尖峰 → 锁定 CPU 与时间窗口 → Ftrace 记录 IRQ/调度/osnoise → 定位最长阻塞路径 → 修改并重复最坏值验证 测试应预热并锁定内存，配置实时优先...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/realtime-linux-latency/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="实时 Linux 抖动分析：从现象定位不可抢占区">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="实时 Linux 抖动分析：从现象定位不可抢占区 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="实时系统关注最坏延迟，而不是平均吞吐。抖动可能来自长 IRQ、软中断、关闭抢占、锁竞争、缺页、频率变化、SMI 或其他 CPU 的共享资源干扰。 cyclictest/rtla 捕获尖峰 → 锁定 CPU 与时间窗口 → Ftrace 记录 IRQ/调度/osnoise → 定位最长阻塞路径 → 修改并重复最坏值验证 测试应预热并锁定内存，配置实时优先...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>串口帧协议：解决粘包、丢字节与错误恢复 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="可靠串口协议应包含帧头、长度、类型、序号、负载和校验。接收端按字节推进状态机，遇到非法长度或 CRC 错误时重新搜索帧头。 DMA/中断接收字节 → 寻找帧头 → 读取长度与负载 → 校验 CRC → 分发或重新同步 帧头转义、最大长度、超时和序号能提高噪声环境下的恢复能力。参考： EmbedSummary">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/uart-frame-protocol/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="串口帧协议：解决粘包、丢字节与错误恢复 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="可靠串口协议应包含帧头、长度、类型、序号、负载和校验。接收端按字节推进状态机，遇到非法长度或 CRC 错误时重新搜索帧头。 DMA/中断接收字节 → 寻找帧头 → 读取长度与负载 → 校验 CRC → 分发或重新同步 帧头转义、最大长度、超时和序号能提高噪声环境下的恢复能力。参考： EmbedSummary">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/uart-frame-protocol/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="串口帧协议：解决粘包、丢字节与错误恢复">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="串口帧协议：解决粘包、丢字节与错误恢复 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="可靠串口协议应包含帧头、长度、类型、序号、负载和校验。接收端按字节推进状态机，遇到非法长度或 CRC 错误时重新搜索帧头。 DMA/中断接收字节 → 寻找帧头 → 读取长度与负载 → 校验 CRC → 分发或重新同步 帧头转义、最大长度、超时和序号能提高噪声环境下的恢复能力。参考： EmbedSummary">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

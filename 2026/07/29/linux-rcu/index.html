@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>RCU：读多写少场景下的并发设计 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="RCU（Read-Copy-Update）让读者在极低同步成本下访问共享数据。写者不原地破坏旧版本，而是创建新版本、发布新指针，并等待所有旧读者离开后再回收旧对象。 更新流程 读侧进入 RCU 临界区并解引用指针；写侧复制并修改对象，再原子发布。经过 grace period 后，可确认此前的读侧临界区都已结束，旧对象才安全释放。 读者读取旧指针 →...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-rcu/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RCU：读多写少场景下的并发设计 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="RCU（Read-Copy-Update）让读者在极低同步成本下访问共享数据。写者不原地破坏旧版本，而是创建新版本、发布新指针，并等待所有旧读者离开后再回收旧对象。 更新流程 读侧进入 RCU 临界区并解引用指针；写侧复制并修改对象，再原子发布。经过 grace period 后，可确认此前的读侧临界区都已结束，旧对象才安全释放。 读者读取旧指针 →...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-rcu/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="RCU：读多写少场景下的并发设计">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RCU：读多写少场景下的并发设计 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="RCU（Read-Copy-Update）让读者在极低同步成本下访问共享数据。写者不原地破坏旧版本，而是创建新版本、发布新指针，并等待所有旧读者离开后再回收旧对象。 更新流程 读侧进入 RCU 临界区并解引用指针；写侧复制并修改对象，再原子发布。经过 grace period 后，可确认此前的读侧临界区都已结束，旧对象才安全释放。 读者读取旧指针 →...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

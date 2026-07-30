@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>eBPF 程序生命周期：加载、验证、挂载与通信 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="eBPF 让受限程序在内核事件点执行。用户态加载字节码，Verifier 验证控制流、边界与指针安全，通过后由解释器或 JIT 执行，并通过 Map 与用户态交换状态。 编译 eBPF 对象 → bpf 系统调用加载 → Verifier 静态验证 → JIT 并挂载到 Hook → 事件触发并通过 Map/RingBuf 输出 程序类型决定可用上下文...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/ebpf-program-lifecycle/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="eBPF 程序生命周期：加载、验证、挂载与通信 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="eBPF 让受限程序在内核事件点执行。用户态加载字节码，Verifier 验证控制流、边界与指针安全，通过后由解释器或 JIT 执行，并通过 Map 与用户态交换状态。 编译 eBPF 对象 → bpf 系统调用加载 → Verifier 静态验证 → JIT 并挂载到 Hook → 事件触发并通过 Map/RingBuf 输出 程序类型决定可用上下文...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/ebpf-program-lifecycle/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="eBPF 程序生命周期：加载、验证、挂载与通信">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="eBPF 程序生命周期：加载、验证、挂载与通信 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="eBPF 让受限程序在内核事件点执行。用户态加载字节码，Verifier 验证控制流、边界与指针安全，通过后由解释器或 JIT 执行，并通过 Map 与用户态交换状态。 编译 eBPF 对象 → bpf 系统调用加载 → Verifier 静态验证 → JIT 并挂载到 Hook → 事件触发并通过 Map/RingBuf 输出 程序类型决定可用上下文...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

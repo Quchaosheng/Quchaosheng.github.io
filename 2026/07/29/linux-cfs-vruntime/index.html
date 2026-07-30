@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>CFS 与 vruntime：Linux 如何分配 CPU 时间 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="CFS 的目标不是让每个任务运行同样久，而是按权重实现公平。它用 vruntime 记录任务经过权重修正后的运行时间，优先选择 vruntime 较小的可运行任务。 调度过程 传统 CFS 运行队列使用红黑树组织调度实体，最左节点代表当前最“欠 CPU 时间”的任务。nice 值越低，权重越大，同样运行时间带来的 vruntime 增量越小。 任务进入...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-cfs-vruntime/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CFS 与 vruntime：Linux 如何分配 CPU 时间 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="CFS 的目标不是让每个任务运行同样久，而是按权重实现公平。它用 vruntime 记录任务经过权重修正后的运行时间，优先选择 vruntime 较小的可运行任务。 调度过程 传统 CFS 运行队列使用红黑树组织调度实体，最左节点代表当前最“欠 CPU 时间”的任务。nice 值越低，权重越大，同样运行时间带来的 vruntime 增量越小。 任务进入...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-cfs-vruntime/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="CFS 与 vruntime：Linux 如何分配 CPU 时间">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CFS 与 vruntime：Linux 如何分配 CPU 时间 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="CFS 的目标不是让每个任务运行同样久，而是按权重实现公平。它用 vruntime 记录任务经过权重修正后的运行时间，优先选择 vruntime 较小的可运行任务。 调度过程 传统 CFS 运行队列使用红黑树组织调度实体，最左节点代表当前最“欠 CPU 时间”的任务。nice 值越低，权重越大，同样运行时间带来的 vruntime 增量越小。 任务进入...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

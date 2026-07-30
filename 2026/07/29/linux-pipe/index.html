@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 管道：内核缓冲区上的字节流 IPC | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="管道是内核维护的单向字节流缓冲区，读端和写端通过文件描述符访问。它适合具有亲缘关系的进程或 shell 命令串联，数据不需落盘。 创建 pipe → 写端写入内核缓冲区 → 等待的读端被唤醒 → 读端取走字节流 管道不是消息队列：读取边界不等于写入边界。小于 PIPE_BUF 的单次写入可获得原子性保证；无人读时写入会收到 SIGPIPE 或 EPIP...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-pipe/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 管道：内核缓冲区上的字节流 IPC | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="管道是内核维护的单向字节流缓冲区，读端和写端通过文件描述符访问。它适合具有亲缘关系的进程或 shell 命令串联，数据不需落盘。 创建 pipe → 写端写入内核缓冲区 → 等待的读端被唤醒 → 读端取走字节流 管道不是消息队列：读取边界不等于写入边界。小于 PIPE_BUF 的单次写入可获得原子性保证；无人读时写入会收到 SIGPIPE 或 EPIP...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-pipe/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 管道：内核缓冲区上的字节流 IPC">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 管道：内核缓冲区上的字节流 IPC | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="管道是内核维护的单向字节流缓冲区，读端和写端通过文件描述符访问。它适合具有亲缘关系的进程或 shell 命令串联，数据不需落盘。 创建 pipe → 写端写入内核缓冲区 → 等待的读端被唤醒 → 读端取走字节流 管道不是消息队列：读取边界不等于写入边界。小于 PIPE_BUF 的单次写入可获得原子性保证；无人读时写入会收到 SIGPIPE 或 EPIP...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

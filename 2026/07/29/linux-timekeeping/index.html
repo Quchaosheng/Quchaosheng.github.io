@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux 时间管理：时钟源、时钟事件与定时器 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="clocksource 提供连续时间计数，clockevent 设备负责在指定时刻触发中断，timekeeping 把硬件计数转换为单调时间与墙上时间，定时器子系统在其上调度回调。 读取 clocksource 周期 → 换算单调时间 → 定时器确定最近到期点 → 编程 clockevent → 中断到来执行到期任务 实时钟可被校时调整，单调钟不会倒退...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-timekeeping/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 时间管理：时钟源、时钟事件与定时器 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="clocksource 提供连续时间计数，clockevent 设备负责在指定时刻触发中断，timekeeping 把硬件计数转换为单调时间与墙上时间，定时器子系统在其上调度回调。 读取 clocksource 周期 → 换算单调时间 → 定时器确定最近到期点 → 编程 clockevent → 中断到来执行到期任务 实时钟可被校时调整，单调钟不会倒退...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-timekeeping/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 时间管理：时钟源、时钟事件与定时器">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 时间管理：时钟源、时钟事件与定时器 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="clocksource 提供连续时间计数，clockevent 设备负责在指定时刻触发中断，timekeeping 把硬件计数转换为单调时间与墙上时间，定时器子系统在其上调度回调。 读取 clocksource 周期 → 换算单调时间 → 定时器确定最近到期点 → 编程 clockevent → 中断到来执行到期任务 实时钟可被校时调整，单调钟不会倒退...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Buildroot：生成可复现的嵌入式 Linux 系统镜像 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="嵌入式 Linux 的交付物不是一个可执行文件，而是一组彼此匹配的产物：交叉工具链、Bootloader、内核、设备树、根文件系统、库、服务和烧录布局。Buildroot 把这条链路收敛到一份配置和一套依赖图中：选择目标架构与软件包后，它下载源码、交叉编译、安装到 rootfs，并生成可烧录或可启动的镜像。真正的价值不只是“能一键编译”，而是让同一份输...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/buildroot-system-image/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Buildroot：生成可复现的嵌入式 Linux 系统镜像 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="嵌入式 Linux 的交付物不是一个可执行文件，而是一组彼此匹配的产物：交叉工具链、Bootloader、内核、设备树、根文件系统、库、服务和烧录布局。Buildroot 把这条链路收敛到一份配置和一套依赖图中：选择目标架构与软件包后，它下载源码、交叉编译、安装到 rootfs，并生成可烧录或可启动的镜像。真正的价值不只是“能一键编译”，而是让同一份输...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/buildroot-system-image/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Buildroot：生成可复现的嵌入式 Linux 系统镜像">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Buildroot：生成可复现的嵌入式 Linux 系统镜像 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="嵌入式 Linux 的交付物不是一个可执行文件，而是一组彼此匹配的产物：交叉工具链、Bootloader、内核、设备树、根文件系统、库、服务和烧录布局。Buildroot 把这条链路收敛到一份配置和一套依赖图中：选择目标架构与软件包后，它下载源码、交叉编译、安装到 rootfs，并生成可烧录或可启动的镜像。真正的价值不只是“能一键编译”，而是让同一份输...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

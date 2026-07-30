@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>procfs：把内核运行状态投影成文件 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它暴露进程、内存、CPU、网络与内核参数状态，是排障和观测的重要入口。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 /proc/PID/status 、 maps 、 smaps 用于进程诊断； /proc/meminfo 、 s...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-procfs/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="procfs：把内核运行状态投影成文件 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它暴露进程、内存、CPU、网络与内核参数状态，是排障和观测的重要入口。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 /proc/PID/status 、 maps 、 smaps 用于进程诊断； /proc/meminfo 、 s...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-procfs/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="procfs：把内核运行状态投影成文件">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="procfs：把内核运行状态投影成文件 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="procfs 是虚拟文件系统，文件内容在读取时由内核动态生成。它暴露进程、内存、CPU、网络与内核参数状态，是排障和观测的重要入口。 用户读取 /proc 文件 → VFS 路由到 procfs → 内核回调收集状态 → 格式化为文本返回 /proc/PID/status 、 maps 、 smaps 用于进程诊断； /proc/meminfo 、 s...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

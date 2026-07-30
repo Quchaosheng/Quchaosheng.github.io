@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Linux SPI 驱动：控制器、设备与传输 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="SPI 是时钟同步、全双工的串行总线，但它不定义统一的寄存器协议、设备发现方式或数据帧格式。Linux SPI 子系统因此将两类职责拆开：控制器驱动管理 SoC 的时钟、FIFO、DMA、片选和中断；协议驱动理解某颗传感器、Flash 或 ADC 的命令、寄存器和数据格式。设备树或其他固件描述负责告诉内核“哪条总线上挂着哪颗设备”。 设备树描述外设 →...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-spi-driver/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux SPI 驱动：控制器、设备与传输 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="SPI 是时钟同步、全双工的串行总线，但它不定义统一的寄存器协议、设备发现方式或数据帧格式。Linux SPI 子系统因此将两类职责拆开：控制器驱动管理 SoC 的时钟、FIFO、DMA、片选和中断；协议驱动理解某颗传感器、Flash 或 ADC 的命令、寄存器和数据格式。设备树或其他固件描述负责告诉内核“哪条总线上挂着哪颗设备”。 设备树描述外设 →...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-spi-driver/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux SPI 驱动：控制器、设备与传输">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux SPI 驱动：控制器、设备与传输 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="SPI 是时钟同步、全双工的串行总线，但它不定义统一的寄存器协议、设备发现方式或数据帧格式。Linux SPI 子系统因此将两类职责拆开：控制器驱动管理 SoC 的时钟、FIFO、DMA、片选和中断；协议驱动理解某颗传感器、Flash 或 ADC 的命令、寄存器和数据格式。设备树或其他固件描述负责告诉内核“哪条总线上挂着哪颗设备”。 设备树描述外设 →...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

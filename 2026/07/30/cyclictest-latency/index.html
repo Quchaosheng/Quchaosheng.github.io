@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>cyclictest：怎样测量 Linux 实时调度延迟 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="cyclictest 是 Linux 实时测试里最常见的起点。它创建周期线程，记录计划唤醒时刻与线程真正恢复执行时刻的偏差。这个偏差覆盖了定时器到期、中断处理、调度器选择、CPU 被占用以及部分系统噪声，因此比单纯测一段用户态函数更接近“实时线程有没有按时醒来”。但它仍只是测量工具，不等于业务任务的端到端截止期证明。 设置实时优先级与 CPU → 绝对...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/cyclictest-latency/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="cyclictest：怎样测量 Linux 实时调度延迟 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="cyclictest 是 Linux 实时测试里最常见的起点。它创建周期线程，记录计划唤醒时刻与线程真正恢复执行时刻的偏差。这个偏差覆盖了定时器到期、中断处理、调度器选择、CPU 被占用以及部分系统噪声，因此比单纯测一段用户态函数更接近“实时线程有没有按时醒来”。但它仍只是测量工具，不等于业务任务的端到端截止期证明。 设置实时优先级与 CPU → 绝对...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/cyclictest-latency/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="cyclictest：怎样测量 Linux 实时调度延迟">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="cyclictest：怎样测量 Linux 实时调度延迟 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="cyclictest 是 Linux 实时测试里最常见的起点。它创建周期线程，记录计划唤醒时刻与线程真正恢复执行时刻的偏差。这个偏差覆盖了定时器到期、中断处理、调度器选择、CPU 被占用以及部分系统噪声，因此比单纯测一段用户态函数更接近“实时线程有没有按时醒来”。但它仍只是测量工具，不等于业务任务的端到端截止期证明。 设置实时优先级与 CPU → 绝对...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

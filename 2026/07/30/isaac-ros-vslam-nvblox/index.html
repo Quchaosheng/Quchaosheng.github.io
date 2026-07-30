@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="机器人要自主移动，至少需要回答两个问题：自己在哪里，以及周围哪些空间安全。Visual SLAM 通过相机特征与 IMU 估计连续位姿；nvblox 将深度观测按位姿融合，维护 TSDF、占据栅格或 ESDF 等空间表示。前者提供“运动轨迹”，后者提供“可通行距离”，二者接到导航栈后，规划器才有可靠的起点与障碍信息。 同步相机与 IMU → Visua...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/isaac-ros-vslam-nvblox/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="机器人要自主移动，至少需要回答两个问题：自己在哪里，以及周围哪些空间安全。Visual SLAM 通过相机特征与 IMU 估计连续位姿；nvblox 将深度观测按位姿融合，维护 TSDF、占据栅格或 ESDF 等空间表示。前者提供“运动轨迹”，后者提供“可通行距离”，二者接到导航栈后，规划器才有可靠的起点与障碍信息。 同步相机与 IMU → Visua...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/isaac-ros-vslam-nvblox/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="机器人要自主移动，至少需要回答两个问题：自己在哪里，以及周围哪些空间安全。Visual SLAM 通过相机特征与 IMU 估计连续位姿；nvblox 将深度观测按位姿融合，维护 TSDF、占据栅格或 ESDF 等空间表示。前者提供“运动轨迹”，后者提供“可通行距离”，二者接到导航栈后，规划器才有可靠的起点与障碍信息。 同步相机与 IMU → Visua...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

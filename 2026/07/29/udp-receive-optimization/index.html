@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>UDP 收包瓶颈：从网卡队列到应用线程 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="UDP 没有 TCP 的重传、拥塞控制和按序字节流语义，因此延迟低、协议简单，也意味着一旦某一层来不及处理，包会直接消失。丢包可能发生在网卡 RX ring、NAPI&amp;#x2F;softirq、协议栈内存、socket 接收队列，或应用来不及 recvmsg() 的阶段。把所有问题都归因于“接收 buffer 太小”通常会掩盖真正瓶颈。 RX ring...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/udp-receive-optimization/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="UDP 收包瓶颈：从网卡队列到应用线程 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="UDP 没有 TCP 的重传、拥塞控制和按序字节流语义，因此延迟低、协议简单，也意味着一旦某一层来不及处理，包会直接消失。丢包可能发生在网卡 RX ring、NAPI&amp;#x2F;softirq、协议栈内存、socket 接收队列，或应用来不及 recvmsg() 的阶段。把所有问题都归因于“接收 buffer 太小”通常会掩盖真正瓶颈。 RX ring...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/udp-receive-optimization/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="UDP 收包瓶颈：从网卡队列到应用线程">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="UDP 收包瓶颈：从网卡队列到应用线程 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="UDP 没有 TCP 的重传、拥塞控制和按序字节流语义，因此延迟低、协议简单，也意味着一旦某一层来不及处理，包会直接消失。丢包可能发生在网卡 RX ring、NAPI&amp;#x2F;softirq、协议栈内存、socket 接收队列，或应用来不及 recvmsg() 的阶段。把所有问题都归因于“接收 buffer 太小”通常会掩盖真正瓶颈。 RX ring...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

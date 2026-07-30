@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>NUMA：CPU 为什么更偏爱本地内存 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="NUMA（非一致内存访问）把 CPU、内存划分为多个节点。CPU 访问本节点内存延迟较低，跨节点访问则要经过互连总线，因此线程跑在哪个节点、页面落在哪个节点会直接影响性能。 核心机制 Linux 默认采用“首次触碰”策略：虚拟内存被首次实际写入时，物理页通常分配在执行该线程所在的 NUMA 节点。调度器会尽量保持 CPU 与内存亲和性，自动 NUMA...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-numa-memory-access/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="NUMA：CPU 为什么更偏爱本地内存 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="NUMA（非一致内存访问）把 CPU、内存划分为多个节点。CPU 访问本节点内存延迟较低，跨节点访问则要经过互连总线，因此线程跑在哪个节点、页面落在哪个节点会直接影响性能。 核心机制 Linux 默认采用“首次触碰”策略：虚拟内存被首次实际写入时，物理页通常分配在执行该线程所在的 NUMA 节点。调度器会尽量保持 CPU 与内存亲和性，自动 NUMA...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-numa-memory-access/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="NUMA：CPU 为什么更偏爱本地内存">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NUMA：CPU 为什么更偏爱本地内存 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="NUMA（非一致内存访问）把 CPU、内存划分为多个节点。CPU 访问本节点内存延迟较低，跨节点访问则要经过互连总线，因此线程跑在哪个节点、页面落在哪个节点会直接影响性能。 核心机制 Linux 默认采用“首次触碰”策略：虚拟内存被首次实际写入时，物理页通常分配在执行该线程所在的 NUMA 节点。调度器会尽量保持 CPU 与内存亲和性，自动 NUMA...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

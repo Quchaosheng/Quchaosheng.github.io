@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>进程睡眠与唤醒：等待队列避免忙等 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="当驱动等待数据、缓冲区空间、DMA 完成或硬件状态变化时，持续轮询会浪费 CPU，也会让功耗和实时性更差。Linux 用等待队列把“条件暂时不满足”的任务挂起来，设置为可中断或不可中断睡眠；事件发生后，生产者唤醒等待者，调度器再在合适时机让它继续执行。关键点不是调用一次 wake_up() ，而是正确处理检查条件与进入睡眠之间的竞争。 检查条件不满足...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-sleep-wakeup/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="进程睡眠与唤醒：等待队列避免忙等 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="当驱动等待数据、缓冲区空间、DMA 完成或硬件状态变化时，持续轮询会浪费 CPU，也会让功耗和实时性更差。Linux 用等待队列把“条件暂时不满足”的任务挂起来，设置为可中断或不可中断睡眠；事件发生后，生产者唤醒等待者，调度器再在合适时机让它继续执行。关键点不是调用一次 wake_up() ，而是正确处理检查条件与进入睡眠之间的竞争。 检查条件不满足...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-sleep-wakeup/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="进程睡眠与唤醒：等待队列避免忙等">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="进程睡眠与唤醒：等待队列避免忙等 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="当驱动等待数据、缓冲区空间、DMA 完成或硬件状态变化时，持续轮询会浪费 CPU，也会让功耗和实时性更差。Linux 用等待队列把“条件暂时不满足”的任务挂起来，设置为可中断或不可中断睡眠；事件发生后，生产者唤醒等待者，调度器再在合适时机让它继续执行。关键点不是调用一次 wake_up() ，而是正确处理检查条件与进入睡眠之间的竞争。 检查条件不满足...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

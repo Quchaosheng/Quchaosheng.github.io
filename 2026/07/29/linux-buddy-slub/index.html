@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>伙伴系统与 SLUB：Linux 内核怎样分配内存 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="Linux 内核用分层分配器解决不同粒度的需求：伙伴系统管理以页为单位的连续物理内存，SLUB 在这些页上高效分配频繁使用的小对象。 两层协作 伙伴系统按 2 的幂次组织空闲块。分配时拆分大块，释放时与同阶“伙伴”合并。SLUB 为相同类型或大小的对象建立 cache，把 slab 中的空闲槽直接交给调用者。 kmem_cache_alloc → 从当...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="伙伴系统与 SLUB：Linux 内核怎样分配内存 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="Linux 内核用分层分配器解决不同粒度的需求：伙伴系统管理以页为单位的连续物理内存，SLUB 在这些页上高效分配频繁使用的小对象。 两层协作 伙伴系统按 2 的幂次组织空闲块。分配时拆分大块，释放时与同阶“伙伴”合并。SLUB 为相同类型或大小的对象建立 cache，把 slab 中的空闲槽直接交给调用者。 kmem_cache_alloc → 从当...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="伙伴系统与 SLUB：Linux 内核怎样分配内存">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="伙伴系统与 SLUB：Linux 内核怎样分配内存 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="Linux 内核用分层分配器解决不同粒度的需求：伙伴系统管理以页为单位的连续物理内存，SLUB 在这些页上高效分配频繁使用的小对象。 两层协作 伙伴系统按 2 的幂次组织空闲块。分配时拆分大块，释放时与同阶“伙伴”合并。SLUB 为相同类型或大小的对象建立 cache，把 slab 中的空闲槽直接交给调用者。 kmem_cache_alloc → 从当...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

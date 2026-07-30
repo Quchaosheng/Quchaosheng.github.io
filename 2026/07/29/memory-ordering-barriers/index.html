@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>内存屏障与内存序：多核程序如何建立顺序 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="多核程序的问题不只是“两个线程同时改了同一个变量”。编译器为了优化会重排独立读写，CPU 为了流水线和缓存效率也可能让不同核心在不同时间观察到写入。C++ 原子操作和内存序用来表达哪些读写必须以什么顺序对其他线程可见。理解它的目标不是把所有操作写成 seq_cst ，而是为每一条跨线程数据路径建立清晰的 happens-before 关系。 生产者写入...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/memory-ordering-barriers/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="内存屏障与内存序：多核程序如何建立顺序 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="多核程序的问题不只是“两个线程同时改了同一个变量”。编译器为了优化会重排独立读写，CPU 为了流水线和缓存效率也可能让不同核心在不同时间观察到写入。C++ 原子操作和内存序用来表达哪些读写必须以什么顺序对其他线程可见。理解它的目标不是把所有操作写成 seq_cst ，而是为每一条跨线程数据路径建立清晰的 happens-before 关系。 生产者写入...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/memory-ordering-barriers/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="内存屏障与内存序：多核程序如何建立顺序">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="内存屏障与内存序：多核程序如何建立顺序 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="多核程序的问题不只是“两个线程同时改了同一个变量”。编译器为了优化会重排独立读写，CPU 为了流水线和缓存效率也可能让不同核心在不同时间观察到写入。C++ 原子操作和内存序用来表达哪些读写必须以什么顺序对其他线程可见。理解它的目标不是把所有操作写成 seq_cst ，而是为每一条跨线程数据路径建立清晰的 happens-before 关系。 生产者写入...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>静态链接与动态链接：符号如何成为可执行程序 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="链接器解析目标文件符号和重定位，把代码与数据组织为 ELF。静态链接把所需库代码复制进程序；动态链接保留依赖，由动态加载器在启动或首次调用时解析。 编译生成 .o → 收集符号与节 → 解析引用并重定位 → 生成 ELF → 动态加载器处理共享库 GOT&amp;#x2F;PLT 支持位置无关代码与延迟绑定。排查问题可用 readelf 、 nm 、 objd...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/static-dynamic-linking/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="静态链接与动态链接：符号如何成为可执行程序 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="链接器解析目标文件符号和重定位，把代码与数据组织为 ELF。静态链接把所需库代码复制进程序；动态链接保留依赖，由动态加载器在启动或首次调用时解析。 编译生成 .o → 收集符号与节 → 解析引用并重定位 → 生成 ELF → 动态加载器处理共享库 GOT&amp;#x2F;PLT 支持位置无关代码与延迟绑定。排查问题可用 readelf 、 nm 、 objd...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/static-dynamic-linking/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="静态链接与动态链接：符号如何成为可执行程序">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="静态链接与动态链接：符号如何成为可执行程序 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="链接器解析目标文件符号和重定位，把代码与数据组织为 ELF。静态链接把所需库代码复制进程序；动态链接保留依赖，由动态加载器在启动或首次调用时解析。 编译生成 .o → 收集符号与节 → 解析引用并重定位 → 生成 ELF → 动态加载器处理共享库 GOT&amp;#x2F;PLT 支持位置无关代码与延迟绑定。排查问题可用 readelf 、 nm 、 objd...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

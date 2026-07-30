@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>CMA：为大块连续物理内存保留弹性空间 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="显示、摄像头、视频编解码和某些 DMA 设备常需要大块连续物理内存。系统运行一段时间后，即使总空闲内存很多，伙伴系统也可能因碎片找不到足够大的连续块。CMA（Contiguous Memory Allocator）在启动时保留一片可迁移区域：平时可临时给普通可移动页使用；当设备需要连续内存时，内核尝试迁走其中页面并整理出连续范围。这比永久独占一大块 r...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-cma/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CMA：为大块连续物理内存保留弹性空间 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="显示、摄像头、视频编解码和某些 DMA 设备常需要大块连续物理内存。系统运行一段时间后，即使总空闲内存很多，伙伴系统也可能因碎片找不到足够大的连续块。CMA（Contiguous Memory Allocator）在启动时保留一片可迁移区域：平时可临时给普通可移动页使用；当设备需要连续内存时，内核尝试迁走其中页面并整理出连续范围。这比永久独占一大块 r...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-cma/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="CMA：为大块连续物理内存保留弹性空间">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CMA：为大块连续物理内存保留弹性空间 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="显示、摄像头、视频编解码和某些 DMA 设备常需要大块连续物理内存。系统运行一段时间后，即使总空闲内存很多，伙伴系统也可能因碎片找不到足够大的连续块。CMA（Contiguous Memory Allocator）在启动时保留一片可迁移区域：平时可临时给普通可移动页使用；当设备需要连续内存时，内核尝试迁走其中页面并整理出连续范围。这比永久独占一大块 r...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

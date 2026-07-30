@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>NAPI：Linux 如何承受高并发收包 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="如果每个数据包都触发一次硬中断，高流量时 CPU 会花大量时间在“响应中断、保存现场、再响应下一个中断”，却没有时间真正处理数据，这就是中断风暴。反过来，持续轮询所有队列在低流量时又浪费 CPU。NAPI 采用混合模型：第一个包由中断提醒，随后驱动暂时关闭该队列中断，在软中断&amp;#x2F;NAPI poll 中按预算批量取包；队列清空后再恢复中断。它是...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-napi-receive/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="NAPI：Linux 如何承受高并发收包 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="如果每个数据包都触发一次硬中断，高流量时 CPU 会花大量时间在“响应中断、保存现场、再响应下一个中断”，却没有时间真正处理数据，这就是中断风暴。反过来，持续轮询所有队列在低流量时又浪费 CPU。NAPI 采用混合模型：第一个包由中断提醒，随后驱动暂时关闭该队列中断，在软中断&amp;#x2F;NAPI poll 中按预算批量取包；队列清空后再恢复中断。它是...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-napi-receive/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="NAPI：Linux 如何承受高并发收包">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NAPI：Linux 如何承受高并发收包 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="如果每个数据包都触发一次硬中断，高流量时 CPU 会花大量时间在“响应中断、保存现场、再响应下一个中断”，却没有时间真正处理数据，这就是中断风暴。反过来，持续轮询所有队列在低流量时又浪费 CPU。NAPI 采用混合模型：第一个包由中断提醒，随后驱动暂时关闭该队列中断，在软中断&amp;#x2F;NAPI poll 中按预算批量取包；队列清空后再恢复中断。它是...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

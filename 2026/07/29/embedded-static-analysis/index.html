@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>嵌入式静态分析：在运行前发现危险路径 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="静态分析沿控制流和数据流查找空指针、越界、未初始化值、资源泄漏与可疑并发，不需要执行目标程序，适合难以完整测试的固件。 生成 compile_commands.json → 运行编译器告警与分析器 → 按严重度归类 → 修复或记录理由 → CI 阻止新增缺陷 先开启高质量编译告警，再引入 Cppcheck&amp;#x2F;Clang-Tidy；规则集应逐步收...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-static-analysis/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="嵌入式静态分析：在运行前发现危险路径 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="静态分析沿控制流和数据流查找空指针、越界、未初始化值、资源泄漏与可疑并发，不需要执行目标程序，适合难以完整测试的固件。 生成 compile_commands.json → 运行编译器告警与分析器 → 按严重度归类 → 修复或记录理由 → CI 阻止新增缺陷 先开启高质量编译告警，再引入 Cppcheck&amp;#x2F;Clang-Tidy；规则集应逐步收...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-static-analysis/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="嵌入式静态分析：在运行前发现危险路径">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="嵌入式静态分析：在运行前发现危险路径 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="静态分析沿控制流和数据流查找空指针、越界、未初始化值、资源泄漏与可疑并发，不需要执行目标程序，适合难以完整测试的固件。 生成 compile_commands.json → 运行编译器告警与分析器 → 按严重度归类 → 修复或记录理由 → CI 阻止新增缺陷 先开启高质量编译告警，再引入 Cppcheck&amp;#x2F;Clang-Tidy；规则集应逐步收...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

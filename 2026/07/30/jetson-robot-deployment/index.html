@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>Jetson 机器人部署：功耗、算力与实时控制怎样分工 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器集成在一块边缘板上。JetPack 将 Linux for Tegra、CUDA、TensorRT、cuDNN 和系统组件打包起来，使相机、视觉推理与 ROS 2 能在机器人本体运行。它很适合“看懂环境”和“生成任务”，但 GPU 的高吞吐量并不自动等于电机控制回路拥有可预测的最...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jetson 机器人部署：功耗、算力与实时控制怎样分工 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器集成在一块边缘板上。JetPack 将 Linux for Tegra、CUDA、TensorRT、cuDNN 和系统组件打包起来，使相机、视觉推理与 ROS 2 能在机器人本体运行。它很适合“看懂环境”和“生成任务”，但 GPU 的高吞吐量并不自动等于电机控制回路拥有可预测的最...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Jetson 机器人部署：功耗、算力与实时控制怎样分工">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Jetson 机器人部署：功耗、算力与实时控制怎样分工 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器集成在一块边缘板上。JetPack 将 Linux for Tegra、CUDA、TensorRT、cuDNN 和系统组件打包起来，使相机、视觉推理与 ROS 2 能在机器人本体运行。它很适合“看懂环境”和“生成任务”，但 GPU 的高吞吐量并不自动等于电机控制回路拥有可预测的最...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

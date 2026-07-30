@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>ksoftirqd：软中断为何会转入内核线程 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="硬中断必须尽快返回，因此 Linux 将大量可延后的处理放进 softirq，例如网络收包、定时器和任务队列。softirq 可以在中断返回路径上被处理，延迟低，但若它持续工作太久，就会长时间占据 CPU、拖慢用户线程和其他中断。内核因此对处理次数&amp;#x2F;时间设预算，超过预算的剩余工作交给每 CPU 一个 ksoftirqd/N 内核线程继续完成。...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-ksoftirqd/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ksoftirqd：软中断为何会转入内核线程 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="硬中断必须尽快返回，因此 Linux 将大量可延后的处理放进 softirq，例如网络收包、定时器和任务队列。softirq 可以在中断返回路径上被处理，延迟低，但若它持续工作太久，就会长时间占据 CPU、拖慢用户线程和其他中断。内核因此对处理次数&amp;#x2F;时间设预算，超过预算的剩余工作交给每 CPU 一个 ksoftirqd/N 内核线程继续完成。...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-ksoftirqd/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="ksoftirqd：软中断为何会转入内核线程">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ksoftirqd：软中断为何会转入内核线程 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="硬中断必须尽快返回，因此 Linux 将大量可延后的处理放进 softirq，例如网络收包、定时器和任务队列。softirq 可以在中断返回路径上被处理，延迟低，但若它持续工作太久，就会长时间占据 CPU、拖慢用户线程和其他中断。内核因此对处理次数&amp;#x2F;时间设预算，超过预算的剩余工作交给每 CPU 一个 ksoftirqd/N 内核线程继续完成。...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

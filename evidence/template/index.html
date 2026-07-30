@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>实验记录模板 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="用于记录环境、命令、原始工件、结论范围和后续动作的可复用实验模板。">
+
+<link rel="canonical" href="https://quchaosheng.github.io/evidence/template/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="website">
+<meta property="og:title" content="实验记录模板 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="用于记录环境、命令、原始工件、结论范围和后续动作的可复用实验模板。">
+
+<meta property="og:url" content="https://quchaosheng.github.io/evidence/template/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="实验记录模板">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="实验记录模板 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="用于记录环境、命令、原始工件、结论范围和后续动作的可复用实验模板。">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/evidence">证据</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/evidence">证据</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    <article class="post-wrap page">
+        
+        <h2 class="post-title">实验记录模板</h2>
+        
+        <section class="post-content">
+            <div class="page-lead"><p class="section-kicker">REPRODUCIBLE RECORD</p><p>每一次测量、仿真或台架验证都从同一份记录结构开始。模板不会把一次成功写成普遍结论，它要求把可复查工件和不能外推的部分一起留下。</p></div>
+
+<div class="note-flow"><span>定义问题与阈值</span><i>→</i><span>冻结环境与输入</span><i>→</i><span>运行并保存工件</span><i>→</i><span>解释结果与边界</span><i>→</i><span>决定补测 / 回归 / 回滚</span></div>
+
+<h2 id="使用规则"><a href="#使用规则" class="headerlink" title="使用规则"></a>使用规则</h2><ol>
+<li>先写通过阈值和失败动作，再运行命令。</li>
+<li>不覆盖失败工件；新尝试用新的运行 ID 和目录。</li>
+<li>记录原始输出的位置与哈希，而不是只贴一张成功截图。</li>
+<li>结论要写明“本次能证明什么”和“不能证明什么”。</li>
+</ol>
+<h2 id="记录骨架"><a href="#记录骨架" class="headerlink" title="记录骨架"></a>记录骨架</h2><figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: &quot;&lt;实验名称&gt;&quot;</span><br><span class="line">date: &quot;<span class="language-xml"><span class="tag">&lt;<span class="name">YYYY-MM-DD</span>&gt;</span></span>&quot;</span><br><span class="line">project: &quot;&lt;仓库或项目&gt;&quot;</span><br><span class="line">run<span class="emphasis">_id: &quot;&lt;唯一运行 ID&gt;&quot;</span></span><br><span class="line"><span class="emphasis">evidence_</span>class: &quot;implementation | simulation | vcan | physical<span class="emphasis">_io | formal_</span>test&quot;</span><br><span class="line"><span class="section">status: &quot;passed | failed | interrupted | blocked&quot;</span></span><br><span class="line"><span class="section">---</span></span><br><span class="line"></span><br><span class="line"><span class="section"># 1. 问题与验收阈值</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> 要回答的问题：</span><br><span class="line"><span class="bullet">-</span> 通过条件：</span><br><span class="line"><span class="bullet">-</span> 失败条件与安全动作：</span><br><span class="line"><span class="bullet">-</span> 本次不试图证明的内容：</span><br><span class="line"></span><br><span class="line"><span class="section"># 2. 环境快照</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> 硬件 / 台架：</span><br><span class="line"><span class="bullet">-</span> OS / 内核 / 固件：</span><br><span class="line"><span class="bullet">-</span> 依赖与工具版本：</span><br><span class="line"><span class="bullet">-</span> Git commit 与工作区状态：</span><br><span class="line"><span class="bullet">-</span> 启动参数、CPU / IRQ / 电源策略：</span><br><span class="line"></span><br><span class="line"><span class="section"># 3. 输入与执行</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> 工作负载、持续时间、并发和 seed：</span><br><span class="line"><span class="bullet">-</span> 完整命令：</span><br><span class="line"><span class="bullet">-</span> 输入数据或模拟故障：</span><br><span class="line"><span class="bullet">-</span> 输出目录：</span><br><span class="line"></span><br><span class="line"><span class="section"># 4. 原始工件</span></span><br><span class="line"></span><br><span class="line">| 工件 | 路径或链接 | SHA-256 | 说明 |</span><br><span class="line">| --- | --- | --- | --- |</span><br><span class="line">| 环境报告 | | | |</span><br><span class="line">| 日志 / trace | | | |</span><br><span class="line">| 统计结果 | | | |</span><br><span class="line">| 失败现场 | | | |</span><br><span class="line"></span><br><span class="line"><span class="section"># 5. 结果</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> 观察到的数值或状态：</span><br><span class="line"><span class="bullet">-</span> 与阈值的比较：</span><br><span class="line"><span class="bullet">-</span> 失败时的最早异常证据：</span><br><span class="line"></span><br><span class="line"><span class="section"># 6. 结论范围</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> 本次支持的结论：</span><br><span class="line"><span class="bullet">-</span> 不支持或不能外推的结论：</span><br><span class="line"><span class="bullet">-</span> 已知混杂因素与剩余风险：</span><br><span class="line"></span><br><span class="line"><span class="section"># 7. 后续动作</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> [ ] 补测</span><br><span class="line"><span class="bullet">-</span> [ ] 回归测试</span><br><span class="line"><span class="bullet">-</span> [ ] 修复</span><br><span class="line"><span class="bullet">-</span> [ ] 回滚</span><br><span class="line"><span class="bullet">-</span> [ ] 明确暂不验证及原因</span><br></pre></td></tr></table></figure>
+
+<p>项目页和<a href="/evidence/">证据日志</a>应只引用已经有对应记录和工件的结论。真正的实验结果出现后，再把这份骨架替换为该次运行的事实。</p>
+
+        </section>
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

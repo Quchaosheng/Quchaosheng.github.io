@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>C++20 线程池：任务队列、工作线程与停止协议 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="线程池复用一组工作线程执行许多短任务，避免“每来一个任务就创建&amp;#x2F;销毁一个线程”的栈、TLS、调度和生命周期成本。但线程池不是一个 std::vector&amp;lt;std::thread&amp;gt; ：它至少要定义任务队列、唤醒条件、结果&amp;#x2F;异常传递、任务容量、停止语义和任务提交后谁负责背压。大多数生产事故都出在停止与过载，而不在 worke...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/cpp20-thread-pool/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C++20 线程池：任务队列、工作线程与停止协议 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="线程池复用一组工作线程执行许多短任务，避免“每来一个任务就创建&amp;#x2F;销毁一个线程”的栈、TLS、调度和生命周期成本。但线程池不是一个 std::vector&amp;lt;std::thread&amp;gt; ：它至少要定义任务队列、唤醒条件、结果&amp;#x2F;异常传递、任务容量、停止语义和任务提交后谁负责背压。大多数生产事故都出在停止与过载，而不在 worke...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/cpp20-thread-pool/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="C++20 线程池：任务队列、工作线程与停止协议">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="C++20 线程池：任务队列、工作线程与停止协议 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="线程池复用一组工作线程执行许多短任务，避免“每来一个任务就创建&amp;#x2F;销毁一个线程”的栈、TLS、调度和生命周期成本。但线程池不是一个 std::vector&amp;lt;std::thread&amp;gt; ：它至少要定义任务队列、唤醒条件、结果&amp;#x2F;异常传递、任务容量、停止语义和任务提交后谁负责背压。大多数生产事故都出在停止与过载，而不在 worke...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>按键消抖：从电气抖动到可靠事件 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="机械触点在按下和释放时会快速跳变。软件通常周期采样，只有输入连续稳定达到阈值才改变逻辑状态，并进一步识别单击、长按与连击。 周期采样 GPIO → 更新稳定计数 → 超过阈值确认状态 → 计算按压时长 → 发布按键事件 中断可用于唤醒，但不应直接把每次边沿当成一次按键。参考： MultiButton">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/button-debounce/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="按键消抖：从电气抖动到可靠事件 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="机械触点在按下和释放时会快速跳变。软件通常周期采样，只有输入连续稳定达到阈值才改变逻辑状态，并进一步识别单击、长按与连击。 周期采样 GPIO → 更新稳定计数 → 超过阈值确认状态 → 计算按压时长 → 发布按键事件 中断可用于唤醒，但不应直接把每次边沿当成一次按键。参考： MultiButton">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/button-debounce/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="按键消抖：从电气抖动到可靠事件">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="按键消抖：从电气抖动到可靠事件 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="机械触点在按下和释放时会快速跳变。软件通常周期采样，只有输入连续稳定达到阈值才改变逻辑状态，并进一步识别单击、长按与连击。 周期采样 GPIO → 更新稳定计数 → 超过阈值确认状态 → 计算按压时长 → 发布按键事件 中断可用于唤醒，但不应直接把每次边沿当成一次按键。参考： MultiButton">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

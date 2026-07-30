@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>NUMA 与共享缓存：实时线程为何会被别的 CPU 干扰 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="把实时线程独占一个 CPU 后，仍可能发现执行时间随“其他核在干什么”而波动。原因是核心并不独占整台芯片：同一 NUMA 节点中的 CPU 可能共享末级缓存（LLC）、内存控制器和互连带宽；跨节点访问还会经过更长路径。另一个核心上大规模 memcpy、GPU DMA、数据库或网络包处理，都可能让实时线程的缓存命中率下降、内存访问排队变长。 实时线程命中...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/realtime-numa-cache-jitter/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="NUMA 与共享缓存：实时线程为何会被别的 CPU 干扰 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="把实时线程独占一个 CPU 后，仍可能发现执行时间随“其他核在干什么”而波动。原因是核心并不独占整台芯片：同一 NUMA 节点中的 CPU 可能共享末级缓存（LLC）、内存控制器和互连带宽；跨节点访问还会经过更长路径。另一个核心上大规模 memcpy、GPU DMA、数据库或网络包处理，都可能让实时线程的缓存命中率下降、内存访问排队变长。 实时线程命中...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/realtime-numa-cache-jitter/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="NUMA 与共享缓存：实时线程为何会被别的 CPU 干扰">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NUMA 与共享缓存：实时线程为何会被别的 CPU 干扰 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="把实时线程独占一个 CPU 后，仍可能发现执行时间随“其他核在干什么”而波动。原因是核心并不独占整台芯片：同一 NUMA 节点中的 CPU 可能共享末级缓存（LLC）、内存控制器和互连带宽；跨节点访问还会经过更长路径。另一个核心上大规模 memcpy、GPU DMA、数据库或网络包处理，都可能让实时线程的缓存命中率下降、内存访问排队变长。 实时线程命中...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

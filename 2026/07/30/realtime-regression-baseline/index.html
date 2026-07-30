@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>实时回归测试：把一次调优变成可持续的延迟基线 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="实时性会被看似无关的改动悄悄破坏：内核升级、网卡驱动、BIOS、容器配置、日志服务、模型版本、散热策略甚至办公室温度都可能改变长尾。一次成功调优如果没有留下环境、负载和原始数据，下一次尖峰出现时只能从头猜。实时回归测试的价值是把“那天跑得很好”变成可复现、可比较、可阻止回归的工程基线。 定义负载与通过阈值 → 记录软硬件环境 → 长时间组合压测 → 比...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/realtime-regression-baseline/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="实时回归测试：把一次调优变成可持续的延迟基线 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="实时性会被看似无关的改动悄悄破坏：内核升级、网卡驱动、BIOS、容器配置、日志服务、模型版本、散热策略甚至办公室温度都可能改变长尾。一次成功调优如果没有留下环境、负载和原始数据，下一次尖峰出现时只能从头猜。实时回归测试的价值是把“那天跑得很好”变成可复现、可比较、可阻止回归的工程基线。 定义负载与通过阈值 → 记录软硬件环境 → 长时间组合压测 → 比...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/realtime-regression-baseline/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="实时回归测试：把一次调优变成可持续的延迟基线">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="实时回归测试：把一次调优变成可持续的延迟基线 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="实时性会被看似无关的改动悄悄破坏：内核升级、网卡驱动、BIOS、容器配置、日志服务、模型版本、散热策略甚至办公室温度都可能改变长尾。一次成功调优如果没有留下环境、负载和原始数据，下一次尖峰出现时只能从头猜。实时回归测试的价值是把“那天跑得很好”变成可复现、可比较、可阻止回归的工程基线。 定义负载与通过阈值 → 记录软硬件环境 → 长时间组合压测 → 比...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

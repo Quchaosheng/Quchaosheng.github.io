@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>CPU 很快，为什么取数据仍然很慢 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="CPU 指令执行速度远快于 DRAM 访问速度。现代处理器依靠寄存器、多级缓存、预取和乱序执行隐藏差距；一旦数据不在缓存中，流水线可能等待数十到数百个周期。 查找路径 每次加载先经过地址翻译，再按层级查询缓存。命中就返回数据；未命中则继续向更低层请求，并以 cache line 为单位把相邻数据带回。 生成虚拟地址 → TLB 地址翻译 → L1/L2...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/cpu-memory-hierarchy/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CPU 很快，为什么取数据仍然很慢 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="CPU 指令执行速度远快于 DRAM 访问速度。现代处理器依靠寄存器、多级缓存、预取和乱序执行隐藏差距；一旦数据不在缓存中，流水线可能等待数十到数百个周期。 查找路径 每次加载先经过地址翻译，再按层级查询缓存。命中就返回数据；未命中则继续向更低层请求，并以 cache line 为单位把相邻数据带回。 生成虚拟地址 → TLB 地址翻译 → L1/L2...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/cpu-memory-hierarchy/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="CPU 很快，为什么取数据仍然很慢">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CPU 很快，为什么取数据仍然很慢 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="CPU 指令执行速度远快于 DRAM 访问速度。现代处理器依靠寄存器、多级缓存、预取和乱序执行隐藏差距；一旦数据不在缓存中，流水线可能等待数十到数百个周期。 查找路径 每次加载先经过地址翻译，再按层级查询缓存。命中就返回数据；未命中则继续向更低层请求，并以 cache line 为单位把相邻数据带回。 生成虚拟地址 → TLB 地址翻译 → L1/L2...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

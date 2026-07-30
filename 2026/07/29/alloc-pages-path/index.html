@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>alloc_pages：物理页面分配如何走到伙伴系统 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="alloc_pages() 看上去只是申请若干物理页，实际调用把“我在什么上下文、能否等待、需要什么内存区域、是否必须连续、失败可否重试”交给内存管理子系统。内核会依据 GFP 标志、NUMA 策略、zone 水位线和 order 选择候选区域，先走 per-CPU page list（PCP）与伙伴系统快路径；资源紧张时才进入回收、规整、重试甚至 O...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/alloc-pages-path/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="alloc_pages：物理页面分配如何走到伙伴系统 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="alloc_pages() 看上去只是申请若干物理页，实际调用把“我在什么上下文、能否等待、需要什么内存区域、是否必须连续、失败可否重试”交给内存管理子系统。内核会依据 GFP 标志、NUMA 策略、zone 水位线和 order 选择候选区域，先走 per-CPU page list（PCP）与伙伴系统快路径；资源紧张时才进入回收、规整、重试甚至 O...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/alloc-pages-path/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="alloc_pages：物理页面分配如何走到伙伴系统">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="alloc_pages：物理页面分配如何走到伙伴系统 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="alloc_pages() 看上去只是申请若干物理页，实际调用把“我在什么上下文、能否等待、需要什么内存区域、是否必须连续、失败可否重试”交给内存管理子系统。内核会依据 GFP 标志、NUMA 策略、zone 水位线和 order 选择候选区域，先走 per-CPU page list（PCP）与伙伴系统快路径；资源紧张时才进入回收、规整、重试甚至 O...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

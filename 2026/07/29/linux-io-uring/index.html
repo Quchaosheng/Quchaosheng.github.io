@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>io_uring：用共享环减少异步 I/O 开销 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="io_uring 通过用户态与内核共享的提交环（SQ）和完成环（CQ）批量传递 I&amp;#x2F;O 请求，减少系统调用、数据复制和上下文切换。 请求生命周期 应用填写 SQE 并推进队尾，内核消费请求并执行 I&amp;#x2F;O，完成后写入 CQE。应用读取 CQE 获取结果。批量提交、固定缓冲区和注册文件可进一步减少开销。 应用填写 SQE → 提交到 S...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-io-uring/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="io_uring：用共享环减少异步 I/O 开销 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="io_uring 通过用户态与内核共享的提交环（SQ）和完成环（CQ）批量传递 I&amp;#x2F;O 请求，减少系统调用、数据复制和上下文切换。 请求生命周期 应用填写 SQE 并推进队尾，内核消费请求并执行 I&amp;#x2F;O，完成后写入 CQE。应用读取 CQE 获取结果。批量提交、固定缓冲区和注册文件可进一步减少开销。 应用填写 SQE → 提交到 S...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-io-uring/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="io_uring：用共享环减少异步 I/O 开销">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="io_uring：用共享环减少异步 I/O 开销 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="io_uring 通过用户态与内核共享的提交环（SQ）和完成环（CQ）批量传递 I&amp;#x2F;O 请求，减少系统调用、数据复制和上下文切换。 请求生命周期 应用填写 SQE 并推进队尾，内核消费请求并执行 I&amp;#x2F;O，完成后写入 CQE。应用读取 CQE 获取结果。批量提交、固定缓冲区和注册文件可进一步减少开销。 应用填写 SQE → 提交到 S...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

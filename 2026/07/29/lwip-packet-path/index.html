@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>lwIP 数据路径：小内存设备如何运行 TCP/IP | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="lwIP 用 pbuf 描述报文，通过网卡 netif 输入 IP 层，再分发到 UDP&amp;#x2F;TCP 与应用接口；发送方向则反向封装并交给驱动输出。 驱动收到帧 → 构造 pbuf → ethernet_input/IP → TCP/UDP PCB → 应用回调或 socket 重点配置内存池、TCP 窗口、线程模型与零拷贝边界。参考： lwIP">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/lwip-packet-path/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="lwIP 数据路径：小内存设备如何运行 TCP/IP | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="lwIP 用 pbuf 描述报文，通过网卡 netif 输入 IP 层，再分发到 UDP&amp;#x2F;TCP 与应用接口；发送方向则反向封装并交给驱动输出。 驱动收到帧 → 构造 pbuf → ethernet_input/IP → TCP/UDP PCB → 应用回调或 socket 重点配置内存池、TCP 窗口、线程模型与零拷贝边界。参考： lwIP">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/lwip-packet-path/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="lwIP 数据路径：小内存设备如何运行 TCP/IP">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="lwIP 数据路径：小内存设备如何运行 TCP/IP | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="lwIP 用 pbuf 描述报文，通过网卡 netif 输入 IP 层，再分发到 UDP&amp;#x2F;TCP 与应用接口；发送方向则反向封装并交给驱动输出。 驱动收到帧 → 构造 pbuf → ethernet_input/IP → TCP/UDP PCB → 应用回调或 socket 重点配置内存池、TCP 窗口、线程模型与零拷贝边界。参考： lwIP">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

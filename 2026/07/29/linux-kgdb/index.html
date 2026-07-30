@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>kGDB：远程单步调试 Linux 内核 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="kGDB 在目标内核中实现 GDB 远程调试协议，可通过串口或其他 kgdboc 通道暂停内核、设置断点、查看变量和单步执行。 目标内核启用 KGDB → kgdboc 配置传输通道 → 触发断点进入调试器 → 主机 GDB 连接 vmlinux → 断点、单步与检查状态 主机必须加载与目标完全匹配、包含调试符号的 vmlinux 。单步内核可能影响时...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-kgdb/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kGDB：远程单步调试 Linux 内核 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="kGDB 在目标内核中实现 GDB 远程调试协议，可通过串口或其他 kgdboc 通道暂停内核、设置断点、查看变量和单步执行。 目标内核启用 KGDB → kgdboc 配置传输通道 → 触发断点进入调试器 → 主机 GDB 连接 vmlinux → 断点、单步与检查状态 主机必须加载与目标完全匹配、包含调试符号的 vmlinux 。单步内核可能影响时...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-kgdb/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="kGDB：远程单步调试 Linux 内核">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="kGDB：远程单步调试 Linux 内核 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="kGDB 在目标内核中实现 GDB 远程调试协议，可通过串口或其他 kgdboc 通道暂停内核、设置断点、查看变量和单步执行。 目标内核启用 KGDB → kgdboc 配置传输通道 → 触发断点进入调试器 → 主机 GDB 连接 vmlinux → 断点、单步与检查状态 主机必须加载与目标完全匹配、包含调试符号的 vmlinux 。单步内核可能影响时...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

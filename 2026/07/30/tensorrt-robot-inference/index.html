@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>TensorRT 机器人推理：从训练模型到稳定延迟 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="训练模型在电脑上能跑，不代表它能在机器人上稳定地跑。TensorRT 会解析 ONNX 或其他模型表示，融合算子、选择 kernel 和内存布局，并针对目标 GPU 构建可执行的 engine。FP16 和 INT8 常能降低计算量与带宽，但机器人真正需要的是在持续输入、温度变化和其他节点抢资源时，仍能解释端到端延迟和漏检风险。 导出 ONNX 模型...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TensorRT 机器人推理：从训练模型到稳定延迟 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="训练模型在电脑上能跑，不代表它能在机器人上稳定地跑。TensorRT 会解析 ONNX 或其他模型表示，融合算子、选择 kernel 和内存布局，并针对目标 GPU 构建可执行的 engine。FP16 和 INT8 常能降低计算量与带宽，但机器人真正需要的是在持续输入、温度变化和其他节点抢资源时，仍能解释端到端延迟和漏检风险。 导出 ONNX 模型...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="TensorRT 机器人推理：从训练模型到稳定延迟">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TensorRT 机器人推理：从训练模型到稳定延迟 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="训练模型在电脑上能跑，不代表它能在机器人上稳定地跑。TensorRT 会解析 ONNX 或其他模型表示，融合算子、选择 kernel 和内存布局，并针对目标 GPU 构建可执行的 engine。FP16 和 INT8 常能降低计算量与带宽，但机器人真正需要的是在持续输入、温度变化和其他节点抢资源时，仍能解释端到端延迟和漏检风险。 导出 ONNX 模型...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>LVGL 渲染流程：脏区、绘制缓冲与显示刷新 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="LVGL 根据对象变化标记无效区域，布局与绘制阶段只重绘脏区到缓冲区，再调用显示驱动 flush。单缓冲省内存，双缓冲可与 DMA 并行刷新。 输入或动画改变对象 → 标记 invalid area → 布局与绘制到 buffer → flush_cb 交给 LCD/DMA → 通知刷新完成 性能优化关注缓冲大小、色深、合并脏区、图片格式和 DMA&amp;#...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/lvgl-rendering/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LVGL 渲染流程：脏区、绘制缓冲与显示刷新 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="LVGL 根据对象变化标记无效区域，布局与绘制阶段只重绘脏区到缓冲区，再调用显示驱动 flush。单缓冲省内存，双缓冲可与 DMA 并行刷新。 输入或动画改变对象 → 标记 invalid area → 布局与绘制到 buffer → flush_cb 交给 LCD/DMA → 通知刷新完成 性能优化关注缓冲大小、色深、合并脏区、图片格式和 DMA&amp;#...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/lvgl-rendering/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="LVGL 渲染流程：脏区、绘制缓冲与显示刷新">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="LVGL 渲染流程：脏区、绘制缓冲与显示刷新 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="LVGL 根据对象变化标记无效区域，布局与绘制阶段只重绘脏区到缓冲区，再调用显示驱动 flush。单缓冲省内存，双缓冲可与 DMA 并行刷新。 输入或动画改变对象 → 标记 invalid area → 布局与绘制到 buffer → flush_cb 交给 LCD/DMA → 通知刷新完成 性能优化关注缓冲大小、色深、合并脏区、图片格式和 DMA&amp;#...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 

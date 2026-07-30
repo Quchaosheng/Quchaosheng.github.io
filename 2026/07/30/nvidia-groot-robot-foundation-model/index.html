@@ -13,13 +13,34 @@
     <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
-
-
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="GR00T 代表视觉-语言-动作（VLA）模型进入机器人任务的一条路线：模型接收图像、语言、状态等多模态信息，输出任务步骤、动作候选或连续控制参考。它的价值在于把过去需要大量手工规则的泛化理解交给数据驱动模型；它的风险也很直接，模型输出会受训练分布、上下文、延迟和硬件状态影响，不能因为“看起来懂了”就越过安全边界直接驱动执行器。 接收视觉与语言指令 →...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="GR00T 代表视觉-语言-动作（VLA）模型进入机器人任务的一条路线：模型接收图像、语言、状态等多模态信息，输出任务步骤、动作候选或连续控制参考。它的价值在于把过去需要大量手工规则的泛化理解交给数据驱动模型；它的风险也很直接，模型输出会受训练分布、上下文、延迟和硬件状态影响，不能因为“看起来懂了”就越过安全边界直接驱动执行器。 接收视觉与语言指令 →...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="GR00T 代表视觉-语言-动作（VLA）模型进入机器人任务的一条路线：模型接收图像、语言、状态等多模态信息，输出任务步骤、动作候选或连续控制参考。它的价值在于把过去需要大量手工规则的泛化理解交给数据驱动模型；它的风险也很直接，模型输出会受训练分布、上下文、延迟和硬件状态影响，不能因为“看起来懂了”就越过安全边界直接驱动执行器。 接收视觉与语言指令 →...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
 
 
 
