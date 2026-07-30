@@ -104,7 +104,7 @@
                 
                 <a class="menu-item" href="/paths">路线</a>
                 
-                <a class="menu-item" href="/evidence">证据</a>
+                <a class="menu-item" href="/category">分类</a>
                 
                 <a class="menu-item" href="/archives">文章</a>
                 
@@ -137,7 +137,7 @@
                 
                 <a class="menu-item" href="/paths">路线</a>
                 
-                <a class="menu-item" href="/evidence">证据</a>
+                <a class="menu-item" href="/category">分类</a>
                 
                 <a class="menu-item" href="/archives">文章</a>
                 
@@ -169,9 +169,73 @@
     <header class="archive-intro">
         <div class="section-kicker">NOTE INDEX</div>
         <h1>文章归档</h1>
-        <p>按时间整理的技术笔记与实践记录。</p>
+        <p>先按方向找到要看的主题，也可以继续按日期查看全部笔记。</p>
     </header>
-    <div class="post-wrap archive">
+    <section class="archive-topic-section" aria-labelledby="archive-topics-title">
+        <div class="archive-topic-heading">
+            <div>
+                <div class="section-kicker">BROWSE BY TOPIC</div>
+                <h2 id="archive-topics-title">按主题找文章</h2>
+            </div>
+            <a class="archive-all-categories" href="/category/">全部分类 <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="archive-topic-grid">
+            <a class="archive-topic-card" href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">
+                <span class="archive-topic-kicker">01 · ROBOTICS</span>
+                <strong>AI 机器人</strong>
+                <span class="archive-topic-description">ROS 2、Jetson、Isaac ROS、GPU 推理与部署。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%86%85%E6%A0%B8/">
+                <span class="archive-topic-kicker">02 · KERNEL</span>
+                <strong>Linux 内核</strong>
+                <span class="archive-topic-description">调度、内存、进程、I/O 与内核机制。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">
+                <span class="archive-topic-kicker">03 · REALTIME</span>
+                <strong>Linux 实时</strong>
+                <span class="archive-topic-description">延迟、隔离、PREEMPT_RT、时钟与回归测试。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="/category/%E6%8A%80%E6%9C%AF/Linux%E7%BD%91%E7%BB%9C/">
+                <span class="archive-topic-kicker">04 · NETWORK</span>
+                <strong>Linux 网络</strong>
+                <span class="archive-topic-description">收发路径、TCP、UDP、XDP 与网络性能。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">
+                <span class="archive-topic-kicker">05 · EMBEDDED</span>
+                <strong>嵌入式</strong>
+                <span class="archive-topic-description">外设、协议、日志、可靠性与软件组织。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8FLinux/">
+                <span class="archive-topic-kicker">06 · PLATFORM</span>
+                <strong>嵌入式 Linux</strong>
+                <span class="archive-topic-description">设备树、驱动、启动、DMA 与 ARM64 平台。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="/category/%E6%8A%80%E6%9C%AF/RISC-V/">
+                <span class="archive-topic-kicker">07 · ARCHITECTURE</span>
+                <strong>RISC-V</strong>
+                <span class="archive-topic-description">启动、SBI、中断、SMP、虚拟化与低功耗。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="/category/%E6%8A%80%E6%9C%AF/C-C/">
+                <span class="archive-topic-kicker">08 · C AND C++</span>
+                <strong>C/C++</strong>
+                <span class="archive-topic-description">内存、线程、并发与调试基础。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+        </div>
+    </section>
+    <section class="archive-timeline" aria-labelledby="archive-timeline-title">
+        <div class="archive-timeline-heading">
+            <div class="section-kicker">ALL NOTES</div>
+            <h2 id="archive-timeline-title">按时间查看</h2>
+        </div>
+        <div class="post-wrap archive">
     
     
         
@@ -181,7 +245,20 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/embedded-bootloader-update/">嵌入式 Bootloader：安全升级与失败回滚</a>
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/embedded-bootloader-update/">嵌入式 Bootloader：安全升级与失败回滚</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>
+                            
+                        
+                    </div>
+                
+            </div>
             <span class="archive-item-date">2026-06-15</span>
         </article>
     
@@ -190,7 +267,20 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/embedded-unit-testing/">嵌入式单元测试：把硬件依赖隔离在边界之外</a>
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/embedded-unit-testing/">嵌入式单元测试：把硬件依赖隔离在边界之外</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>
+                            
+                        
+                    </div>
+                
+            </div>
             <span class="archive-item-date">2026-06-14</span>
         </article>
     
@@ -199,7 +289,20 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/mcu-shell/">MCU Shell：给嵌入式设备一个可诊断入口</a>
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/mcu-shell/">MCU Shell：给嵌入式设备一个可诊断入口</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>
+                            
+                        
+                    </div>
+                
+            </div>
             <span class="archive-item-date">2026-06-13</span>
         </article>
     
@@ -208,7 +311,20 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/embedded-flash-storage/">嵌入式 Flash 存储：擦写约束、掉电安全与磨损均衡</a>
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/embedded-flash-storage/">嵌入式 Flash 存储：擦写约束、掉电安全与磨损均衡</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>
+                            
+                        
+                    </div>
+                
+            </div>
             <span class="archive-item-date">2026-06-12</span>
         </article>
     
@@ -217,7 +333,20 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/cortex-m-fault-backtrace/">Cortex-M 故障回溯：从 HardFault 找到出错代码</a>
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/cortex-m-fault-backtrace/">Cortex-M 故障回溯：从 HardFault 找到出错代码</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>
+                            
+                        
+                    </div>
+                
+            </div>
             <span class="archive-item-date">2026-06-11</span>
         </article>
     
@@ -226,7 +355,20 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/embedded-logging/">嵌入式日志系统：在可观测性与实时性之间取舍</a>
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/embedded-logging/">嵌入式日志系统：在可观测性与实时性之间取舍</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>
+                            
+                        
+                    </div>
+                
+            </div>
             <span class="archive-item-date">2026-06-10</span>
         </article>
     
@@ -235,7 +377,20 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/embedded-event-state-machine/">事件驱动状态机：让裸机程序摆脱超级循环</a>
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/embedded-event-state-machine/">事件驱动状态机：让裸机程序摆脱超级循环</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>
+                            
+                        
+                    </div>
+                
+            </div>
             <span class="archive-item-date">2026-06-09</span>
         </article>
     
@@ -244,7 +399,20 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/embedded-rtos-selection/">嵌入式 RTOS 选型：不要只比较功能列表</a>
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/embedded-rtos-selection/">嵌入式 RTOS 选型：不要只比较功能列表</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>
+                            
+                        
+                    </div>
+                
+            </div>
             <span class="archive-item-date">2026-06-09</span>
         </article>
     
@@ -253,7 +421,20 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/linux-timekeeping/">Linux 时间管理：时钟源、时钟事件与定时器</a>
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/linux-timekeeping/">Linux 时间管理：时钟源、时钟事件与定时器</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%86%85%E6%A0%B8/">Linux内核</a>
+                            
+                        
+                    </div>
+                
+            </div>
             <span class="archive-item-date">2026-06-08</span>
         </article>
     
@@ -262,7 +443,20 @@
         
 
         <article class="archive-item">
-            <a class="archive-item-link" href="/2026/07/29/tcp-drop-tracing/">TCP 丢包追踪：用 kprobe 与 tracepoint 串起证据链</a>
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/tcp-drop-tracing/">TCP 丢包追踪：用 kprobe 与 tracepoint 串起证据链</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E7%BD%91%E7%BB%9C/">Linux网络</a>
+                            
+                        
+                    </div>
+                
+            </div>
             <span class="archive-item-date">2026-06-07</span>
         </article>
     
@@ -272,6 +466,8 @@
     </nav>
 
 </div>
+
+    </section>
 </div>
 
             </div>
