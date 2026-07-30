@@ -1,0 +1,53 @@
+name: Site CI
+
+on:
+  push:
+    branches:
+      - source
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test post dates
+        run: npm run test:post-dates
+
+      - name: Test batch publishing
+        run: bash tests/test-publish-batch.sh
+
+      - name: Build Hexo site
+        run: |
+          npm run clean
+          npm run build
+
+  windows-tools:
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test note synchronization
+        shell: powershell
+        run: >-
+          powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass
+          -File tests/test-sync-notes.ps1
