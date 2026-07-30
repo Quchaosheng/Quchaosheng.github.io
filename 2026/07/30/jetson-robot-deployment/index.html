@@ -146,6 +146,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -177,10 +242,32 @@
         </header>
 
         <div class="post-content">
-            <p>Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器集成在边缘平台上。JetPack 提供驱动、CUDA、TensorRT 和系统组件，适合在机器人本体完成视觉与 AI 推理，但 GPU 吞吐量不等于控制回路的最坏时延保证。</p>
+            <p>Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器集成在一块边缘板上。JetPack 将 Linux for Tegra、CUDA、TensorRT、cuDNN 和系统组件打包起来，使相机、视觉推理与 ROS 2 能在机器人本体运行。它很适合“看懂环境”和“生成任务”，但 GPU 的高吞吐量并不自动等于电机控制回路拥有可预测的最坏时延。</p>
 <div class="note-flow"><span>选择 JetPack 与功耗模式</span><i>→</i><span>部署模型和 ROS 2 节点</span><i>→</i><span>测量 CPU/GPU/内存负载</span><i>→</i><span>分离推理与实时控制</span><i>→</i><span>在温度稳定后复测长尾</span></div>
 
-<p>常见架构是 Jetson 负责感知、规划和任务编排，MCU 或独立实时线程负责电机闭环与急停。部署验收要覆盖降频、内存压力、相机丢帧和模型超时，而不只看平均 FPS。参考：<a target="_blank" rel="noopener" href="https://docs.nvidia.com/jetson/">NVIDIA Jetson Documentation</a></p>
+<h2 id="Jetson-上实际要争抢哪些资源"><a href="#Jetson-上实际要争抢哪些资源" class="headerlink" title="Jetson 上实际要争抢哪些资源"></a>Jetson 上实际要争抢哪些资源</h2><p>推理不只占 GPU。摄像头采集和图像颜色转换可能使用 ISP 或 VIC，视频解码会使用专用引擎，TensorRT 占 GPU 和显存带宽，ROS 2 节点、DDS 和驱动则会占用 CPU。多路相机加上大模型时，瓶颈往往从 GPU 算力变成内存带宽、CPU 回调排队或散热引起的降频。</p>
+<p>因此应同时观察以下维度，而不是只看 FPS：</p>
+<ul>
+<li><strong>模型侧</strong>：每帧推理延迟、GPU 利用率、显存占用、输入队列长度。</li>
+<li><strong>系统侧</strong>：CPU 核心利用率、RAM&#x2F;Swap、温度、频率变化和磁盘 I&#x2F;O。</li>
+<li><strong>机器人侧</strong>：图像从采集到被控制器使用的年龄、丢帧率、控制指令间隔。</li>
+</ul>
+<p>Jetson 系统通常可用下面的命令进行初步观测。实际字段会随型号和 JetPack 版本变化，但它们足以帮助你判断是“模型慢”还是“整机正在喘不过气”。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> nvpmodel -q          <span class="comment"># 查看当前功耗/性能模式</span></span><br><span class="line">tegrastats                <span class="comment"># 连续观察 CPU、GPU、内存、温度与频率</span></span><br><span class="line"><span class="built_in">sudo</span> jetson_clocks --show <span class="comment"># 查看可锁定的时钟状态</span></span><br></pre></td></tr></table></figure>
+
+<p><code>jetson_clocks</code> 很适合做可重复的性能测试，但在产品上长期强制最高频率会带来功耗、温升和续航成本。正确顺序是先测清热稳定后的长尾，再决定是否改变功耗模式、风扇策略或模型规模。</p>
+<h2 id="一个更稳妥的职责划分"><a href="#一个更稳妥的职责划分" class="headerlink" title="一个更稳妥的职责划分"></a>一个更稳妥的职责划分</h2><p>常见结构是 Jetson 运行相机、感知、地图、规划与 ROS 2 Action；一个 MCU、专用驱动器或独立实时线程负责编码器读取、电流环、速度环、限位与急停。两者之间只交换有限的、高层的命令和反馈，例如 <code>cmd_vel</code>、目标轨迹、状态字与故障码。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Jetson: camera -&gt; TensorRT -&gt; perception -&gt; planner -&gt; bounded velocity command</span><br><span class="line">MCU/RT controller: watchdog -&gt; limit check -&gt; motor loop -&gt; encoder feedback</span><br><span class="line">Safety path: emergency stop -&gt; power/driver inhibit, independent of GPU process</span><br></pre></td></tr></table></figure>
+
+<p>不要让推理进程直接写 PWM，也不要把急停实现成一个普通 ROS topic。前者把不确定的 GPU 负载带进控制环，后者会在网络、进程或 DDS 出问题时失效。</p>
+<h2 id="部署前后的检查顺序"><a href="#部署前后的检查顺序" class="headerlink" title="部署前后的检查顺序"></a>部署前后的检查顺序</h2><ol>
+<li>固定 JetPack、CUDA、TensorRT 和模型版本，记录设备型号及功耗模式。</li>
+<li>先跑单相机、单模型的冷启动与热稳定测试，再逐个加入相机、规划和录包负载。</li>
+<li>用 <code>tegrastats</code> 与 ROS 2 时间戳一起记录，观察 P95&#x2F;P99，而不是只看平均 FPS。</li>
+<li>施加内存压力、拔插相机、降低照度、制造模型超时，验证控制器是否按预期降级。</li>
+</ol>
+<p>只有在这些情况下仍能解释清楚系统行为，Jetson 才算从“能跑 demo”进入“能放在机器人上”。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.nvidia.com/jetson/">NVIDIA Jetson Documentation</a> · <a target="_blank" rel="noopener" href="https://docs.nvidia.com/jetson/archives/">Jetson Linux Developer Guide</a></p>
 
         </div>
 
