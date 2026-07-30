@@ -146,6 +146,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -177,10 +242,20 @@
         </header>
 
         <div class="post-content">
-            <p>传统定时器受内核节拍粒度限制，<code>hrtimer</code> 则用红黑树按到期时间排序，并由高精度 clock event 设备安排下一次中断。它让纳秒级接口具备更细的触发粒度，但最终唤醒时间仍会受到中断关闭、调度竞争和硬件计时器精度影响。</p>
+            <p>一个周期任务若每 1 ms 运行一次，最直观的写法是“睡 1 ms，再做一次工作”。但如果每轮工作多花了 80 微秒，下一轮又从当前时刻开始睡，误差会不断累积，最终周期已经悄悄漂移。Linux 的高精度定时器（hrtimer）配合硬件 clock event，可以把到期时刻表达为绝对时间，并按下一次最近到期事件编程硬件定时器。它解决的是“什么时候该触发”，不是“触发后什么时候一定能拿到 CPU”。</p>
 <div class="note-flow"><span>任务设置到期时间</span><i>→</i><span>hrtimer 入队排序</span><i>→</i><span>编程 clock event</span><i>→</i><span>定时中断触发回调</span><i>→</i><span>唤醒任务并参与调度</span></div>
 
-<p>实时程序应使用单调时钟和绝对时间周期，避免处理耗时不断累积为漂移。高精度定时器解决的是“何时到期”，不能单独保证“何时得到 CPU”。参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/timers/highres.html">High resolution timers and dynamic ticks</a></p>
+<h2 id="clocksource、clockevent-与-hrtimer-各管什么"><a href="#clocksource、clockevent-与-hrtimer-各管什么" class="headerlink" title="clocksource、clockevent 与 hrtimer 各管什么"></a>clocksource、clockevent 与 hrtimer 各管什么</h2><p>这三个名词很容易混。<strong>clocksource</strong> 是“现在几点”的高质量计时来源，例如 TSC 或架构计数器；<strong>clockevent</strong> 是“到某个时刻叫醒我”的硬件事件设备；<strong>hrtimer</strong> 则是内核把多个高精度定时请求排队、选择最近到期项的通用机制。用户态的 <code>clock_nanosleep</code>、POSIX timer 等接口最终会依赖这条路径。</p>
+<div class="note-map"><span><b>clocksource</b><small>读取当前时间，要求单调、稳定且精度足够</small></span><span><b>clockevent</b><small>为下一次到期事件编程中断，负责“叫醒”</small></span><span><b>hrtimer</b><small>按到期时间管理软件定时器，选择最近 deadline</small></span><span><b>定时器到期</b><small>只说明回调/唤醒可以发生，尚未保证线程运行</small></span><span><b>调度器</b><small>决定被唤醒的线程何时真的占用 CPU</small></span><span><b>干扰来源</b><small>IRQ、不可抢占区、锁、CPU 频率和固件都会拉长后半段</small></span></div>
+
+<p>高精度不等于无限精度。硬件定时器有分辨率和编程成本，内核还会受中断屏蔽、CPU 深度休眠与虚拟化影响。对实时工程而言，最重要的是将“定时器到期延迟”和“线程调度延迟”分开测量。</p>
+<h2 id="为什么周期任务应使用绝对时间"><a href="#为什么周期任务应使用绝对时间" class="headerlink" title="为什么周期任务应使用绝对时间"></a>为什么周期任务应使用绝对时间</h2><p>相对睡眠将本轮计算时间累加进下一轮周期；绝对睡眠则始终追赶同一条时间轴。用户态通常可用 <code>CLOCK_MONOTONIC</code> 和 <code>TIMER_ABSTIME</code> 实现，避免被系统时间校正影响。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">timespec</span> <span class="title">next</span> =</span> now_monotonic();</span><br><span class="line"><span class="type">const</span> <span class="type">long</span> period_ns = <span class="number">1000000</span>;  <span class="comment">// 1 ms</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (;;) &#123;</span><br><span class="line">    add_ns(&amp;next, period_ns);</span><br><span class="line">    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &amp;next, <span class="literal">NULL</span>);</span><br><span class="line">    run_control_step();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>实际代码还要定义“错过一个周期怎么办”：连续超时后是跳过过期周期、连续补算，还是进入安全状态？不同控制系统的正确答案并不相同，但不能默认悄悄累积延迟。</p>
+<h2 id="如何把问题定位到正确一段"><a href="#如何把问题定位到正确一段" class="headerlink" title="如何把问题定位到正确一段"></a>如何把问题定位到正确一段</h2><p><code>cyclictest</code> 适合量整体唤醒偏差；<code>rtla timerlat</code> 能进一步区分定时器&#x2F;IRQ 延迟和线程延迟。如果定时器按时触发、线程却迟迟不运行，应检查调度、IRQ 亲和性和 CPU 隔离；如果定时器本身就晚，则关注 clockevent、深度 idle、固件或平台时间源。</p>
+<p>建立基线时，固定时钟源、CPU 亲和性、功耗模式和测试时长。不要用 <code>sleep()</code> 的平均时间推断实时能力，也不要把一个纳秒级 API 名称误解成整个系统具有纳秒级 deadline 保证。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/timers/highres.html">High resolution timers and dynamic ticks</a> · <a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/clock_nanosleep.2.html">clock_nanosleep(2)</a></p>
 
         </div>
 

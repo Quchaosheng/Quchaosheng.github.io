@@ -146,6 +146,71 @@
                 <div class="container">
     
     
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
 
     
     <article class="post-wrap">
@@ -177,10 +242,26 @@
         </header>
 
         <div class="post-content">
-            <p><code>SCHED_DEADLINE</code> 用 runtime、deadline、period 描述任务需求，调度时优先选择绝对截止期最早的任务。内核通过 CBS 控制任务在每个周期内的运行预算，避免某个任务超量执行破坏其他任务的时间保证。</p>
+            <p>当一个任务可以明确说出“我每 10 ms 来一次、最坏需要 1 ms CPU、最晚 8 ms 必须完成”时，<code>SCHED_DEADLINE</code> 往往比手工安排一堆 FIFO 优先级更贴近问题本身。它采用最早截止期优先（EDF）选择任务，并使用 Constant Bandwidth Server（CBS）为每个任务分配运行预算。这样某个任务突然超量执行时，不会无休止侵占其他 deadline 任务的带宽。</p>
 <div class="note-flow"><span>声明 runtime/deadline/period</span><i>→</i><span>内核执行准入检查</span><i>→</i><span>按最早截止期运行</span><i>→</i><span>消耗完预算后节流</span><i>→</i><span>下周期补充并重排</span></div>
 
-<p>参数必须来自最坏执行时间测量，并为中断、共享锁和系统噪声留出余量。准入成功只说明带宽模型可行，不等于任务在真实硬件上必然按期完成。参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/scheduler/sched-deadline.html">Deadline Task Scheduling</a></p>
+<h2 id="三个参数不是同一个“时间”"><a href="#三个参数不是同一个“时间”" class="headerlink" title="三个参数不是同一个“时间”"></a>三个参数不是同一个“时间”</h2><p><code>runtime</code> 是一个周期内任务最多可获得的 CPU 执行时间；<code>deadline</code> 是本次作业相对激活时刻的完成期限；<code>period</code> 是下一次预算补充&#x2F;新作业到来的周期。典型约束为 <code>runtime &lt;= deadline &lt;= period</code>。例如 <code>runtime=1 ms, deadline=8 ms, period=10 ms</code> 描述的不是“线程每次只能跑 1 ms”，而是一个有带宽和完成期限的周期模型。</p>
+<div class="note-map"><span><b>runtime</b><small>每个 period 中可消耗的 CPU 预算，来自最坏执行时间估计</small></span><span><b>deadline</b><small>这次作业应完成的相对期限，影响 EDF 排序</small></span><span><b>period</b><small>预算与作业的周期，决定长期 CPU 带宽</small></span><span><b>带宽占比</b><small>可先粗略估算为 runtime / period</small></span><span><b>CBS 节流</b><small>任务耗尽预算后等待补充，保护其他任务</small></span><span><b>准入控制</b><small>内核拒绝明显超卖的 deadline 任务组合</small></span></div>
+
+<p>以这个例子而言，单任务的理论带宽需求是 <code>1 / 10 = 10%</code> 的一个 CPU。多任务合计不能把 CPU 买空，还要给 IRQ、内核工作、缓存抖动和业务恢复路径留余量。准入成功说明内核带宽模型没有明显冲突，不说明真实硬件上的锁、DMA 或内存访问一定能在 deadline 内完成。</p>
+<h2 id="CBS-如何避免一个任务拖垮全局"><a href="#CBS-如何避免一个任务拖垮全局" class="headerlink" title="CBS 如何避免一个任务拖垮全局"></a>CBS 如何避免一个任务拖垮全局</h2><p>若 deadline 任务超出 <code>runtime</code>，CBS 会让它暂时没有预算，避免它一直抢占其他早截止期作业。这个机制对系统稳定很重要，但如果你没有把“预算耗尽”纳入业务状态机，就会看到任务突然延迟却不知道原因。因此应同时记录每轮实际执行时间、deadline miss 和预算耗尽事件。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">任务激活 -&gt; 分配本轮 deadline 与预算 -&gt; EDF 运行</span><br><span class="line">       -&gt; 正常完成：等待下一个 period</span><br><span class="line">       -&gt; 超出 runtime：CBS 节流 -&gt; 等待预算补充/重新排期</span><br></pre></td></tr></table></figure>
+
+<p>不要通过把 runtime 填得很大来躲开节流；那只是把风险转移给其他任务。真正应优化的是算法最坏执行时间、输入规模、锁、CPU 布局和优先级关系。</p>
+<h2 id="使用前要回答的工程问题"><a href="#使用前要回答的工程问题" class="headerlink" title="使用前要回答的工程问题"></a>使用前要回答的工程问题</h2><ol>
+<li>任务的最坏执行时间来自真实测量，还是一次空载平均值？</li>
+<li>deadline 是业务可接受的完成时间，还是随手填成等于 period？</li>
+<li>任务阻塞在锁、I&#x2F;O 或 GPU 上时，谁负责取消或降级？</li>
+<li>任务在哪个 CPU 运行，该 CPU 的 IRQ&#x2F;RCU&#x2F;频率噪声是否已处理？</li>
+<li>发生 deadline miss 后，机器人&#x2F;设备会继续使用过期结果，还是切换到安全动作？</li>
+</ol>
+<p><code>SCHED_DEADLINE</code> 很强，但它要求你对任务模型更诚实。参数越能反映真实资源需求，系统的可分析性就越高。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/scheduler/sched-deadline.html">Deadline Task Scheduling</a> · <a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/sched.7.html">sched(7)</a></p>
 
         </div>
 
