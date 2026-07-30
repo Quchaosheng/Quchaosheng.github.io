@@ -242,19 +242,16 @@
         </header>
 
         <div class="post-content">
-            <p>SPI 是时钟同步、全双工的串行总线，但它不定义统一的寄存器协议、设备发现方式或数据帧格式。Linux SPI 子系统因此将两类职责拆开：控制器驱动管理 SoC 的时钟、FIFO、DMA、片选和中断；协议驱动理解某颗传感器、Flash 或 ADC 的命令、寄存器和数据格式。设备树或其他固件描述负责告诉内核“哪条总线上挂着哪颗设备”。</p>
+            <p>Linux SPI 子系统把硬件控制器与具体外设驱动分开。控制器驱动负责时钟、FIFO、DMA 和片选，协议驱动只描述外设需要怎样组织消息与解析数据。</p>
+<h2 id="一次传输"><a href="#一次传输" class="headerlink" title="一次传输"></a>一次传输</h2><p>设备树创建 <code>spi_device</code>，匹配到 <code>spi_driver</code> 后执行 probe。协议驱动构造一个或多个 <code>spi_transfer</code>，组合成 <code>spi_message</code> 提交给控制器。</p>
 <div class="note-flow"><span>设备树描述外设</span><i>→</i><span>总线匹配并 probe</span><i>→</i><span>构造 transfer/message</span><i>→</i><span>控制器驱动执行</span><i>→</i><span>中断或 DMA 完成</span></div>
 
-<h2 id="三层对象如何配合"><a href="#三层对象如何配合" class="headerlink" title="三层对象如何配合"></a>三层对象如何配合</h2><p><code>spi_controller</code> 对应硬件控制器；设备树节点创建 <code>spi_device</code>，其中包含 chip select、mode、最大频率等板级信息；<code>spi_driver</code> 通过 <code>of_match_table</code> 匹配并在 probe 中初始化具体器件。协议驱动将一个或多个 <code>spi_transfer</code> 组合为 <code>spi_message</code>，同步提交或异步提交给 controller。</p>
-<div class="note-map"><span><b>spi_controller</b><small>SoC 硬件驱动，负责 FIFO、DMA、时钟、CS 与传输完成</small></span><span><b>spi_device</b><small>总线上的具体外设，来自 DT/ACPI/board info</small></span><span><b>spi_driver</b><small>理解器件命令和寄存器协议，负责 probe/状态机</small></span><span><b>spi_transfer</b><small>一次全双工数据段，包含 tx/rx buffer、长度、速度等</small></span><span><b>spi_message</b><small>多个 transfer 组成一个原子事务，可控制片选保持</small></span><span><b>完成方式</b><small>同步调用便于简单路径；异步调用适合不阻塞上下文</small></span></div>
-
-<h2 id="SPI-mode-和片选边界不能靠猜"><a href="#SPI-mode-和片选边界不能靠猜" class="headerlink" title="SPI mode 和片选边界不能靠猜"></a>SPI mode 和片选边界不能靠猜</h2><p>CPOL&#x2F;CPHA 决定时钟空闲电平与采样边沿，设备树 <code>spi-cpol</code>、<code>spi-cpha</code>&#x2F;mode 配错时，逻辑分析仪上可能“有波形”却数据全错。频率、bits-per-word、bit order、CS 极性和 transfer 间 CS 是否保持，也都由器件 datasheet 决定。多段读寄存器事务常要求“命令和数据之间 CS 不能释放”。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">spi_transfer</span> <span class="title">xfers</span>[] =</span> &#123;</span><br><span class="line">    &#123; .tx_buf = &amp;cmd, .len = <span class="number">1</span> &#125;,</span><br><span class="line">    &#123; .rx_buf = data, .len = data_len &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">/* 将 xfers 加入同一 spi_message 后提交，维持设备事务边界 */</span></span><br></pre></td></tr></table></figure>
-
-<p>控制器是否能在相邻 transfer 间保持 CS、是否改用 DMA、最小&#x2F;最大传输长度，都应查 controller capability 和实际硬件波形。</p>
-<h2 id="驱动调试从外到内"><a href="#驱动调试从外到内" class="headerlink" title="驱动调试从外到内"></a>驱动调试从外到内</h2><p>先确认运行时设备树节点、<code>compatible</code>、chip select、频率和 pinctrl；再确认 controller 已 probe、时钟&#x2F;复位&#x2F;供电资源可用；随后在 protocol driver probe 中读取一个稳定的识别寄存器；最后用逻辑分析仪检查 CS、SCLK、MOSI&#x2F;MISO、mode 和帧长度。不要一开始就怀疑“SPI 子系统有 bug”。</p>
-<p><code>spidev</code> 很适合 bring-up 和产测工具，但不是绕开正式协议驱动的长期替代品。内核需要知道设备的电源管理、并发、错误恢复和系统 suspend&#x2F;resume 语义，才能让硬件稳定地融入系统。</p>
-<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/spi/spi-summary.html">SPI subsystem</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/spi/spidev.html">SPI userspace API</a></p>
+<h2 id="记忆要点"><a href="#记忆要点" class="headerlink" title="记忆要点"></a>记忆要点</h2><ul>
+<li>SPI 是全双工时钟同步总线，没有统一的上层寄存器协议。</li>
+<li>mode 决定 CPOL&#x2F;CPHA，频率和 bits-per-word 也必须匹配器件。</li>
+<li>多段 transfer 可控制片选是否保持，避免破坏器件事务边界。</li>
+</ul>
+<p>参考：<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247495151&idx=1&sn=ba206a324d615ef3bd6eafdca8c558bc">不懂 Linux SPI 驱动，看完这篇就明白了</a></p>
 
         </div>
 
