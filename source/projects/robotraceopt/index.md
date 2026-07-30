@@ -11,8 +11,6 @@ cover: /image/projects/robotraceopt.png
   <p>RoboTraceOpt 用来查 ROS 2 机器人里的超时、抖动和 CAN ACK 问题。它把应用事件、ROS 2 trace、Linux 调度记录和 CAN ACK 的时间放到一起，方便看问题发生在哪一层。</p>
 </div>
 
-<figure class="project-hero-image"><img src="/image/projects/robotraceopt.png" alt="RoboTraceOpt GitHub 项目预览图"></figure>
-
 <div class="project-facts">
   <div><span>目标环境</span><strong>Ubuntu 22.04 · ROS 2 Humble</strong></div>
   <div><span>运行时信号</span><strong>RuntimeEvent · tracing · eBPF · CAN</strong></div>
@@ -57,8 +55,6 @@ python3 -m unittest discover -s tests -q
 - 代码里有 RuntimeEvent v2 插桩、`ros2_tracing`、eBPF 调度记录、SocketCAN/vcan ACK 适配、关联和配置搜索逻辑。
 - WSL dry-run、RuntimeEvent-only 和 vcan 可以检查链路和协议，不能用来说明正式调度归因或物理 CAN。
 - 要下正式结论，还要有原生 Linux 或 X5 测试、环境报告和完整的输出文件。
-
-测试情况会更新在[证据日志](/evidence/)。
 
 ## 真机测试还缺什么
 

@@ -44,4 +44,4 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 接上执行器后，还要单独测试安全链路和闭环反馈。
 
-**链接：** [GitHub 源码与运行说明](https://github.com/Quchaosheng/embodied-agent-runtime) · [证据日志](/evidence/) · [项目总览](/projects/)
+**链接：** [GitHub 源码与运行说明](https://github.com/Quchaosheng/embodied-agent-runtime) · [项目总览](/projects/)

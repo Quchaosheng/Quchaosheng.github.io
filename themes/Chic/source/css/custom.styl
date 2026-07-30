@@ -139,7 +139,7 @@
     margin 0 0 .85rem
     line-height 1.65
 
-.evidence-tag
+.project-status
   color #087f5b
   font-size .8em
   font-weight bold
@@ -343,8 +343,83 @@
     margin 0
     color $light-font-secondary-color
 
+.archive-topic-section
+  margin 2.4rem auto 3rem
+
+.archive-topic-heading
+  display flex
+  align-items end
+  justify-content space-between
+  gap 1.5rem
+  margin-bottom 1rem
+  h2
+    margin .3rem 0 0
+    font-size 1.35em
+    font-weight normal
+    letter-spacing 0
+
+.archive-all-categories
+  flex-shrink 0
+  padding-bottom .14rem
+  border-bottom 1px solid currentColor
+  font-size .88em
+
+.archive-topic-grid
+  display grid
+  grid-template-columns repeat(4, minmax(0, 1fr))
+  gap .75rem
+
+.archive-topic-card
+  display flex
+  min-height 9.75rem
+  box-sizing border-box
+  flex-direction column
+  align-items flex-start
+  padding 1rem
+  border 1px solid rgba(102,112,133,.24)
+  border-top 3px solid #78a58d
+  border-radius 6px
+  background rgba(255,255,255,.58)
+  color $light-font-color
+  text-decoration none
+  transition border-color .2s ease, transform .2s ease
+  &:hover
+    border-color #5c8d71
+    color $light-global-link-color
+    transform translateY(-2px)
+  strong
+    margin .55rem 0 .45rem
+    font-size 1.05em
+    font-weight normal
+    letter-spacing 0
+
+.archive-topic-kicker
+  color #087f5b
+  font-size .66em
+  font-weight bold
+  letter-spacing .08em
+
+.archive-topic-description
+  color $light-font-secondary-color
+  font-size .82em
+  line-height 1.55
+
+.archive-topic-arrow
+  margin-top auto
+  padding-top .45rem
+  color #5c8d71
+  font-size .95em
+
+.archive-timeline-heading
+  margin-bottom .35rem
+  h2
+    margin .3rem 0 0
+    font-size 1.35em
+    font-weight normal
+    letter-spacing 0
+
 .archive
-  padding-top 1rem
+  padding-top .45rem
   h3
     margin 1.8rem 0 .5rem
     color #5c8d71
@@ -359,10 +434,22 @@
     margin-left 0
     padding .7rem 0
     border-bottom 1px solid rgba(232,232,232,.7)
-  .archive-item-link
+  .archive-item-main
+    min-width 0
     flex 1
+  .archive-item-link
+    display inline-block
     white-space normal
     line-height 1.55
+  .archive-item-categories
+    display flex
+    flex-wrap wrap
+    gap .25rem .55rem
+    margin-top .26rem
+    a
+      color #5c8d71
+      font-size .72em
+      line-height 1.4
   .archive-item-date
     flex-shrink 0
     float none
@@ -505,6 +592,20 @@
     border-color rgba(144,145,150,.35)
   .archive h3
     color #91c3a5
+  .archive-topic-card
+    border-color rgba(145,195,165,.3)
+    border-top-color #91c3a5
+    background rgba(255,255,255,.035)
+    color $dark-font-color
+    &:hover
+      border-color #91c3a5
+      color $dark-global-link-color
+  .archive-topic-kicker,
+  .archive-topic-arrow,
+  .archive-item-categories a
+    color #91c3a5
+  .archive-topic-description
+    color $dark-font-secondary-color
   .post-wrap.page .post-title
     border-color $dark-border-color
   .tag-cloud-tags a
@@ -517,6 +618,21 @@
     padding-top 1.5rem
     h1
       font-size 1.8em
+  .archive-topic-section
+    margin 1.8rem auto 2.4rem
+  .archive-topic-heading
+    display block
+    .archive-all-categories
+      display inline-block
+      margin-top .75rem
+  .archive-topic-grid
+    grid-template-columns 1fr
+    gap .65rem
+  .archive-topic-card
+    min-height 0
+    padding .95rem 1rem
+  .archive-topic-arrow
+    display none
   .archive .archive-item
     display block
     padding .75rem 0
@@ -771,7 +887,7 @@
   flex-wrap wrap
   gap .85rem
 
-// Project, evidence, and reading surfaces share compact, inspectable layouts.
+// Project and reading surfaces share compact, inspectable layouts.
 .page-lead
   margin 0 0 2rem
   padding 1.2rem 0 1.35rem

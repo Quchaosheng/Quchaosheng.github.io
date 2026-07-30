@@ -2,7 +2,72 @@
     <header class="archive-intro">
         <div class="section-kicker">NOTE INDEX</div>
         <h1>文章归档</h1>
-        <p>按时间整理的技术笔记与实践记录。</p>
+        <p>先按方向找到要看的主题，也可以继续按日期查看全部笔记。</p>
     </header>
-    <%- partial('_page/archive', {pagination: config.archive, index: true}) %>
+    <section class="archive-topic-section" aria-labelledby="archive-topics-title">
+        <div class="archive-topic-heading">
+            <div>
+                <div class="section-kicker">BROWSE BY TOPIC</div>
+                <h2 id="archive-topics-title">按主题找文章</h2>
+            </div>
+            <a class="archive-all-categories" href="<%- url_for('/category/') %>">全部分类 <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="archive-topic-grid">
+            <a class="archive-topic-card" href="<%- url_for('/category/技术/AI机器人/') %>">
+                <span class="archive-topic-kicker">01 · ROBOTICS</span>
+                <strong>AI 机器人</strong>
+                <span class="archive-topic-description">ROS 2、Jetson、Isaac ROS、GPU 推理与部署。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="<%- url_for('/category/技术/Linux内核/') %>">
+                <span class="archive-topic-kicker">02 · KERNEL</span>
+                <strong>Linux 内核</strong>
+                <span class="archive-topic-description">调度、内存、进程、I/O 与内核机制。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="<%- url_for('/category/技术/Linux实时/') %>">
+                <span class="archive-topic-kicker">03 · REALTIME</span>
+                <strong>Linux 实时</strong>
+                <span class="archive-topic-description">延迟、隔离、PREEMPT_RT、时钟与回归测试。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="<%- url_for('/category/技术/Linux网络/') %>">
+                <span class="archive-topic-kicker">04 · NETWORK</span>
+                <strong>Linux 网络</strong>
+                <span class="archive-topic-description">收发路径、TCP、UDP、XDP 与网络性能。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="<%- url_for('/category/技术/嵌入式/') %>">
+                <span class="archive-topic-kicker">05 · EMBEDDED</span>
+                <strong>嵌入式</strong>
+                <span class="archive-topic-description">外设、协议、日志、可靠性与软件组织。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="<%- url_for('/category/技术/嵌入式Linux/') %>">
+                <span class="archive-topic-kicker">06 · PLATFORM</span>
+                <strong>嵌入式 Linux</strong>
+                <span class="archive-topic-description">设备树、驱动、启动、DMA 与 ARM64 平台。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="<%- url_for('/category/技术/RISC-V/') %>">
+                <span class="archive-topic-kicker">07 · ARCHITECTURE</span>
+                <strong>RISC-V</strong>
+                <span class="archive-topic-description">启动、SBI、中断、SMP、虚拟化与低功耗。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="archive-topic-card" href="<%- url_for('/category/技术/C-C/') %>">
+                <span class="archive-topic-kicker">08 · C AND C++</span>
+                <strong>C/C++</strong>
+                <span class="archive-topic-description">内存、线程、并发与调试基础。</span>
+                <span class="archive-topic-arrow" aria-hidden="true">→</span>
+            </a>
+        </div>
+    </section>
+    <section class="archive-timeline" aria-labelledby="archive-timeline-title">
+        <div class="archive-timeline-heading">
+            <div class="section-kicker">ALL NOTES</div>
+            <h2 id="archive-timeline-title">按时间查看</h2>
+        </div>
+        <%- partial('_page/archive', {pagination: config.archive, index: true}) %>
+    </section>
 </div>

@@ -42,4 +42,4 @@ ros2 service call /demo2/start_docking std_srvs/srv/Trigger "{}"
 
 上真机前，先分别测相机内外参、地面摩擦、停靠误差、传感器失效和独立安全停止。
 
-**链接：** [GitHub 源码、视频与测试](https://github.com/Quchaosheng/ros2-apriltag-docking-demo) · [证据日志](/evidence/)
+**链接：** [GitHub 源码、视频与测试](https://github.com/Quchaosheng/ros2-apriltag-docking-demo)

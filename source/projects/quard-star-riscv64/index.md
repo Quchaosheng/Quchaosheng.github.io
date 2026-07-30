@@ -46,4 +46,4 @@ make m8-smoke
 
 它适合用来学习系统结构和 QEMU 测试，不是对真实 RISC-V 硬件的性能或安全认证。
 
-**链接：** [GitHub 源码、测试输出与文档](https://github.com/Quchaosheng/quard-star-riscv64-net) · [证据日志](/evidence/)
+**链接：** [GitHub 源码、测试输出与文档](https://github.com/Quchaosheng/quard-star-riscv64-net)

@@ -42,4 +42,4 @@ ros2 launch vcan_diffbot_demo demo.launch.py
 
 接真实 CAN 前，先分别检查线缆、终端电阻、bitrate、控制器协议和无负载安全动作，再谈运动能力。
 
-**链接：** [GitHub 源码与演示](https://github.com/Quchaosheng/ros2-control-vcan-motor-demo) · [证据日志](/evidence/)
+**链接：** [GitHub 源码与演示](https://github.com/Quchaosheng/ros2-control-vcan-motor-demo)
