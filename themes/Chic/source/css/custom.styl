@@ -114,6 +114,35 @@
   border-bottom 1px solid currentColor
   font-size .95em
 
+.now-card
+  margin-top 2rem
+  padding-top 1.15rem
+  border-top 1px solid $light-border-color
+  h2
+    margin .28rem 0 .45rem
+    font-size 1.08em
+    font-weight normal
+  p
+    margin 0
+    color $light-font-secondary-color
+    line-height 1.7
+  strong
+    color #087f5b
+
+.now-links,
+.project-links
+  display flex
+  flex-wrap wrap
+  gap .9rem
+  margin-top .85rem
+  a
+    padding-bottom .12rem
+    border-bottom 1px solid currentColor
+    font-size .88em
+
+.project-links
+  margin-top 0
+
 .recent-notes
   padding 1.8rem 2rem 1.5rem
   border-left 3px solid #78a58d
@@ -151,8 +180,12 @@
     color $dark-font-secondary-color
   .recent-notes
     background rgba(255,255,255,.035)
-  .intro .description, .recent-note time
+  .intro .description, .now-card p, .recent-note time
     color $dark-font-secondary-color
+  .now-card
+    border-color $dark-border-color
+  .now-card strong
+    color #91c3a5
   .section-kicker
     color #91c3a5
 
@@ -191,6 +224,8 @@
     time
       display block
       margin-top .25rem
+  .now-card
+    text-align left
 
 // Reading surfaces: give secondary pages the same hierarchy as the homepage.
 .archive-page
@@ -637,6 +672,231 @@
   display flex
   flex-wrap wrap
   gap .85rem
+
+// Project, evidence, and reading surfaces share compact, inspectable layouts.
+.page-lead
+  margin 0 0 2rem
+  padding 1.2rem 0 1.35rem
+  border-bottom 1px solid $light-border-color
+  > p:last-child
+    max-width 48em
+    margin-bottom 0
+    color $light-font-secondary-color
+    line-height 1.8
+
+.project-hero-image
+  margin 1.35rem 0 1.5rem
+  overflow hidden
+  border 1px solid rgba(102,112,133,.24)
+  border-radius 8px
+  background #fff
+  img
+    display block
+    width 100%
+    height auto
+
+.project-facts
+  display grid
+  grid-template-columns repeat(3, minmax(0, 1fr))
+  gap .8rem
+  margin 1.3rem 0 2rem
+  > div
+    min-height 4.7rem
+    box-sizing border-box
+    padding .85rem .9rem
+    border-top 3px solid #78a58d
+    background rgba(255,255,255,.58)
+  span
+    display block
+    margin-bottom .35rem
+    color #5c8d71
+    font-size .75em
+    font-weight bold
+    letter-spacing .08em
+  strong
+    display block
+    font-size .92em
+    line-height 1.5
+
+.evidence-legend
+  display flex
+  flex-wrap wrap
+  gap .55rem
+  margin 0 0 1.5rem
+
+.status-badge
+  display inline-block
+  padding .18rem .45rem
+  border 1px solid currentColor
+  border-radius 3px
+  font-size .76em
+  line-height 1.35
+
+.status-implementation
+  color #087f5b
+
+.status-proxy
+  color #9c6a00
+
+.status-physical
+  color #225aa0
+
+.status-pending
+  color #7b4c9e
+
+.evidence-table-wrap
+  margin 1.4rem 0 2rem
+  overflow-x auto
+
+.evidence-table
+  width 100%
+  min-width 690px
+  border-collapse collapse
+  font-size .9em
+  th,
+  td
+    padding .8rem .75rem
+    border-bottom 1px solid $light-border-color
+    vertical-align top
+    line-height 1.6
+    text-align left
+  th
+    color #5c8d71
+    font-size .8em
+    font-weight bold
+    letter-spacing .06em
+  .status-badge + .status-badge
+    margin-top .35rem
+
+.learning-path
+  margin 0 0 2.4rem
+  padding 1.8rem 0 0
+  border-top 3px solid #78a58d
+  h2
+    margin .35rem 0 .5rem
+    font-size 1.55em
+    letter-spacing 0
+
+.path-summary
+  max-width 48em
+  margin 0 0 1.2rem
+  color $light-font-secondary-color
+  line-height 1.75
+
+.path-steps
+  margin 1.45rem 0 0
+  padding 0
+  list-style none
+  counter-reset path-step
+  li
+    display grid
+    grid-template-columns 2.2rem minmax(0, 1fr)
+    column-gap .6rem
+    padding .85rem 0
+    border-top 1px solid $light-border-color
+    counter-increment path-step
+    &:before
+      content counter(path-step, decimal-leading-zero)
+      color #5c8d71
+      font-size .8em
+      font-weight bold
+      line-height 1.7
+    a
+      grid-column 2
+      padding-bottom .08rem
+      line-height 1.55
+    span
+      grid-column 2
+      margin-top .24rem
+      color $light-font-secondary-color
+      font-size .88em
+      line-height 1.65
+
+.resource-list
+  margin 1.65rem 0 2rem
+
+.resource-item
+  padding 1.35rem 0
+  border-top 1px solid $light-border-color
+  &:last-child
+    border-bottom 1px solid $light-border-color
+  h3
+    margin .35rem 0 .55rem
+    font-size 1.22em
+    letter-spacing 0
+  > p:not(.section-kicker):not(.resource-links)
+    max-width 48em
+    margin .25rem 0 .7rem
+    color $light-font-secondary-color
+    line-height 1.75
+
+.resource-links
+  margin 0
+  font-size .88em
+  line-height 1.7
+
+.update-entry
+  display grid
+  grid-template-columns 7.5rem minmax(0, 1fr)
+  gap 1.5rem
+  padding 1.5rem 0
+  border-top 1px solid $light-border-color
+  time
+    color #5c8d71
+    font-size .85em
+    font-weight bold
+  h2
+    margin 0 0 .45rem
+    font-size 1.25em
+    font-weight normal
+    letter-spacing 0
+  ul
+    margin .4rem 0 0
+    padding-left 1.15rem
+  li
+    margin .35rem 0
+    line-height 1.7
+
+.dark-theme
+  .page-lead,
+  .now-card,
+  .evidence-table th,
+  .evidence-table td,
+  .learning-path,
+  .path-steps li,
+  .resource-item,
+  .update-entry
+    border-color $dark-border-color
+  .page-lead > p:last-child,
+  .path-summary,
+  .path-steps span,
+  .resource-item > p:not(.section-kicker):not(.resource-links)
+    color $dark-font-secondary-color
+  .project-hero-image
+    border-color rgba(144,145,150,.42)
+    background rgba(255,255,255,.035)
+  .project-facts > div
+    background rgba(255,255,255,.035)
+  .project-facts span,
+  .evidence-table th,
+  .path-steps li:before,
+  .update-entry time
+    color #91c3a5
+
+@media (max-width: 720px)
+  .project-facts
+    grid-template-columns 1fr
+  .learning-path
+    padding-top 1.4rem
+    h2
+      font-size 1.35em
+  .path-steps li
+    grid-template-columns 1.9rem minmax(0, 1fr)
+  .update-entry
+    display block
+    time
+      display block
+      margin-bottom .6rem
 
 .dark-theme
   .tech-hub-card

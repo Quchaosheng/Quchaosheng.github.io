@@ -13,6 +13,7 @@ layout: page
 - **主线：** RuntimeEvent v2 → ROS 2 tracing / eBPF / SocketCAN 适配 → 类型化证据图 → 可审计诊断 → 受约束的配置优化
 - **已有实现：** 三类 ROS 2 工作负载插桩、拓扑约束的 trace-stage 关联、冲突与不确定性处理、候选方案验证和离线回滚决策
 - **证据边界：** WSL、RuntimeEvent-only 与 vcan 是开发或代理证据；正式调度器归因和 X5 结论仍需合格的原生 Linux 或 X5 实测会话
+- [项目详情与证据边界](/projects/robotraceopt/)
 - [源码、运行说明与预检流程](https://github.com/Quchaosheng/RoboTraceOpt)
 
 ### Embodied Agent Runtime

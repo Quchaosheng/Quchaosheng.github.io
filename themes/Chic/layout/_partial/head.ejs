@@ -37,6 +37,7 @@ if (is_archive()){
 <% if (theme.favicon){ %>
     <link rel="icon" href="<%- url_for(theme.favicon) %>">
 <% } %>
+<link rel="alternate" type="application/atom+xml" title="<%= config.title %> Atom Feed" href="<%- url_for('/atom.xml') %>">
 
 <%# css list %>
 <% if (theme.stylesheets !== undefined && theme.stylesheets.length > 0) { %>

@@ -4,10 +4,9 @@ navname: Quchaosheng's Notes
 # Navigation
 nav:
   Projects: /projects
-
+  路线: /paths
+  证据: /evidence
   文章: /archives
-  分类: /category
-  标签: /tag
   搜索: /search
   关于: /about
 

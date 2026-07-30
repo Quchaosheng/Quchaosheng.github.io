@@ -19,6 +19,11 @@ pretty_urls:
   trailing_index: true
   trailing_html: true
 
+# Atom feed is generated locally by scripts/generate-atom-feed.js.
+feed:
+  path: atom.xml
+  limit: 20
+
 # Directories
 source_dir: source
 public_dir: public

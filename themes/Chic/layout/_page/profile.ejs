@@ -21,6 +21,12 @@
             <% } %>
         </div>
         <a class="profile-archive-link" href="<%- url_for(theme.nav['文章'] || '/archives') %>">浏览全部笔记 <span aria-hidden="true">→</span></a>
+        <section class="now-card" aria-labelledby="now-title">
+            <div class="section-kicker">NOW</div>
+            <h2 id="now-title">正在推进</h2>
+            <p><strong>RoboTraceOpt</strong> 的项目档案、证据日志与原生 Linux / X5 正式实验准备。</p>
+            <div class="now-links"><a href="<%- url_for('/projects/robotraceopt/') %>">项目档案 →</a><a href="<%- url_for('/evidence/') %>">证据日志 →</a></div>
+        </section>
     </div>
 
     <section class="project-showcase" aria-labelledby="projects-title">
