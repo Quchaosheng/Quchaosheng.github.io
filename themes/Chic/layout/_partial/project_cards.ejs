@@ -1,5 +1,9 @@
-<article class="project-item">
-  <a class="project-media" href="<%- url_for('/projects/robotraceopt/') %>"><img src="<%- url_for('/image/projects/robotraceopt.png') %>" alt="RoboTraceOpt 的 ROS 2 跨层运行时追踪与证据图诊断项目"></a>
+<article class="project-item project-item--featured">
+  <a class="project-media project-media--runtime" href="<%- url_for('/projects/robotraceopt/') %>" aria-label="查看 RoboTraceOpt 项目详情">
+    <span class="runtime-visual-kicker">CROSS-LAYER RUNTIME</span>
+    <span class="runtime-visual-steps" aria-hidden="true"><span><b>应用事件</b><small>RuntimeEvent</small></span><span><b>跨层追踪</b><small>ROS 2 · eBPF</small></span><span><b>证据图</b><small>关联与诊断</small></span><span><b>受约束验证</b><small>优化与回滚</small></span></span>
+    <span class="runtime-visual-note">Trace · Scheduler · CAN ACK</span>
+  </a>
   <div class="project-body"><span class="evidence-tag">开发 / 预检证据</span><h3>RoboTraceOpt</h3><p>面向 ROS 2 的跨层运行时追踪、证据图诊断与受约束配置优化，连接 RuntimeEvent、ros2_tracing、eBPF 和 SocketCAN/vcan 适配器。</p><div class="project-links"><a href="<%- url_for('/projects/robotraceopt/') %>">项目详情 →</a><a href="https://github.com/Quchaosheng/RoboTraceOpt" target="_blank" rel="noopener">源码 ↗</a></div></div>
 </article>
 <article class="project-item">
