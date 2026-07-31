@@ -4,8 +4,72 @@
   <id>https://quchaosheng.github.io/atom.xml</id>
   <link href="https://quchaosheng.github.io/"/>
   <link href="https://quchaosheng.github.io/atom.xml" rel="self"/>
-  <updated>2026-08-25T01:30:00.000Z</updated>
+  <updated>2026-09-05T01:30:00.000Z</updated>
   <author><name>Quchaosheng</name></author>
+  <entry>
+    <title>Flow Matching 与 Diffusion Policy：机器人为什么开始生成一段动作</title>
+    <id>https://quchaosheng.github.io/2026/09/05/flow-matching-diffusion-robot-policy/</id>
+    <link href="https://quchaosheng.github.io/2026/09/05/flow-matching-diffusion-robot-policy/"/>
+    <published>2026-09-05T01:30:00.000Z</published>
+    <updated>2026-09-05T01:30:00.000Z</updated>
+    <summary type="html">抓住杯柄可以从左侧接近，也可以先绕到右侧。示教数据里两种轨迹都合理，普通 L2 回归却可能取平均，给出一条正好撞上杯子的中间路线。生成式策略处理的是这种多峰动作分布：不把所有示教压成一个均值，而是从条件分布里生成一段自洽动作。 Diffusion Policy 用迭代去噪生成动作序列，π0 一类模型则用 flow matching 学习动作空间里的向量场。两者都常与 action chunk、滚动执行配合，但训练目标、采样过程和部署时的时间预算并不相同。 图像、状态和语言形成条件 → 从随机动作 chunk 开始 → 迭代去噪或积分向量场 → 校验...</summary>
+  </entry>
+  <entry>
+    <title>SIMPLER 论文拆解：仿真评测怎样预测 VLA 的真机表现</title>
+    <id>https://quchaosheng.github.io/2026/09/04/simpler-vla-sim-evaluation/</id>
+    <link href="https://quchaosheng.github.io/2026/09/04/simpler-vla-sim-evaluation/"/>
+    <published>2026-09-04T01:30:00.000Z</published>
+    <updated>2026-09-04T01:30:00.000Z</updated>
+    <summary type="html">有五个 VLA checkpoint，真机每个跑 100 次太贵，能不能先在仿真里淘汰四个？这个问题比“仿真能不能代替真机”窄得多，也更有实际价值。SIMPLER 做的就是 real-to-sim evaluation：把原本面向真实机器人的策略放进匹配过的仿真环境，检查仿真能否恢复真机中的策略排序和失效模式。 它不是用仿真训练策略再迁移到真机。方向反过来以后，建模目标也变了：不必复制现场的每一颗螺丝，要优先匹配那些会改变策略判断与控制响应的视觉和动力学因素。 固定待比较的真实机器人策略 → 匹配控制响应与视觉输入 → 在相同任务变体中跑仿真 → ...</summary>
+  </entry>
+  <entry>
+    <title>Open X-Embodiment 与 DROID：跨机器人数据最难的是动作含义一致</title>
+    <id>https://quchaosheng.github.io/2026/09/03/robot-data-open-x-droid-schema/</id>
+    <link href="https://quchaosheng.github.io/2026/09/03/robot-data-open-x-droid-schema/"/>
+    <published>2026-09-03T01:30:00.000Z</published>
+    <updated>2026-09-03T01:30:00.000Z</updated>
+    <summary type="html">两个数据集都写着 action[0] = 0.1 ，含义可能差得很远。一个表示末端沿基座坐标系移动 0.1 米，另一个表示关节速度归一化后的 10%，还有一个可能是 100 ms 内的位姿增量。把数组补到同样长度，只解决了文件形状，没有解决动作语义。 Open X-Embodiment 和 DROID 都在扩大真实机器人数据的覆盖，但路线不同。Open X-Embodiment 聚合多机构、多机器人数据并统一格式，研究跨本体迁移；DROID 用相对统一的硬件和采集流程，去许多真实场景收集操作数据。前者把“机器人不一样”摆到台面上，后者把“环境不一样...</summary>
+  </entry>
+  <entry>
+    <title>Cosmos 世界模型论文拆解：生成未来视频以后，机器人能拿它做什么</title>
+    <id>https://quchaosheng.github.io/2026/09/02/cosmos-world-model-physical-ai/</id>
+    <link href="https://quchaosheng.github.io/2026/09/02/cosmos-world-model-physical-ai/"/>
+    <published>2026-09-02T01:30:00.000Z</published>
+    <updated>2026-09-02T01:30:00.000Z</updated>
+    <summary type="html">让机器人在真实仓库里撞一百次来学习避障，代价太高；让它在仿真里撞一百次，又会遇到材质、光照、接触和传感器不够真的问题。世界模型给出第三种工具：根据当前画面、文字或动作条件生成可能的后续视频。它能扩大场景覆盖，却不会因为画面逼真就自动拥有正确动力学。 NVIDIA Cosmos 论文把世界模型做成一套平台，而不是单个视频生成器。平台包含视频清洗管线、视频 tokenizer、扩散式与自回归式预训练模型，以及面向具体 physical AI 任务的后训练示例。读这篇论文时，最值得追的不是“生成得像不像电影”，而是生成数据怎样进入训练，哪些变量必须由仿真...</summary>
+  </entry>
+  <entry>
+    <title>Gemini Robotics 论文拆解：具身推理和直接控制是两条不同路线</title>
+    <id>https://quchaosheng.github.io/2026/09/01/gemini-robotics-embodied-reasoning/</id>
+    <link href="https://quchaosheng.github.io/2026/09/01/gemini-robotics-embodied-reasoning/"/>
+    <published>2026-09-01T01:30:00.000Z</published>
+    <updated>2026-09-01T01:30:00.000Z</updated>
+    <summary type="html">机器人看到桌上有杯子，不等于它已经知道怎么抓。识别类别之后，还要选抓取位置、理解遮挡、把不同相机里的同一物体对上，再决定轨迹。Gemini Robotics 论文把这件事分成两种模型：Gemini Robotics 可以直接产生机器人动作，Gemini Robotics-ER 输出与物理世界有关的推理结果。二者名字很近，工程接口却完全不同。 多视角图像与任务指令 → ER 产生目标、空间关系或候选轨迹 → 规划器验证可达性与碰撞 → VLA 或技能控制器生成动作 → 执行中重新观测并拒绝失效计划 两条接入路线 推理模型可以当感知与规划助手，VLA ...</summary>
+  </entry>
+  <entry>
+    <title>SmolVLA 与 LeRobot：小模型怎样用异步推理跟上机器人</title>
+    <id>https://quchaosheng.github.io/2026/08/31/smolvla-lerobot-edge-deployment/</id>
+    <link href="https://quchaosheng.github.io/2026/08/31/smolvla-lerobot-edge-deployment/"/>
+    <published>2026-08-31T01:30:00.000Z</published>
+    <updated>2026-08-31T01:30:00.000Z</updated>
+    <summary type="html">实验台上的机械臂通常等得起模型，真实任务不会。推理偶尔慢 80 ms，控制线程如果跟着停 80 ms，夹爪会在半空顿一下；控制线程如果继续消费旧动作，机器人又可能对着几帧前的位置运动。SmolVLA 的“小”固然吸引人，它更值得读的部分却是异步推理：感知与动作生成一条线程，动作执行另一条线程，两边通过带时间含义的 chunk 协作。 控制线程消费当前动作队列 → 剩余动作低于水位 → 提交最新观测做异步推理 → 校验并合并新 chunk → 过期或不连续则拒绝 异步运行图 模型跑得快只是起点，队列还要回答动作属于哪一帧、何时失效、怎样替换。 Smo...</summary>
+  </entry>
+  <entry>
+    <title>π0 与 π0.5 论文拆解：VLM 怎样接上连续动作和长任务</title>
+    <id>https://quchaosheng.github.io/2026/08/28/pi0-pi05-flow-action-expert/</id>
+    <link href="https://quchaosheng.github.io/2026/08/28/pi0-pi05-flow-action-expert/"/>
+    <published>2026-08-28T01:30:00.000Z</published>
+    <updated>2026-08-28T01:30:00.000Z</updated>
+    <summary type="html">“把桌面收拾干净”对语言模型是一句话，对机械臂却可能是几分钟的状态变化。杯子先移走还是先擦桌面，垃圾袋满了怎么办，中途有人放进一个新物体，这些都不是单个动作向量能回答的问题。π0 解决连续动作怎么生成，π0.5 又往上补了一层语义子任务。两篇放在一起读，才能看见长任务为什么需要快慢两种时间尺度。 图像、语言和机器人状态进入 VLM → 预测当前语义子任务 → action expert 生成连续动作 chunk → 控制器执行并重新观测 → 完成或切换子任务 双时间尺度 语义规划回答“接下来做什么”，动作专家回答“接下来几十个控制点怎么走”。 VL...</summary>
+  </entry>
+  <entry>
+    <title>OpenVLA-OFT 论文拆解：连续动作、并行解码和控制频率怎么连起来</title>
+    <id>https://quchaosheng.github.io/2026/08/27/openvla-oft-action-chunk-continuous/</id>
+    <link href="https://quchaosheng.github.io/2026/08/27/openvla-oft-action-chunk-continuous/"/>
+    <published>2026-08-27T01:30:00.000Z</published>
+    <updated>2026-08-27T01:30:00.000Z</updated>
+    <summary type="html">把 OpenVLA 微调到一台新机械臂上，最先撞到的未必是显存。原版模型用自回归方式生成动作 token，一段动作要按序吐出来；控制程序还在等后面的 token 时，相机画面已经变旧。若只盯着 LoRA 秩和 batch size，这个延迟问题不会自己消失。 OpenVLA-OFT 研究的正是这层接口。作者没有把重点放在换一个更大的视觉语言骨干，而是比较动作解码、动作表示和训练目标，最后组合出并行解码、动作分块、连续动作表示与 L1 回归。它给出的提醒很实在：VLA 微调方案同时决定策略学得怎样，以及动作能不能按时送到控制器。 读取图像、语言和本体...</summary>
+  </entry>
   <entry>
     <title>从实验室到现场：AI 机器人验收报告怎样区分证据</title>
     <id>https://quchaosheng.github.io/2026/08/25/ai-robot-acceptance-evidence/</id>
@@ -101,69 +165,5 @@
     <published>2026-07-24T06:00:00.000Z</published>
     <updated>2026-07-24T06:00:00.000Z</updated>
     <summary type="html">机器人在走廊里定位正常，一到玻璃门或急转弯处就开始漂。此时别急着换特征点算法，先看相机、IMU、深度帧和 TF 是否属于同一段时间。Visual SLAM 提供连续位姿，nvblox 按位姿融合深度并生成 TSDF、占据栅格或 ESDF；其中任何一个时间或坐标关系错了，规划器拿到的地图就会跟着错。 同步相机与 IMU → Visual SLAM 估计位姿 → 深度数据按位姿融合 → 生成三维地图/距离场 → 导航规划并反馈新观测 坐标图 定位、建图和导航共享一条时间与 TF 链，任一环错位都会污染后续结果。 camera_link 相机外参与采集时...</summary>
-  </entry>
-  <entry>
-    <title>Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界</title>
-    <id>https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/"/>
-    <published>2026-07-23T06:00:00.000Z</published>
-    <updated>2026-07-23T06:00:00.000Z</updated>
-    <summary type="html">仿真里的机械臂能连续抓到杯子，真机却在逆光和轻微打滑时频繁抓空。问题通常不在“画面够不够像”，而在仿真有没有覆盖相机曝光、标定误差、执行器延迟和摩擦变化。Isaac Sim 用 USD、物理仿真、ROS 2 Bridge 和 Replicator 把这些变量放进同一套可回放的场景里，价值也在这里。 Domain Randomization 的经典工作已经说明，模拟图像不必追求照片级真实，关键是随机化范围能覆盖真实任务里的变化。这个结论可以指导 Isaac Sim 的参数选择，但不能替代真机测量。论文和工程实现的对应关系，放在 《VLA 论文怎么读》...</summary>
-  </entry>
-  <entry>
-    <title>TensorRT 机器人推理：从训练模型到稳定延迟</title>
-    <id>https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/"/>
-    <published>2026-07-21T06:00:00.000Z</published>
-    <updated>2026-07-21T06:00:00.000Z</updated>
-    <summary type="html">电脑上单张图片推理很快，放到机器人连续跑半小时后，检测结果却越来越晚。TensorRT 会解析 ONNX、融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine；FP16&amp;#x2F;INT8 只解决其中一部分计算成本，队列、温度和其他节点仍可能让结果过期。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 engine → 预分配并预热推理 → 测量端到端延迟与精度 时延图 模型、engine、缓冲区和队列要一起看，单独缩短 GPU 时间不等于感知结果更及时。 ONNX 输入契约 opset、形状、颜色、归一化和后...</summary>
-  </entry>
-  <entry>
-    <title>Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU</title>
-    <id>https://quchaosheng.github.io/2026/07/30/isaac-ros-nitros-zero-copy/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/isaac-ros-nitros-zero-copy/"/>
-    <published>2026-07-20T06:00:00.000Z</published>
-    <updated>2026-07-20T06:00:00.000Z</updated>
-    <summary type="html">开启 NITROS 后，某个节点的日志可能显示“推理只用了几毫秒”，但控制器收到结果仍然很晚。真正消耗时间的地方通常在驱动到 ROS 消息、颜色转换、CPU&amp;#x2F;GPU 拷贝和队列等待之间。NITROS 通过 ROS 2 类型适配和 GXF 让兼容节点协商缓冲区，能减少一部分复制，却不会自动消除所有边界。 相机产生图像 → NITROS 协商兼容格式 → 缓冲区留在加速内存 → GPU 节点连续处理 → 只在边界转换数据 数据图 判断少拷贝是否成立，要沿着每个缓冲区检查位置、格式、所有权和同步点。 相机输出 先确认原始帧位于哪里、是什么格式、...</summary>
-  </entry>
-  <entry>
-    <title>Jetson 机器人部署：功耗、算力与实时控制怎样分工</title>
-    <id>https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/"/>
-    <published>2026-07-17T06:00:00.000Z</published>
-    <updated>2026-07-17T06:00:00.000Z</updated>
-    <summary type="html">同一块 Jetson 上，相机、TensorRT、录包和 ROS 2 都在正常工作，电机控制却偶尔晚一个周期。通常不是 GPU “算不过来”，而是 CPU 回调、内存带宽、温度降频和队列一起把实时路径拖慢。JetPack 把 Linux for Tegra、CUDA、TensorRT 和多媒体组件放在一起，部署时仍要把感知与控制的职责分开。 选择 JetPack 与功耗模式 → 部署模型和 ROS 2 节点 → 测量 CPU/GPU/内存负载 → 分离推理与实时控制 → 在温度稳定后复测长尾 资源图 Jetson 是感知和任务平台，实时控制与安全链...</summary>
-  </entry>
-  <entry>
-    <title>NVIDIA Physical AI 技术栈：机器人从模型到执行器要经过什么</title>
-    <id>https://quchaosheng.github.io/2026/07/30/nvidia-physical-ai-stack/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/nvidia-physical-ai-stack/"/>
-    <published>2026-07-16T06:00:00.000Z</published>
-    <updated>2026-07-16T06:00:00.000Z</updated>
-    <summary type="html">以“相机看到 AprilTag，底盘停到指定距离”为例，真正要接通的是时间戳、模型、规划、控制和急停，而不是一个孤立的大模型。NVIDIA 的 Cosmos、Isaac Sim、Isaac ROS、TensorRT 和 Jetson 分别覆盖数据、仿真、机器人计算图、推理和边缘算力；ROS 2、控制器与安全 I&amp;#x2F;O 决定这些组件在异常时怎样停下来。 采集或生成机器人数据 → 训练感知/决策模型 → Isaac Sim 仿真验证 → Jetson 边缘推理 → ROS 2 与控制器安全执行 数据与模型 传感器数据要带时间戳、置信度与失效状态...</summary>
-  </entry>
-  <entry>
-    <title>实时回归测试：把一次调优变成可持续的延迟基线</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-regression-baseline/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-regression-baseline/"/>
-    <published>2026-07-15T12:00:00.000Z</published>
-    <updated>2026-07-15T12:00:00.000Z</updated>
-    <summary type="html">实时性会被看似无关的改动悄悄破坏：内核升级、网卡驱动、BIOS、容器配置、日志服务、模型版本、散热策略甚至办公室温度都可能改变长尾。一次成功调优如果没有留下环境、负载和原始数据，下一次尖峰出现时只能从头猜。实时回归测试的价值是把“那天跑得很好”变成可复现、可比较、可阻止回归的工程基线。 定义负载与通过阈值 → 记录软硬件环境 → 长时间组合压测 → 比较尾延迟与直方图 → 超阈值后保留追踪证据 基线不是一个最大值 单个 max=37 us 无法说明测试跑了多久、在什么负载下、是否刚好没碰到低频事件。一个有用的基线至少包含：最小&amp;#x2F;平均&amp;#x...</summary>
-  </entry>
-  <entry>
-    <title>Linux 实时网络路径：从网卡中断到应用线程</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-network-path/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-network-path/"/>
-    <published>2026-07-14T02:00:00.000Z</published>
-    <updated>2026-07-14T02:00:00.000Z</updated>
-    <summary type="html">应用线程收到一个网络包之前，数据通常已经走过网卡 DMA、RX queue、中断、NAPI、协议栈、socket 队列和一次线程唤醒。任何一段的 CPU 迁移、队列积压、软中断预算、内存分配或锁竞争，都可能让端到端延迟比“网卡中断很快”大得多。实时网络优化因此不是把应用优先级调高，而是让整条路径的队列、CPU 和时间戳都可见。 网卡收到数据包 → IRQ 唤起 NAPI → 协议栈处理并入 socket → 唤醒实时应用 → 记录端到端延迟 把收包路径拆开看 网卡将报文 DMA 到 RX ring；随后 IRQ 提醒 CPU，Linux 常在 NA...</summary>
-  </entry>
-  <entry>
-    <title>NUMA 与共享缓存：实时线程为何会被别的 CPU 干扰</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-numa-cache-jitter/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-numa-cache-jitter/"/>
-    <published>2026-07-10T06:00:00.000Z</published>
-    <updated>2026-07-10T06:00:00.000Z</updated>
-    <summary type="html">把实时线程独占一个 CPU 后，仍可能发现执行时间随“其他核在干什么”而波动。原因是核心并不独占整台芯片：同一 NUMA 节点中的 CPU 可能共享末级缓存（LLC）、内存控制器和互连带宽；跨节点访问还会经过更长路径。另一个核心上大规模 memcpy、GPU DMA、数据库或网络包处理，都可能让实时线程的缓存命中率下降、内存访问排队变长。 实时线程命中本地数据 → 邻核任务争用 LLC/带宽 → 缓存失效或排队增加 → 最坏执行时间变长 → 重新规划 CPU 与内存布局 CPU 亲和性不等于内存亲和性 Linux 常用“首次触碰”分配策略：一页虚拟...</summary>
   </entry>
 </feed>
