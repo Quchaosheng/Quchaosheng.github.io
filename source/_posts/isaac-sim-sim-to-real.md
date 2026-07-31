@@ -8,6 +8,8 @@ tags: [Isaac Sim, Sim-to-Real, 合成数据]
 
 仿真里的机械臂能连续抓到杯子，真机却在逆光和轻微打滑时频繁抓空。问题通常不在“画面够不够像”，而在仿真有没有覆盖相机曝光、标定误差、执行器延迟和摩擦变化。Isaac Sim 用 USD、物理仿真、ROS 2 Bridge 和 Replicator 把这些变量放进同一套可回放的场景里，价值也在这里。
 
+Domain Randomization 的经典工作已经说明，模拟图像不必追求照片级真实，关键是随机化范围能覆盖真实任务里的变化。这个结论可以指导 Isaac Sim 的参数选择，但不能替代真机测量。论文和工程实现的对应关系，放在[《VLA 论文怎么读》](/2026/03/10/vla-paper-reading-guide/)的 Sim-to-Real 小节里。
+
 <div class="note-flow"><span>建立机器人与传感器模型</span><i>→</i><span>标定物理和噪声参数</span><i>→</i><span>随机化场景与扰动</span><i>→</i><span>批量训练和回归</span><i>→</i><span>实机小范围验证再迭代</span></div>
 
 <figure class="note-visual"><figcaption><span>验证图</span>仿真覆盖已知误差，实机暴露新误差，两边通过同一指标和版本记录闭环。</figcaption><div class="note-map"><span><b>机器人资产</b><small>固定几何、关节、质量、惯量和执行器限制</small></span><span><b>传感器模型</b><small>加入标定误差、噪声、时延、曝光和失效条件</small></span><span><b>场景扰动</b><small>范围来自实测差异，不把随机化当作随意改参数</small></span><span><b>回归指标</b><small>同时记录成功率、碰撞、轨迹误差和尾延迟</small></span><span><b>小范围实机</b><small>先限速、限区域验证，再逐步放开任务边界</small></span><span><b>失败回灌</b><small>把真实失败条件转为新场景、数据或安全约束</small></span></div></figure>
