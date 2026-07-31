@@ -51,6 +51,21 @@ test('rejects future Shanghai timestamps beyond the tolerance', () => {
   ]);
 });
 
+test('allows an explicitly approved future organization date', () => {
+  const result = validate(
+    [
+      '---',
+      'date: 2026-08-25 09:30:00',
+      'allow_future: true',
+      'permalink: /2026/08/25/post/',
+      '---',
+      ''
+    ].join('\n'),
+    new Date('2026-07-31T00:00:00Z')
+  );
+  assert.deepEqual(result.errors, []);
+});
+
 test('allows source checks after the note date without changing its permalink', () => {
   const result = validate(
     [

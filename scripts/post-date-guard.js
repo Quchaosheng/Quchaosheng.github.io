@@ -74,13 +74,14 @@ function validatePostDates(postsDirectory, now = new Date()) {
     const content = fs.readFileSync(fullPath, 'utf8');
     const frontMatter = readFrontMatter(content);
     const noteDate = parseLocalDateTime(frontMatter.date);
+    const allowFuture = frontMatter.allow_future === 'true';
 
     if (!noteDate) {
       errors.push(`${file}: missing or invalid date`);
       continue;
     }
 
-    if (noteDate.getTime() > now.getTime() + FUTURE_TOLERANCE_MS) {
+    if (!allowFuture && noteDate.getTime() > now.getTime() + FUTURE_TOLERANCE_MS) {
       errors.push(`${file}: note date is in the future (${frontMatter.date})`);
     }
 
