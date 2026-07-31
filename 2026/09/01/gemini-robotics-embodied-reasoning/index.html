@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>Gemini Robotics 论文拆解：具身推理和直接控制是两条不同路线 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="机器人看到桌上有杯子，不等于它已经知道怎么抓。识别类别之后，还要选抓取位置、理解遮挡、把不同相机里的同一物体对上，再决定轨迹。Gemini Robotics 论文把这件事分成两种模型：Gemini Robotics 可以直接产生机器人动作，Gemini Robotics-ER 输出与物理世界有关的推理结果。二者名字很近，工程接口却完全不同。 多视角图像...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/09/01/gemini-robotics-embodied-reasoning/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Gemini Robotics 论文拆解：具身推理和直接控制是两条不同路线 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="机器人看到桌上有杯子，不等于它已经知道怎么抓。识别类别之后，还要选抓取位置、理解遮挡、把不同相机里的同一物体对上，再决定轨迹。Gemini Robotics 论文把这件事分成两种模型：Gemini Robotics 可以直接产生机器人动作，Gemini Robotics-ER 输出与物理世界有关的推理结果。二者名字很近，工程接口却完全不同。 多视角图像...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/09/01/gemini-robotics-embodied-reasoning/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Gemini Robotics 论文拆解：具身推理和直接控制是两条不同路线">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Gemini Robotics 论文拆解：具身推理和直接控制是两条不同路线 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="机器人看到桌上有杯子，不等于它已经知道怎么抓。识别类别之后，还要选抓取位置、理解遮挡、把不同相机里的同一物体对上，再决定轨迹。Gemini Robotics 论文把这件事分成两种模型：Gemini Robotics 可以直接产生机器人动作，Gemini Robotics-ER 输出与物理世界有关的推理结果。二者名字很近，工程接口却完全不同。 多视角图像...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Gemini Robotics 论文拆解：具身推理和直接控制是两条不同路线</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-09-01&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/VLA/">#VLA</a>
+                            
+                                <a href="/tag/%E5%85%B7%E8%BA%AB%E6%99%BA%E8%83%BD/">#具身智能</a>
+                            
+                                <a href="/tag/Gemini-Robotics/">#Gemini Robotics</a>
+                            
+                                <a href="/tag/%E7%A9%BA%E9%97%B4%E6%8E%A8%E7%90%86/">#空间推理</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>机器人看到桌上有杯子，不等于它已经知道怎么抓。识别类别之后，还要选抓取位置、理解遮挡、把不同相机里的同一物体对上，再决定轨迹。Gemini Robotics 论文把这件事分成两种模型：Gemini Robotics 可以直接产生机器人动作，Gemini Robotics-ER 输出与物理世界有关的推理结果。二者名字很近，工程接口却完全不同。</p>
+<div class="note-flow"><span>多视角图像与任务指令</span><i>→</i><span>ER 产生目标、空间关系或候选轨迹</span><i>→</i><span>规划器验证可达性与碰撞</span><i>→</i><span>VLA 或技能控制器生成动作</span><i>→</i><span>执行中重新观测并拒绝失效计划</span></div>
+
+<figure class="note-visual"><figcaption><span>两条接入路线</span>推理模型可以当感知与规划助手，VLA 可以直接给动作；两条路线需要不同的验证门。</figcaption><div class="note-map"><span><b>Gemini 2.0 基础</b><small>提供图像、语言和长上下文能力。</small></span><span><b>Robotics-ER</b><small>面向检测、指点、抓取、轨迹、多视角和三维推理。</small></span><span><b>Robotics VLA</b><small>把视觉语言条件直接映射到机器人动作。</small></span><span><b>适配数据</b><small>新技能和新本体仍依赖目标设备上的示教与微调。</small></span><span><b>确定性规划</b><small>检查坐标系、逆解、碰撞、速度和工作空间。</small></span><span><b>安全链路</b><small>限位、急停和保护区独立于模型语义判断。</small></span></div></figure>
+
+<h2 id="ER-输出的是机器人可用的中间量"><a href="#ER-输出的是机器人可用的中间量" class="headerlink" title="ER 输出的是机器人可用的中间量"></a>ER 输出的是机器人可用的中间量</h2><p>Gemini Robotics-ER 中的 ER 是 Embodied Reasoning。论文列出的能力包括物体检测、指点、轨迹与抓取预测、多视角对应和三维包围盒。这些输出比一句自然语言更接近机器人接口，但还不是电机命令。</p>
+<p>例如模型在相机坐标系中给出一个抓取点，系统还要知道相机内外参、深度来源和时间戳，才能把点变换到 <code>base_link</code>。若图像在机械臂运动前采集，抓取点到达执行器时可能已经过期。一个像样的 ER 响应至少要有：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;request_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;pick-0187&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;frame_id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;camera_color_optical_frame&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;captured_at&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2026-09-01T09:30:12.220+08:00&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;output_type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;grasp_candidates&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;candidates&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;position_m&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="number">0.12</span><span class="punctuation">,</span> <span class="number">-0.08</span><span class="punctuation">,</span> <span class="number">0.63</span><span class="punctuation">]</span><span class="punctuation">,</span> <span class="attr">&quot;score&quot;</span><span class="punctuation">:</span> <span class="number">0.78</span><span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;model_version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;record-the-real-version-here&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><code>score</code> 只是模型排序依据，不能直接当作安全概率。候选还要经过 TF 变换、深度有效性、逆运动学、碰撞和夹爪宽度检查。若响应没有 <code>frame_id</code> 与采样时间，再高的分数也无法可靠执行。</p>
+<p>下面的 Python 代码会挡住最常见的接口缺口：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">validate_er_response</span>(<span class="params">data: <span class="built_in">dict</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    required = &#123;<span class="string">&quot;request_id&quot;</span>, <span class="string">&quot;frame_id&quot;</span>, <span class="string">&quot;captured_at&quot;</span>, <span class="string">&quot;output_type&quot;</span>, <span class="string">&quot;candidates&quot;</span>, <span class="string">&quot;model_version&quot;</span>&#125;</span><br><span class="line">    missing = required - data.keys()</span><br><span class="line">    <span class="keyword">if</span> missing:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">f&quot;missing fields: <span class="subst">&#123;<span class="built_in">sorted</span>(missing)&#125;</span>&quot;</span>)</span><br><span class="line">    captured_at = datetime.fromisoformat(data[<span class="string">&quot;captured_at&quot;</span>])</span><br><span class="line">    <span class="keyword">if</span> captured_at.tzinfo <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;captured_at must include timezone&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> data[<span class="string">&quot;output_type&quot;</span>] == <span class="string">&quot;grasp_candidates&quot;</span>:</span><br><span class="line">        <span class="keyword">for</span> item <span class="keyword">in</span> data[<span class="string">&quot;candidates&quot;</span>]:</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">len</span>(item.get(<span class="string">&quot;position_m&quot;</span>, [])) != <span class="number">3</span>:</span><br><span class="line">                <span class="keyword">raise</span> ValueError(<span class="string">&quot;grasp position must be xyz in meters&quot;</span>)</span><br><span class="line"></span><br><span class="line">sample = &#123;</span><br><span class="line">    <span class="string">&quot;request_id&quot;</span>: <span class="string">&quot;pick-0187&quot;</span>,</span><br><span class="line">    <span class="string">&quot;frame_id&quot;</span>: <span class="string">&quot;camera_color_optical_frame&quot;</span>,</span><br><span class="line">    <span class="string">&quot;captured_at&quot;</span>: <span class="string">&quot;2026-09-01T09:30:12.220+08:00&quot;</span>,</span><br><span class="line">    <span class="string">&quot;output_type&quot;</span>: <span class="string">&quot;grasp_candidates&quot;</span>,</span><br><span class="line">    <span class="string">&quot;candidates&quot;</span>: [&#123;<span class="string">&quot;position_m&quot;</span>: [<span class="number">0.12</span>, -<span class="number">0.08</span>, <span class="number">0.63</span>], <span class="string">&quot;score&quot;</span>: <span class="number">0.78</span>&#125;],</span><br><span class="line">    <span class="string">&quot;model_version&quot;</span>: <span class="string">&quot;experiment-a&quot;</span></span><br><span class="line">&#125;</span><br><span class="line">validate_er_response(sample)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;schema accepted; geometry still needs validation&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>这段代码只检查格式。坐标变换与碰撞验证要使用机器人自己的 TF、URDF 和规划场景。</p>
+<h2 id="直接-VLA-路线少了中间接口，也少了可见性"><a href="#直接-VLA-路线少了中间接口，也少了可见性" class="headerlink" title="直接 VLA 路线少了中间接口，也少了可见性"></a>直接 VLA 路线少了中间接口，也少了可见性</h2><p>Gemini Robotics VLA 直接控制机器人，论文强调三类能力：适应新物体和环境，按开放词汇指令工作，以及完成需要灵巧、反应式动作的操作。端到端路线减少了手写感知与规划模块，也让失败原因更难分开。</p>
+<p>如果机械臂抓偏了，可能是模型认错物体、抓取表示错误、动作尺度不匹配，也可能是输入画面比关节状态晚了 150 ms。传统流水线能分别检查检测结果、抓取候选和规划器日志，端到端 VLA 必须额外记录模型输入、动作 chunk、执行反馈和中间任务状态，否则只能看到“失败”。</p>
+<p>所以接入方式不应由“哪个模型更强”决定，而要看系统需要什么证据：</p>
+<table>
+<thead>
+<tr>
+<th>接入方式</th>
+<th>好处</th>
+<th>主要代价</th>
+<th>适合的第一步</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ER 输出候选</td>
+<td>可插入现有规划器，几何检查清楚</td>
+<td>中间接口多，坐标与标定工作重</td>
+<td>离线图像与录包评测</td>
+</tr>
+<tr>
+<td>VLA 输出动作</td>
+<td>能学习难以手写的视觉运动映射</td>
+<td>失败定位和安全验证更难</td>
+<td>低速、受限工作空间</td>
+</tr>
+<tr>
+<td>ER 生成技能参数</td>
+<td>保留行为树或技能库</td>
+<td>能力受已有技能边界限制</td>
+<td>现场已有成熟控制栈</td>
+</tr>
+</tbody></table>
+<p>对已有 ROS 2 机器人，第三条通常更容易审计。模型选择 <code>pick(object_id)</code> 或 <code>place(target_pose)</code>，行为树和控制器仍掌握取消、恢复与限位。等这条链路的日志和验收成熟，再评估是否让 VLA接管更低层动作。</p>
+<h2 id="少量示教的数字该怎么读"><a href="#少量示教的数字该怎么读" class="headerlink" title="少量示教的数字该怎么读"></a>少量示教的数字该怎么读</h2><p>论文报告，在所选 8 个短时新任务中，使用不超过 100 条示教做适配后，有 7 个任务达到 70% 以上成功率，并给出不同任务和基线的具体差异。这是很有信息量的结果，但“100 条示教”不是所有新任务的通用门槛。</p>
+<p>示教数量相同，覆盖范围可能完全不同。100 次都在同一光照、同一物体位置采集，只能把局部分布采得更密；分散到多个物体、背景和失败恢复，单一条件下的样本又会变少。记录示教时至少分开统计物体实例、初始位姿、操作者、成功与失败、相机条件和接触状态。</p>
+<p>新本体适配还多一层动作空间差异。论文展示了对新机器人形态的适配能力，不表示一个现成 checkpoint 能绕过标定直接控制任意机械臂。关节顺序、夹爪语义、动作频率和相机布局仍要重新定义。</p>
+<h2 id="空间推理能力不是功能安全"><a href="#空间推理能力不是功能安全" class="headerlink" title="空间推理能力不是功能安全"></a>空间推理能力不是功能安全</h2><p>模型能回答“人站在机械臂附近”或“这条轨迹可能碰到物体”，属于语义与空间推理。功能安全要求在规定故障下，以可验证的时限进入安全状态。两者不能用同一套证据替代。</p>
+<p>合理分工是：模型提供候选和语义风险信号，规划器做几何与动力学约束，安全 PLC、驱动器或独立控制线程处理急停、速度限制、保护区和通信看门狗。模型服务崩溃时，最下层仍能停车；安全 I&#x2F;O 触发时，也不需要等模型确认。</p>
+<p>这和<a href="/2026/08/13/ai-robot-vla-human-intervention-state-machine/">《VLA 规划接入机器人》</a>中的 <code>Proposed -&gt; Validated -&gt; Executing</code> 状态一致。Gemini Robotics 扩大了候选能力，没有取消验证状态。验收时还应对照<a href="/2026/08/25/ai-robot-acceptance-evidence/">《AI 机器人验收报告》</a>，把论文结果、离线结果、仿真结果和真机证据分栏记录。</p>
+<h2 id="值得跟踪的不是演示视频数量"><a href="#值得跟踪的不是演示视频数量" class="headerlink" title="值得跟踪的不是演示视频数量"></a>值得跟踪的不是演示视频数量</h2><p>后续版本是否真正前进，可以盯四个可核验问题：有没有更明确的动作和空间输出接口，有没有公开到足以复现实验的模型或评测协议，是否报告跨环境失败分布，以及系统安全层能否独立于模型运行。演示任务变多很直观，却回答不了部署时最难的边界。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2503.20020">Gemini Robotics: Bringing AI into the Physical World</a></li>
+<li><a target="_blank" rel="noopener" href="https://deepmind.google/blog/gemini-robotics-brings-ai-into-the-physical-world/">Google DeepMind: Gemini Robotics brings AI into the physical world</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2406.09246">OpenVLA</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Tf2.html">ROS 2 TF2 concepts</a></li>
+</ul>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>模型家族、ER 能力、新任务示教数量和论文实验结论来自 Gemini Robotics 技术报告。本站没有模型访问权，也没有复现 Google DeepMind 的机器人实验。接口 schema、接入表和安全分层是工程分析，不代表官方 API 或安全认证结论。任何抓取点、轨迹或动作在真机执行前都要经过目标设备的标定、规划、限位与故障测试。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/09/01/gemini-robotics-embodied-reasoning/">https://quchaosheng.github.io/2026/09/01/gemini-robotics-embodied-reasoning/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/09/04/simpler-vla-sim-evaluation/">
+                            <span>SIMPLER 论文拆解：仿真评测怎样预测 VLA 的真机表现</span>
+                            <time datetime="2026-09-04T01:30:00.000Z">2026-09-04</time>
+                        </a>
+                    
+                        <a href="/2026/08/28/pi0-pi05-flow-action-expert/">
+                            <span>π0 与 π0.5 论文拆解：VLM 怎样接上连续动作和长任务</span>
+                            <time datetime="2026-08-28T01:30:00.000Z">2026-08-28</time>
+                        </a>
+                    
+                        <a href="/2026/08/27/openvla-oft-action-chunk-continuous/">
+                            <span>OpenVLA-OFT 论文拆解：连续动作、并行解码和控制频率怎么连起来</span>
+                            <time datetime="2026-08-27T01:30:00.000Z">2026-08-27</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/VLA/"># VLA</a>
+                    
+                        <a href="/tag/%E5%85%B7%E8%BA%AB%E6%99%BA%E8%83%BD/"># 具身智能</a>
+                    
+                        <a href="/tag/Gemini-Robotics/"># Gemini Robotics</a>
+                    
+                        <a href="/tag/%E7%A9%BA%E9%97%B4%E6%8E%A8%E7%90%86/"># 空间推理</a>
+                    
+                        <a href="/tag/%E8%AE%BA%E6%96%87%E5%AF%BC%E8%AF%BB/"># 论文导读</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/09/02/cosmos-world-model-physical-ai/">Cosmos 世界模型论文拆解：生成未来视频以后，机器人能拿它做什么</a>
+            
+            
+            <a class="next" rel="next" href="/2026/08/31/smolvla-lerobot-edge-deployment/">SmolVLA 与 LeRobot：小模型怎样用异步推理跟上机器人</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>
