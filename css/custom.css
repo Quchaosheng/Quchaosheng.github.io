@@ -513,6 +513,29 @@
   font-size: 0.72em;
   line-height: 1.4;
 }
+.archive .archive-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.5rem;
+  margin-top: 0.18rem;
+  color: $light-font-secondary-color;
+  font-size: 0.7em;
+  line-height: 1.4;
+}
+.archive .archive-item-tags .archive-item-topic-label {
+  color: #8a938d;
+  letter-spacing: 0.04em;
+}
+.archive .archive-item-tags a {
+  color: #78857c;
+}
+.archive .archive-item-tags a:hover {
+  color: #5c8d71;
+}
+.archive .archive-item-tags .archive-item-more-topics {
+  color: #a0aaa3;
+}
 .archive .archive-item-date {
   flex-shrink: 0;
   float: none;

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>ROS 2 通信入门：Topic、Service、Action 和 Parameter 怎么选 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="相机图像用 Service 请求，机器人移动命令用 Topic 发一次，任务执行却没有反馈，这些接口都能“跑起来”，后面却很难处理超时、取消和节点重启。ROS 2 的四类常用通信方式解决的是不同问题，先按数据语义选择，代码会简单很多。 判断数据是流还是请求 → 确定是否需要反馈与取消 → 选择 Topic、Service 或 Action → 配置 Q...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/03/31/ros2-communication-basics/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ROS 2 通信入门：Topic、Service、Action 和 Parameter 怎么选 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="相机图像用 Service 请求，机器人移动命令用 Topic 发一次，任务执行却没有反馈，这些接口都能“跑起来”，后面却很难处理超时、取消和节点重启。ROS 2 的四类常用通信方式解决的是不同问题，先按数据语义选择，代码会简单很多。 判断数据是流还是请求 → 确定是否需要反馈与取消 → 选择 Topic、Service 或 Action → 配置 Q...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/03/31/ros2-communication-basics/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="ROS 2 通信入门：Topic、Service、Action 和 Parameter 怎么选">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ROS 2 通信入门：Topic、Service、Action 和 Parameter 怎么选 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="相机图像用 Service 请求，机器人移动命令用 Topic 发一次，任务执行却没有反馈，这些接口都能“跑起来”，后面却很难处理超时、取消和节点重启。ROS 2 的四类常用通信方式解决的是不同问题，先按数据语义选择，代码会简单很多。 判断数据是流还是请求 → 确定是否需要反馈与取消 → 选择 Topic、Service 或 Action → 配置 Q...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">ROS 2 通信入门：Topic、Service、Action 和 Parameter 怎么选</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-03-31&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/ROS-2/">#ROS 2</a>
+                            
+                                <a href="/tag/Topic/">#Topic</a>
+                            
+                                <a href="/tag/Service/">#Service</a>
+                            
+                                <a href="/tag/Action/">#Action</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>相机图像用 Service 请求，机器人移动命令用 Topic 发一次，任务执行却没有反馈，这些接口都能“跑起来”，后面却很难处理超时、取消和节点重启。ROS 2 的四类常用通信方式解决的是不同问题，先按数据语义选择，代码会简单很多。</p>
+<div class="note-flow"><span>判断数据是流还是请求</span><i>→</i><span>确定是否需要反馈与取消</span><i>→</i><span>选择 Topic、Service 或 Action</span><i>→</i><span>配置 QoS 和超时</span><i>→</i><span>用 CLI 验证接口</span></div>
+
+<figure class="note-visual"><figcaption><span>通信选择图</span>接口类型由交互语义决定，不由消息大小或写代码的方便程度决定。</figcaption><div class="note-map"><span><b>Topic</b><small>连续状态和事件流，发布者通常不等待每个订阅者确认业务结果。</small></span><span><b>Service</b><small>短时请求响应，调用者等待一个结果，不适合长时间动作。</small></span><span><b>Action</b><small>长任务，提供目标、反馈、结果和取消语义。</small></span><span><b>Parameter</b><small>节点配置与运行参数，不是高频传感器通道。</small></span><span><b>QoS</b><small>决定 Topic 的可靠性、历史深度和数据寿命等传输语义。</small></span><span><b>状态机</b><small>通信成功不等于业务完成，任务状态仍需明确建模。</small></span></div></figure>
+
+<h2 id="先用-CLI-看一套正在运行的系统"><a href="#先用-CLI-看一套正在运行的系统" class="headerlink" title="先用 CLI 看一套正在运行的系统"></a>先用 CLI 看一套正在运行的系统</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ros2 node list</span><br><span class="line">ros2 topic list -t</span><br><span class="line">ros2 service list -t</span><br><span class="line">ros2 action list -t</span><br><span class="line">ros2 param list</span><br></pre></td></tr></table></figure>
+
+<p>进一步检查单个节点：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ros2 node info /robot_controller</span><br><span class="line">ros2 interface show geometry_msgs/msg/Twist</span><br></pre></td></tr></table></figure>
+
+<p>CLI 只能告诉你接口是否存在和类型是什么。是否过期、谁拥有状态、失败后怎样恢复，还要看消息字段、QoS 和任务设计。</p>
+<h2 id="Topic-适合连续数据"><a href="#Topic-适合连续数据" class="headerlink" title="Topic 适合连续数据"></a>Topic 适合连续数据</h2><p>相机、IMU、里程计、诊断和速度命令通常用 Topic。发布者把消息送进 DDS，订阅者按自己的节奏接收。Topic 不天然提供“执行完成”，收到 <code>/cmd_vel</code> 也不代表底盘已经达到速度。</p>
+<p>周期状态应带时间戳和有效标志。控制器还要设置 watchdog：一段时间没收到新命令就减速或停车，而不是永远执行最后一条消息。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ros2 topic info /cmd_vel --verbose</span><br><span class="line">ros2 topic hz /odom</span><br><span class="line">ros2 topic <span class="built_in">echo</span> --once /odom</span><br></pre></td></tr></table></figure>
+
+<h2 id="Service-适合短请求"><a href="#Service-适合短请求" class="headerlink" title="Service 适合短请求"></a>Service 适合短请求</h2><p>Service 有明确的 request 和 response，适合读取一次状态、触发短操作或修改配置。服务回调如果需要几十秒，客户端很难知道进度，也不容易取消；这种任务应改用 Action。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ros2 service <span class="built_in">type</span> /reset_odometry</span><br><span class="line">ros2 service call /reset_odometry std_srvs/srv/Trigger <span class="string">&#x27;&#123;&#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>服务成功返回只说明服务器处理了请求。设备是否真的复位、外部动作是否完成，仍应通过响应字段或状态 Topic 验证。</p>
+<h2 id="Action-为长任务保留反馈和取消"><a href="#Action-为长任务保留反馈和取消" class="headerlink" title="Action 为长任务保留反馈和取消"></a>Action 为长任务保留反馈和取消</h2><p>导航、抓取和轨迹执行可能持续数秒甚至更久。Action 把一次任务拆成 goal、feedback、result 和 cancel。客户端可以看到进度，也可以请求取消。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ros2 action info /navigate_to_pose</span><br><span class="line">ros2 action send_goal /fibonacci example_interfaces/action/Fibonacci <span class="string">&#x27;&#123;order: 10&#125;&#x27;</span> --feedback</span><br></pre></td></tr></table></figure>
+
+<p>取消请求不等于设备已经停止。Action 服务器要把取消传到底层控制器，并在安全状态确认后返回最终结果。</p>
+<h2 id="Parameter-是配置，不是消息队列"><a href="#Parameter-是配置，不是消息队列" class="headerlink" title="Parameter 是配置，不是消息队列"></a>Parameter 是配置，不是消息队列</h2><p>Parameter 适合阈值、模式和静态配置。高频变化的目标位置或传感器数据不应靠反复改参数传输。参数更新还要验证范围和组合一致性，避免只改一半配置。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ros2 param get /controller max_speed</span><br><span class="line">ros2 param <span class="built_in">set</span> /controller max_speed 0.3</span><br><span class="line">ros2 param dump /controller</span><br></pre></td></tr></table></figure>
+
+<h2 id="一个简单选择表"><a href="#一个简单选择表" class="headerlink" title="一个简单选择表"></a>一个简单选择表</h2><table>
+<thead>
+<tr>
+<th>需求</th>
+<th>推荐接口</th>
+<th>仍要补充</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>连续传感器数据</td>
+<td>Topic</td>
+<td>时间戳、QoS、过期策略</td>
+</tr>
+<tr>
+<td>一次快速查询</td>
+<td>Service</td>
+<td>超时、错误码、幂等性</td>
+</tr>
+<tr>
+<td>导航或抓取任务</td>
+<td>Action</td>
+<td>反馈、取消、安全停止</td>
+</tr>
+<tr>
+<td>节点配置</td>
+<td>Parameter</td>
+<td>schema、范围、版本迁移</td>
+</tr>
+</tbody></table>
+<p>确定接口类型以后，Topic 还要继续选择<a href="/2026/04/30/ros2-qos-basics/">可靠性、队列深度和 durability</a>。长任务如果需要把“请求取消”落实到“设备已经停下”，可以对照<a href="/2026/08/13/ai-robot-vla-human-intervention-state-machine/">VLA 任务执行状态机</a>里的 <code>CancelRequested</code>、<code>Canceling</code> 和 <code>Canceled</code> 三个状态。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Basic/About-Nodes.html">ROS 2 Nodes</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Basic/About-Topics.html">ROS 2 Topics</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Basic/About-Services.html">ROS 2 Services</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Basic/About-Actions.html">ROS 2 Actions</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html">ROS 2 Parameters</a></li>
+</ul>
+<p><strong>证据边界：</strong>接口选择表是通用设计建议，不代表某个机器人包的唯一实现。命令名称和接口类型要以目标 ROS 2 系统为准。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/03/31/ros2-communication-basics/">https://quchaosheng.github.io/2026/03/31/ros2-communication-basics/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/24/ai-robot-rosbag2-failure-replay/">
+                            <span>rosbag2 故障回放：怎样把一次机器人超时变成可重复实验</span>
+                            <time datetime="2026-08-24T01:30:00.000Z">2026-08-24</time>
+                        </a>
+                    
+                        <a href="/2026/08/06/ai-robot-tactile-force-ros2-safety/">
+                            <span>触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</span>
+                            <time datetime="2026-08-06T01:30:00.000Z">2026-08-06</time>
+                        </a>
+                    
+                        <a href="/2026/08/04/ai-robot-visual-servo-latency-budget/">
+                            <span>视觉伺服的端到端延迟预算：目标为什么总是慢半拍</span>
+                            <time datetime="2026-08-04T01:30:00.000Z">2026-08-04</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/ROS-2/"># ROS 2</a>
+                    
+                        <a href="/tag/Topic/"># Topic</a>
+                    
+                        <a href="/tag/Service/"># Service</a>
+                    
+                        <a href="/tag/Action/"># Action</a>
+                    
+                        <a href="/tag/Parameter/"># Parameter</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/why-stack-allocation-is-faster-than-heap/">为什么栈的内存分配通常比堆更快？</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/bcachefs-overview/">bcachefs：写时复制文件系统的核心设计</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

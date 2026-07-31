@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>Category: 技术 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="Quchaosheng 的技术笔记与项目记录">
+
+<link rel="canonical" href="https://quchaosheng.github.io/category/%E6%8A%80%E6%9C%AF/page/15/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Category: 技术 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="Quchaosheng 的技术笔记与项目记录">
+
+<meta property="og:url" content="https://quchaosheng.github.io/category/%E6%8A%80%E6%9C%AF/page/15/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Category: 技术">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Category: 技术 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="Quchaosheng 的技术笔记与项目记录">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                
+    
+<div class="container">
+    <div class="post-wrap categories">
+        <div class="section-kicker">CATEGORY</div>
+        <h1 class="post-title">分类：技术</h1>
+    </div>
+    
+    <section class="category-hub">
+        <div class="section-kicker">TECHNOLOGY SECTIONS</div>
+        <h2>按方向阅读</h2>
+        <div class="tech-hub-grid">
+            <a class="tech-hub-card" href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%86%85%E6%A0%B8/">
+                <span>01 · LINUX</span>
+                <h3>Linux 内核与网络</h3>
+                <p>调度、内存、进程、驱动模型，以及网络收包、TCP、UDP 与性能分析。</p>
+            </a>
+            <a class="tech-hub-card" href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8FLinux/">
+                <span>02 · EMBEDDED</span>
+                <h3>嵌入式 Linux</h3>
+                <p>设备树、驱动、中断、ARM64 平台与软硬件协同的系统实践。</p>
+            </a>
+            <a class="tech-hub-card" href="/category/%E6%8A%80%E6%9C%AF/%E8%AE%A1%E7%AE%97%E6%9C%BA%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84/">
+                <span>03 · ARCHITECTURE</span>
+                <h3>体系结构</h3>
+                <p>RISC-V、MMU、缓存、内存层次与底层执行模型。</p>
+            </a>
+            <a class="tech-hub-card" href="/category/%E6%8A%80%E6%9C%AF/C-C/">
+                <span>04 · ENGINEERING</span>
+                <h3>C/C++ 与调试</h3>
+                <p>语言基础、内存与并发问题定位，以及 GDB、Sanitizer 工具链。</p>
+            </a>
+        </div>
+    </section>
+    <h2 class="category-hub-archive-title">全部技术文章</h2>
+    
+    <div class="post-wrap archive">
+    
+    
+        
+
+        
+            <h3>2026</h3>
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/mutex-futex-internals/">mutex 底层：无竞争走原子操作，有竞争才用 futex</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/C-C/">C-C++</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/mutex/">#mutex</a>
+                            
+                        
+                            
+                                <a href="/tag/futex/">#futex</a>
+                            
+                        
+                            
+                                <a href="/tag/%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5/">#线程同步</a>
+                            
+                        
+                        
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-02-19</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/cpp20-coroutines/">C++20 协程：把异步流程写成顺序代码</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/C-C/">C-C++</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/%E5%8D%8F%E7%A8%8B/">#协程</a>
+                            
+                        
+                            
+                                <a href="/tag/C-20/">#C++20</a>
+                            
+                        
+                            
+                                <a href="/tag/%E5%BC%82%E6%AD%A5%E7%BC%96%E7%A8%8B/">#异步编程</a>
+                            
+                        
+                        
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-02-18</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/02/17/ros2-executor-callback-groups-basics/">ROS 2 Executor 入门：回调组为什么会让定时器迟到</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/ROS-2/">#ROS 2</a>
+                            
+                        
+                            
+                                <a href="/tag/Executor/">#Executor</a>
+                            
+                        
+                            
+                                <a href="/tag/%E5%9B%9E%E8%B0%83%E7%BB%84/">#回调组</a>
+                            
+                        
+                            
+                        
+                        <span class="archive-item-more-topics">+1</span>
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-02-17</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/linux-five-io-models/">Linux 五种 I/O 模型：阻塞、非阻塞与多路复用</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E7%BD%91%E7%BB%9C/">Linux网络</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">#网络编程</a>
+                            
+                        
+                            
+                                <a href="/tag/I-O%E6%A8%A1%E5%9E%8B/">#I/O模型</a>
+                            
+                        
+                            
+                                <a href="/tag/epoll/">#epoll</a>
+                            
+                        
+                        
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-02-16</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/cpp20-thread-pool/">C++20 线程池：任务队列、工作线程与停止协议</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/C-C/">C-C++</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/C-20/">#C++20</a>
+                            
+                        
+                            
+                                <a href="/tag/%E7%BA%BF%E7%A8%8B%E6%B1%A0/">#线程池</a>
+                            
+                        
+                            
+                                <a href="/tag/%E5%B9%B6%E5%8F%91/">#并发</a>
+                            
+                        
+                        
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-02-13</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/malloc-free-internals/">malloc 与 free：用户态分配器如何管理堆内存</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/C-C/">C-C++</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D/">#内存分配</a>
+                            
+                        
+                            
+                                <a href="/tag/malloc/">#malloc</a>
+                            
+                        
+                            
+                                <a href="/tag/free/">#free</a>
+                            
+                        
+                            
+                        
+                        <span class="archive-item-more-topics">+1</span>
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-02-12</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/device-tree-debugging/">设备树调试：从 compatible 到驱动 probe</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8FLinux/">嵌入式Linux</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/%E8%AE%BE%E5%A4%87%E6%A0%91/">#设备树</a>
+                            
+                        
+                            
+                                <a href="/tag/DTS/">#DTS</a>
+                            
+                        
+                            
+                                <a href="/tag/%E9%A9%B1%E5%8A%A8%E8%B0%83%E8%AF%95/">#驱动调试</a>
+                            
+                        
+                        
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-02-11</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/linux-spi-driver/">Linux SPI 驱动：控制器、设备与传输</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8FLinux/">嵌入式Linux</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/%E8%AE%BE%E5%A4%87%E6%A0%91/">#设备树</a>
+                            
+                        
+                            
+                                <a href="/tag/%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8/">#设备驱动</a>
+                            
+                        
+                            
+                                <a href="/tag/SPI/">#SPI</a>
+                            
+                        
+                        
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-02-10</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/29/udp-receive-optimization/">UDP 收包瓶颈：从网卡队列到应用线程</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E7%BD%91%E7%BB%9C/">Linux网络</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/%E7%BD%91%E7%BB%9C%E6%80%A7%E8%83%BD/">#网络性能</a>
+                            
+                        
+                            
+                                <a href="/tag/UDP/">#UDP</a>
+                            
+                        
+                            
+                                <a href="/tag/%E8%B0%83%E4%BC%98/">#调优</a>
+                            
+                        
+                        
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-02-09</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/02/06/linux-thread-cpu-affinity/">Linux 线程如何绑核：taskset、pthread affinity 与 cpuset</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">Linux实时</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/%E7%BA%BF%E7%A8%8B/">#线程</a>
+                            
+                        
+                            
+                                <a href="/tag/CPU%E4%BA%B2%E5%92%8C%E6%80%A7/">#CPU亲和性</a>
+                            
+                        
+                            
+                                <a href="/tag/taskset/">#taskset</a>
+                            
+                        
+                            
+                        
+                            
+                        
+                        <span class="archive-item-more-topics">+2</span>
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-02-06</span>
+        </article>
+    
+    
+    <nav class="pagination">
+        <a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/">1</a><span class="space">&hellip;</span><a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/page/13/">13</a><a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/page/14/">14</a><span class="page-number current">15</span><a class="page-number" href="/category/%E6%8A%80%E6%9C%AF/page/16/">16</a>
+    </nav>
+
+</div>
+
+</div>
+
+
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

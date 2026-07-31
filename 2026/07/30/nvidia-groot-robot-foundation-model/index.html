@@ -18,14 +18,14 @@
 
 <title>NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="GR00T 代表视觉-语言-动作（VLA）模型进入机器人任务的一条路线：模型接收图像、语言、状态等多模态信息，输出任务步骤、动作候选或连续控制参考。它的价值在于把过去需要大量手工规则的泛化理解交给数据驱动模型；它的风险也很直接，模型输出会受训练分布、上下文、延迟和硬件状态影响，不能因为“看起来懂了”就越过安全边界直接驱动执行器。 接收视觉与语言指令 →...">
+    <meta name="description" content="“把红杯子放到托盘里”这句话，GR00T 之类的 VLA 模型可能能给出一串看似合理的动作。目标被遮住、相机画面变旧或规划器找不到可达姿态时，模型仍可能返回格式正确的结果。它接收图像、语言和状态并生成任务或动作候选，但候选必须经过运行时校验，不能直接越过控制器和安全 I&amp;#x2F;O。 接收视觉与语言指令 → 模型生成任务/动作候选 → 运行时校验场景...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="GR00T 代表视觉-语言-动作（VLA）模型进入机器人任务的一条路线：模型接收图像、语言、状态等多模态信息，输出任务步骤、动作候选或连续控制参考。它的价值在于把过去需要大量手工规则的泛化理解交给数据驱动模型；它的风险也很直接，模型输出会受训练分布、上下文、延迟和硬件状态影响，不能因为“看起来懂了”就越过安全边界直接驱动执行器。 接收视觉与语言指令 →...">
+    <meta property="og:description" content="“把红杯子放到托盘里”这句话，GR00T 之类的 VLA 模型可能能给出一串看似合理的动作。目标被遮住、相机画面变旧或规划器找不到可达姿态时，模型仍可能返回格式正确的结果。它接收图像、语言和状态并生成任务或动作候选，但候选必须经过运行时校验，不能直接越过控制器和安全 I&amp;#x2F;O。 接收视觉与语言指令 → 模型生成任务/动作候选 → 运行时校验场景...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="GR00T 代表视觉-语言-动作（VLA）模型进入机器人任务的一条路线：模型接收图像、语言、状态等多模态信息，输出任务步骤、动作候选或连续控制参考。它的价值在于把过去需要大量手工规则的泛化理解交给数据驱动模型；它的风险也很直接，模型输出会受训练分布、上下文、延迟和硬件状态影响，不能因为“看起来懂了”就越过安全边界直接驱动执行器。 接收视觉与语言指令 →...">
+    <meta name="twitter:description" content="“把红杯子放到托盘里”这句话，GR00T 之类的 VLA 模型可能能给出一串看似合理的动作。目标被遮住、相机画面变旧或规划器找不到可达姿态时，模型仍可能返回格式正确的结果。它接收图像、语言和状态并生成任务或动作候选，但候选必须经过运行时校验，不能直接越过控制器和安全 I&amp;#x2F;O。 接收视觉与语言指令 → 模型生成任务/动作候选 → 运行时校验场景...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -264,30 +264,43 @@
                             
                         </span>
                     
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/VLA/">#VLA</a>
+                            
+                                <a href="/tag/%E5%85%B7%E8%BA%AB%E6%99%BA%E8%83%BD/">#具身智能</a>
+                            
+                                <a href="/tag/GR00T/">#GR00T</a>
+                            
+                        </span>
+                    
                 </div>
             
         </header>
 
         <div class="post-content">
-            <p>GR00T 代表视觉-语言-动作（VLA）模型进入机器人任务的一条路线：模型接收图像、语言、状态等多模态信息，输出任务步骤、动作候选或连续控制参考。它的价值在于把过去需要大量手工规则的泛化理解交给数据驱动模型；它的风险也很直接，模型输出会受训练分布、上下文、延迟和硬件状态影响，不能因为“看起来懂了”就越过安全边界直接驱动执行器。</p>
+            <p>“把红杯子放到托盘里”这句话，GR00T 之类的 VLA 模型可能能给出一串看似合理的动作。目标被遮住、相机画面变旧或规划器找不到可达姿态时，模型仍可能返回格式正确的结果。它接收图像、语言和状态并生成任务或动作候选，但候选必须经过运行时校验，不能直接越过控制器和安全 I&#x2F;O。</p>
 <div class="note-flow"><span>接收视觉与语言指令</span><i>→</i><span>模型生成任务/动作候选</span><i>→</i><span>运行时校验场景与约束</span><i>→</i><span>控制器执行有限动作</span><i>→</i><span>反馈结果或安全停止</span></div>
 
 <figure class="note-visual"><figcaption><span>边界图</span>模型负责提出候选，确定性的校验、规划和控制层决定动作能否落到硬件。</figcaption><div class="note-map"><span><b>多模态输入</b><small>图像、语言和机器人状态都要带版本、坐标与新鲜度</small></span><span><b>VLA 候选</b><small>输出有限动作 schema，并保留置信度与超时状态</small></span><span><b>任务守卫</b><small>检查对象、场景、状态机权限和输入是否过期</small></span><span><b>运动规划</b><small>验证可达性、碰撞、速度和工作空间约束</small></span><span><b>底层控制</b><small>独立执行限位、watchdog、力矩限制与急停</small></span><span><b>结果记录</b><small>保存输入、候选、拒绝原因和执行结果供回放</small></span></div></figure>
 
-<h2 id="VLA-模型适合做什么，不适合做什么"><a href="#VLA-模型适合做什么，不适合做什么" class="headerlink" title="VLA 模型适合做什么，不适合做什么"></a>VLA 模型适合做什么，不适合做什么</h2><p>它适合处理高层的、语义模糊的任务，例如把“整理桌面上的工具”分解为识别、选择、抓取和放置，或根据视觉观察给出下一个操作候选。它不适合独自承担电流环、碰撞检测、关节限位、急停或毫秒级同步控制；这些必须仍由经过验证的控制器、安全传感器和状态机完成。</p>
+<h2 id="先划清动作权限"><a href="#先划清动作权限" class="headerlink" title="先划清动作权限"></a>先划清动作权限</h2><p>它适合处理高层的、语义模糊的任务，例如把“整理桌面上的工具”分解为识别、选择、抓取和放置，或根据视觉观察给出下一个操作候选。它不适合独自承担电流环、碰撞检测、关节限位、急停或毫秒级同步控制；这些必须仍由经过验证的控制器、安全传感器和状态机完成。</p>
 <p>一个更稳妥的调用关系如下：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">VLA model -&gt; task proposal / action chunk</span><br><span class="line">          -&gt; task guard (object, pose, confidence, freshness)</span><br><span class="line">          -&gt; motion planner (collision, reachability, speed limits)</span><br><span class="line">          -&gt; controller (watchdog, torque/velocity limits, e-stop)</span><br></pre></td></tr></table></figure>
 
 <p>这里的 <code>task guard</code> 不只是一个 <code>if</code>。它需要检查模型输入是否过期、目标是否仍存在、坐标变换是否可用、当前状态机是否允许该动作，以及模型调用是否超过时间预算。</p>
-<h2 id="将模型输出限制成“可验证的动作”"><a href="#将模型输出限制成“可验证的动作”" class="headerlink" title="将模型输出限制成“可验证的动作”"></a>将模型输出限制成“可验证的动作”</h2><p>不要让模型输出自由文本后由另一个脚本随意解释。最好把可执行动作设计为固定 schema，例如 <code>pick(object_id, grasp_pose)</code>、<code>move_to(pose, max_speed)</code>、<code>open_gripper()</code>，并为每个字段定义坐标系、单位、范围和超时时间。</p>
+<h2 id="让输出先变成可检查的动作"><a href="#让输出先变成可检查的动作" class="headerlink" title="让输出先变成可检查的动作"></a>让输出先变成可检查的动作</h2><p>不要让模型输出自由文本后由另一个脚本随意解释。最好把可执行动作设计为固定 schema，例如 <code>pick(object_id, grasp_pose)</code>、<code>move_to(pose, max_speed)</code>、<code>open_gripper()</code>，并为每个字段定义坐标系、单位、范围和超时时间。</p>
 <figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">action:</span> <span class="string">move_to</span></span><br><span class="line"><span class="attr">frame_id:</span> <span class="string">map</span></span><br><span class="line"><span class="attr">target:</span> &#123;<span class="attr">x:</span> <span class="number">1.20</span>, <span class="attr">y:</span> <span class="number">-0.35</span>, <span class="attr">yaw:</span> <span class="number">0.0</span>&#125;</span><br><span class="line"><span class="attr">max_speed_mps:</span> <span class="number">0.20</span></span><br><span class="line"><span class="attr">deadline_ms:</span> <span class="number">3000</span></span><br><span class="line"><span class="attr">requires:</span> [<span class="string">localization_valid</span>, <span class="string">path_clear</span>]</span><br></pre></td></tr></table></figure>
 
 <p>运行时先验证 schema，再将动作交给规划器，而不是把自然语言直接翻译成 CAN 帧或电机指令。这让日志、回放、测试和人工审核都有清晰的对象。</p>
-<h2 id="推理延迟也是控制约束的一部分"><a href="#推理延迟也是控制约束的一部分" class="headerlink" title="推理延迟也是控制约束的一部分"></a>推理延迟也是控制约束的一部分</h2><p>VLA 的输入通常比一个检测模型更大，推理耗时也更难预测。若模型花了 800 ms 才提出“向前走”，它看到的场景可能早已改变。任务层需要为输入设最大年龄，为模型设 timeout，为动作设独立 deadline；超过预算就丢弃结果并重新感知，而不是照单全收。</p>
+<h2 id="场景变了，旧动作就该作废"><a href="#场景变了，旧动作就该作废" class="headerlink" title="场景变了，旧动作就该作废"></a>场景变了，旧动作就该作废</h2><p>VLA 的输入通常比一个检测模型更大，推理耗时也更难预测。若模型花了 800 ms 才提出“向前走”，它看到的场景可能早已改变。任务层需要为输入设最大年龄，为模型设 timeout，为动作设独立 deadline；超过预算就丢弃结果并重新感知，而不是照单全收。</p>
 <p>还应记录模型版本、提示词&#x2F;任务上下文、输入传感器时间戳、原始输出、过滤原因、最终执行动作和退出状态。这样一次错误行为才有机会被重放、复现与修复，而不是只留下“AI 失灵了”的印象。</p>
-<h2 id="评估不该只看演示视频"><a href="#评估不该只看演示视频" class="headerlink" title="评估不该只看演示视频"></a>评估不该只看演示视频</h2><p>一个足够严谨的评估至少包括：已见与未见物体、遮挡、错误语言指令、目标突然移动、相机断流、网络延迟、规划不可达、取消动作和急停。每种情况都要有明确的预期结果，例如拒绝执行、请求确认、重新感知或安全停止。</p>
+<h2 id="评估要覆盖拒绝和取消"><a href="#评估要覆盖拒绝和取消" class="headerlink" title="评估要覆盖拒绝和取消"></a>评估要覆盖拒绝和取消</h2><p>一个足够严谨的评估至少包括：已见与未见物体、遮挡、错误语言指令、目标突然移动、相机断流、网络延迟、规划不可达、取消动作和急停。每种情况都要有明确的预期结果，例如拒绝执行、请求确认、重新感知或安全停止。</p>
 <p>基础模型能扩大机器人的任务理解能力，但真正让它可部署的是外面的运行时边界。模型能力越强，动作权限、审计记录和降级路径越要清楚。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://developer.nvidia.com/isaac/gr00t">NVIDIA Isaac GR00T</a> · <a target="_blank" rel="noopener" href="https://docs.ros.org/en/rolling/Concepts/Basic/About-Actions.html">ROS 2 Actions</a></p>
+<p><strong>证据边界：</strong>本文讨论模型在机器人软件栈中的职责，不代表 GR00T 在任何具体硬件、任务或版本上的成功率和安全等级。动作权限、取消时间和降级路径必须在目标设备上单独验收。</p>
 
         </div>
 
@@ -321,19 +334,19 @@
                 <h2 id="related-posts-title">同主题继续阅读</h2>
                 <div class="related-post-list">
                     
-                        <a href="/2026/07/30/deepstream-multicamera-robot/">
-                            <span>DeepStream 多相机机器人：视频流怎样批量进入 AI 管线</span>
-                            <time datetime="2026-07-27T06:00:00.000Z">2026-07-27</time>
+                        <a href="/2026/08/13/ai-robot-vla-human-intervention-state-machine/">
+                            <span>VLA 规划接入机器人：动作候选、人工接管和可取消状态机</span>
+                            <time datetime="2026-08-13T01:30:00.000Z">2026-08-13</time>
                         </a>
                     
-                        <a href="/2026/07/30/isaac-ros-vslam-nvblox/">
-                            <span>Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间</span>
-                            <time datetime="2026-07-24T06:00:00.000Z">2026-07-24</time>
+                        <a href="/2026/03/10/vla-paper-reading-guide/">
+                            <span>VLA 论文怎么读：从 RT-1 到 OpenVLA，先看数据和动作接口</span>
+                            <time datetime="2026-03-10T01:30:00.000Z">2026-03-10</time>
                         </a>
                     
-                        <a href="/2026/07/30/isaac-sim-sim-to-real/">
-                            <span>Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界</span>
-                            <time datetime="2026-07-23T06:00:00.000Z">2026-07-23</time>
+                        <a href="/2026/08/25/ai-robot-acceptance-evidence/">
+                            <span>从实验室到现场：AI 机器人验收报告怎样区分证据</span>
+                            <time datetime="2026-08-25T01:30:00.000Z">2026-08-25</time>
                         </a>
                     
                 </div>
@@ -345,11 +358,11 @@
                 <span class="tag">
                     
                     
-                        <a href="/tag/GR00T/"># GR00T</a>
-                    
                         <a href="/tag/VLA/"># VLA</a>
                     
                         <a href="/tag/%E5%85%B7%E8%BA%AB%E6%99%BA%E8%83%BD/"># 具身智能</a>
+                    
+                        <a href="/tag/GR00T/"># GR00T</a>
                     
                         
                 </span>
@@ -362,8 +375,10 @@
         </section>
         <section class="post-nav">
             
+                <a class="prev" rel="prev" href="/2026/08/04/ai-robot-visual-servo-latency-budget/">视觉伺服的端到端延迟预算：目标为什么总是慢半拍</a>
             
-            <a class="next" rel="next" href="/2026/07/30/deepstream-multicamera-robot/">DeepStream 多相机机器人：视频流怎样批量进入 AI 管线</a>
+            
+            <a class="next" rel="next" href="/2026/07/30/deepstream-multicamera-robot/">DeepStream 多相机机器人：帧率正常，控制为什么还是迟钝</a>
             
         </section>
 

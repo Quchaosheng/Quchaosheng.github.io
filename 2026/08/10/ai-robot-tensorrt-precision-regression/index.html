@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>TensorRT FP16 和 INT8 精度回归：别只看推理时间 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="模型换成 TensorRT 以后，FPS 上去了，机器人却更容易把相似物体认错。很多团队到这一步才开始比较几张输出图，结果很难定位：问题可能来自 FP16 的累积误差、INT8 校准集、动态 shape、算子替换，也可能只是预处理的颜色顺序变了。 精度回归应该和性能回归分开测。先固定输入和预处理，把原始框架输出当作参考；再逐层比较 TensorRT 输...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/08/10/ai-robot-tensorrt-precision-regression/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TensorRT FP16 和 INT8 精度回归：别只看推理时间 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="模型换成 TensorRT 以后，FPS 上去了，机器人却更容易把相似物体认错。很多团队到这一步才开始比较几张输出图，结果很难定位：问题可能来自 FP16 的累积误差、INT8 校准集、动态 shape、算子替换，也可能只是预处理的颜色顺序变了。 精度回归应该和性能回归分开测。先固定输入和预处理，把原始框架输出当作参考；再逐层比较 TensorRT 输...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/08/10/ai-robot-tensorrt-precision-regression/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="TensorRT FP16 和 INT8 精度回归：别只看推理时间">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TensorRT FP16 和 INT8 精度回归：别只看推理时间 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="模型换成 TensorRT 以后，FPS 上去了，机器人却更容易把相似物体认错。很多团队到这一步才开始比较几张输出图，结果很难定位：问题可能来自 FP16 的累积误差、INT8 校准集、动态 shape、算子替换，也可能只是预处理的颜色顺序变了。 精度回归应该和性能回归分开测。先固定输入和预处理，把原始框架输出当作参考；再逐层比较 TensorRT 输...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">TensorRT FP16 和 INT8 精度回归：别只看推理时间</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-08-10&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/Jetson/">#Jetson</a>
+                            
+                                <a href="/tag/TensorRT/">#TensorRT</a>
+                            
+                                <a href="/tag/FP16/">#FP16</a>
+                            
+                                <a href="/tag/INT8/">#INT8</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>模型换成 TensorRT 以后，FPS 上去了，机器人却更容易把相似物体认错。很多团队到这一步才开始比较几张输出图，结果很难定位：问题可能来自 FP16 的累积误差、INT8 校准集、动态 shape、算子替换，也可能只是预处理的颜色顺序变了。</p>
+<p>精度回归应该和性能回归分开测。先固定输入和预处理，把原始框架输出当作参考；再逐层比较 TensorRT 输出；最后把差异放进真正的任务指标，例如抓取目标是否选对、深度排序是否改变、控制器拒绝率是否上升。单独报告“平均误差很小”不够。</p>
+<div class="note-flow"><span>锁定输入和预处理</span><i>→</i><span>保存 FP32 参考输出</span><i>→</i><span>逐层定位差异</span><i>→</i><span>重新设计 INT8 校准集</span><i>→</i><span>用任务指标和尾延迟验收</span></div>
+
+<figure class="note-visual"><figcaption><span>精度证据链</span>量化误差只有在输入、算子和任务结果都能对上时才有解释。</figcaption><div class="note-map"><span><b>输入契约</b><small>分辨率、颜色顺序、归一化和动态范围必须和参考模型一致。</small></span><span><b>FP32 基线</b><small>保存框架版本、权重摘要和代表性输入，避免基线自己漂移。</small></span><span><b>算子差异</b><small>融合、插件和精度选择可能让误差集中在少数层。</small></span><span><b>校准集</b><small>INT8 校准样本要覆盖真实亮度、距离、材质和遮挡，而不是只挑好看的图。</small></span><span><b>任务指标</b><small>检测、抓取或避障结果比单个张量的平均绝对误差更接近实际风险。</small></span><span><b>运行时长尾</b><small>显存、动态 shape 和 tactic 选择会同时影响 P99 延迟。</small></span></div></figure>
+
+<h2 id="先确认两条流水线真的相同"><a href="#先确认两条流水线真的相同" class="headerlink" title="先确认两条流水线真的相同"></a>先确认两条流水线真的相同</h2><p>模型精度比较前，我会把预处理单独固化。输入从相机到网络通常要经过颜色转换、缩放、裁剪、归一化和布局变换。任何一步不一致，都会让后面看起来像量化误差。</p>
+<p>复制和预处理耗时应和数值误差分开。若需要确认 Pinned Memory、Device buffer 或 stream 同步是否拖慢链路，可以先跑<a href="/2026/06/22/cuda-memory-stream-basics/">CUDA 内存与 Stream 基础实验</a>。</p>
+<p>可以先保留一批 <code>.npy</code> 或等价的浮点输入，跳过相机和解码，直接送入两个推理路径：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">trtexec --onnx=model.onnx --fp16 --dumpLayerInfo --profilingVerbosity=detailed</span><br><span class="line">trtexec --onnx=model.onnx --fp16 --shapes=input:1x3x480x640 --dumpProfile</span><br></pre></td></tr></table></figure>
+
+<p>命令行参数会随 TensorRT 版本变化，实际使用前应以当前版本的 <code>trtexec --help</code> 为准。这两条命令用于固定构建选项并留下层级信息，一次运行证明不了模型正确。参考模型也要记录 batch、shape、布局和输出后处理版本。</p>
+<h2 id="FP16-的误差通常集中在少数地方"><a href="#FP16-的误差通常集中在少数地方" class="headerlink" title="FP16 的误差通常集中在少数地方"></a>FP16 的误差通常集中在少数地方</h2><p>FP16 能减少显存和带宽压力，但指数范围和尾数位数都比 FP32 小。大范围累加、归一化、softmax、坐标解码和极小概率值可能更敏感。TensorRT 还可能把多个算子融合，误差不一定能从算子名字一一对应上。</p>
+<p>逐层检查时可以保存最大绝对误差和相对误差，但不要把接近零的张量用相对误差无限放大：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">abs_err = max(abs(reference - engine))</span><br><span class="line">rel_err = abs(reference - engine) / max(abs(reference), epsilon)</span><br></pre></td></tr></table></figure>
+
+<p>若差异只在一个归一化或坐标解码层，优先考虑保留该层的 FP32 精度，或者检查输入尺度。不要一看到误差就把整个网络切回 FP32，那会掩盖真正的原因和性能代价。</p>
+<h2 id="INT8-的校准集不是随机抽几张图"><a href="#INT8-的校准集不是随机抽几张图" class="headerlink" title="INT8 的校准集不是随机抽几张图"></a>INT8 的校准集不是随机抽几张图</h2><p>INT8 需要把连续值映射到有限的整数范围。校准样本决定激活范围，样本太干净或只覆盖白天场景，部署到逆光、暗处、反光材质时就可能饱和。校准集应按任务条件分层记录：亮度、距离、目标大小、遮挡、运动模糊和背景，而不是只按文件名抽样。</p>
+<p>校准之前先做一份分布检查，至少知道每个输入通道和关键中间激活的最小值、最大值以及饱和比例。部署后若发现某类场景退化，应先回到输入分布和校准集查证，不能直接宣称“INT8 不适合机器人”。</p>
+<h2 id="差异要落到任务指标上"><a href="#差异要落到任务指标上" class="headerlink" title="差异要落到任务指标上"></a>差异要落到任务指标上</h2><p>检测模型可以比较召回率、误检率和目标框偏差；抓取任务还要记录目标选择、姿态误差、放弃次数和控制结果。避障模型则要看近距离漏检和结果年龄。下面这张表适合放进一次回归记录：</p>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>记录内容</th>
+<th>不能单独说明什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>张量</td>
+<td>最大误差、饱和比例、NaN&#x2F;Inf</td>
+<td>不代表任务一定失败</td>
+</tr>
+<tr>
+<td>检测</td>
+<td>召回、误检、框偏差</td>
+<td>不代表机械臂一定能抓到</td>
+</tr>
+<tr>
+<td>控制</td>
+<td>拒绝次数、结果年龄、急停次数</td>
+<td>不能归因到量化，除非输入和链路已对齐</td>
+</tr>
+<tr>
+<td>性能</td>
+<td>P50、P99、显存峰值</td>
+<td>平均 FPS 不能代表尾延迟</td>
+</tr>
+</tbody></table>
+<p>同一批输入要在 FP32、FP16 和 INT8 三个引擎上跑，构建日志、权重摘要、TensorRT 版本和 GPU 型号一并保存。模型换了后，如果只保留最终 FPS，下一次回归就没有参照物。</p>
+<h2 id="动态-shape-和-tactic-会改变结果"><a href="#动态-shape-和-tactic-会改变结果" class="headerlink" title="动态 shape 和 tactic 会改变结果"></a>动态 shape 和 tactic 会改变结果</h2><p>TensorRT 会根据 shape、硬件和构建选项选择 tactic。动态输入范围、工作空间大小和插件实现都可能改变延迟，甚至改变数值路径。Jetson 上的功耗和温度也会影响长时间运行的尾延迟。性能测试要固定输入 shape、功耗模式、预热次数和测试时长，并把 P99 与显存峰值一起记录。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tegrastats</span><br><span class="line">trtexec --onnx=model.onnx --int8 --shapes=input:1x3x480x640 --dumpProfile --separateProfileRun</span><br></pre></td></tr></table></figure>
+
+<p>这两条命令只能帮助观察运行状态和 profile，不能代替任务级验收。校准缓存也应和模型、输入 shape 绑定，换了预处理或数据分布就要重新评估。</p>
+<h2 id="什么时候保留混合精度"><a href="#什么时候保留混合精度" class="headerlink" title="什么时候保留混合精度"></a>什么时候保留混合精度</h2><p>如果量化只让某一类目标的召回下降，可以尝试对敏感层保留 FP16 或 FP32，或改用更合适的校准方法。代价要在报告里写明，包括增加的显存、延迟和维护复杂度。对于直接驱动机器人动作的模型，宁可明确拒绝不确定结果，也不要用一个漂亮的平均误差掩盖少数危险场景。</p>
+<p>引擎通过回归后，还要进入<a href="/2026/08/14/ai-robot-edge-model-ota-rollback/">边缘模型升级与回滚</a>的候选槽位，最后再用<a href="/2026/08/25/ai-robot-acceptance-evidence/">机器人验收证据表</a>核对任务退化。数值一致、包可回滚、任务通过是三张不同的检查单。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/accuracy-considerations.html">TensorRT accuracy considerations</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.nvidia.com/deeplearning/tensorrt/latest/">TensorRT documentation</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/NVIDIA/TensorRT/tree/main/samples/trtexec">TensorRT trtexec sample</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.nvidia.com/deeplearning/tensorrt/latest/">TensorRT developer guide</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.nvidia.com/jetson/">NVIDIA Jetson Linux documentation</a></li>
+</ul>
+<p><strong>证据边界：</strong>本文讨论的是精度回归的测试方法，没有给出任何具体模型的误差、FPS 或抓取成功率。<code>trtexec</code> 参数和插件行为受 TensorRT 版本、GPU 和模型结构影响，发布前应记录实际环境并核对当前版本文档。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/08/10/ai-robot-tensorrt-precision-regression/">https://quchaosheng.github.io/2026/08/10/ai-robot-tensorrt-precision-regression/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/14/ai-robot-edge-model-ota-rollback/">
+                            <span>边缘模型升级与回滚：签名、兼容性和灰度发布怎样接起来</span>
+                            <time datetime="2026-08-14T01:30:00.000Z">2026-08-14</time>
+                        </a>
+                    
+                        <a href="/2026/08/04/ai-robot-visual-servo-latency-budget/">
+                            <span>视觉伺服的端到端延迟预算：目标为什么总是慢半拍</span>
+                            <time datetime="2026-08-04T01:30:00.000Z">2026-08-04</time>
+                        </a>
+                    
+                        <a href="/2026/07/30/tensorrt-robot-inference/">
+                            <span>TensorRT 机器人推理：从训练模型到稳定延迟</span>
+                            <time datetime="2026-07-21T06:00:00.000Z">2026-07-21</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/Jetson/"># Jetson</a>
+                    
+                        <a href="/tag/TensorRT/"># TensorRT</a>
+                    
+                        <a href="/tag/FP16/"># FP16</a>
+                    
+                        <a href="/tag/INT8/"># INT8</a>
+                    
+                        <a href="/tag/%E6%A8%A1%E5%9E%8B%E9%83%A8%E7%BD%B2/"># 模型部署</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/08/11/ai-robot-voxel-memory-budget/">三维场景记忆的显存预算：体素地图为什么越跑越大</a>
+            
+            
+            <a class="next" rel="next" href="/2026/08/06/ai-robot-tactile-force-ros2-safety/">触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>
