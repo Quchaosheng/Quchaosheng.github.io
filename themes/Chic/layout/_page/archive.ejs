@@ -19,6 +19,17 @@
                         <% }) %>
                     </div>
                 <% } %>
+                <% if (post.tags && post.tags.length) { %>
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        <% post.tags.forEach(function (tag, index) { %>
+                            <% if (index < 3) { %>
+                                <a href="<%- url_for(tag.path) %>">#<%= tag.name %></a>
+                            <% } %>
+                        <% }) %>
+                        <% if (post.tags.length > 3) { %><span class="archive-item-more-topics">+<%= post.tags.length - 3 %></span><% } %>
+                    </div>
+                <% } %>
             </div>
             <span class="archive-item-date"><%- date(post.date, theme.date_format) %></span>
         </article>
