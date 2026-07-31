@@ -907,6 +907,51 @@
     font-weight bold
     letter-spacing .08em
 
+.module-hub-section
+  margin 0 0 2.6rem
+  padding 1.7rem 0 0
+  border-top 3px solid #78a58d
+
+.module-hub-heading
+  max-width 52em
+  h2
+    margin .35rem 0 .55rem
+    letter-spacing 0
+  // The base theme adds a hash marker to article headings; module headings are already numbered.
+  .post-content h2::before,
+  h2::before
+    display none !important
+    content none !important
+  p:last-child
+    margin 0
+    color $light-font-secondary-color
+    line-height 1.8
+
+.module-hub-links
+  display flex
+  flex-wrap wrap
+  gap .65rem 1.1rem
+  margin-top 1.15rem
+  a
+    padding-bottom .15rem
+    border-bottom 1px solid currentColor
+    line-height 1.6
+
+.module-hub-footer
+  margin 2.5rem 0 0
+  padding-top 1.25rem
+  border-top 1px solid $light-border-color
+  color $light-font-secondary-color
+  line-height 1.8
+
+.dark-theme
+  .module-hub-heading p:last-child,
+  .module-hub-footer
+    color $dark-font-secondary-color
+  .module-hub-section,
+  .module-hub-footer
+    border-color $dark-border-color
+
 .tech-hub-links
   display flex
   flex-wrap wrap
