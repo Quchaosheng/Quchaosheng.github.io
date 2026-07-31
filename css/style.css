@@ -2419,6 +2419,54 @@ body.dark-theme .highlight .code .meta {
   font-weight: bold;
   letter-spacing: 0.08em;
 }
+.module-hub-section {
+  margin: 0 0 2.6rem;
+  padding: 1.7rem 0 0;
+  border-top: 3px solid #78a58d;
+}
+.module-hub-heading {
+  max-width: 52em;
+}
+.module-hub-heading h2 {
+  margin: 0.35rem 0 0.55rem;
+  letter-spacing: 0;
+}
+.module-hub-heading .post-content h2::before,
+.module-hub-heading h2::before {
+  display: none !important;
+  content: none !important;
+}
+.module-hub-heading p:last-child {
+  margin: 0;
+  color: #a9a9b3;
+  line-height: 1.8;
+}
+.module-hub-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.1rem;
+  margin-top: 1.15rem;
+}
+.module-hub-links a {
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid currentColor;
+  line-height: 1.6;
+}
+.module-hub-footer {
+  margin: 2.5rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e8e8e8;
+  color: #a9a9b3;
+  line-height: 1.8;
+}
+.dark-theme .module-hub-heading p:last-child,
+.dark-theme .module-hub-footer {
+  color: #87878d;
+}
+.dark-theme .module-hub-section,
+.dark-theme .module-hub-footer {
+  border-color: #909196;
+}
 .tech-hub-links {
   display: flex;
   flex-wrap: wrap;
