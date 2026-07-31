@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="相机识别出的目标位置看起来没问题，转换到 base_link 后却跳动，或者 TF2 直接报 extrapolation error。多数时候矩阵本身没错，查询时刻才是问题。TF2 保存的是随时间变化的坐标树，帧名和时间戳缺一个都不完整。 定义父子坐标系 → 发布静态或动态变换 → 保留传感器采样时间 → 按该时间查询 TF → 处理过期与外推失败 T...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/05/21/ros2-tf2-frame-time-basics/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="相机识别出的目标位置看起来没问题，转换到 base_link 后却跳动，或者 TF2 直接报 extrapolation error。多数时候矩阵本身没错，查询时刻才是问题。TF2 保存的是随时间变化的坐标树，帧名和时间戳缺一个都不完整。 定义父子坐标系 → 发布静态或动态变换 → 保留传感器采样时间 → 按该时间查询 TF → 处理过期与外推失败 T...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/05/21/ros2-tf2-frame-time-basics/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="相机识别出的目标位置看起来没问题，转换到 base_link 后却跳动，或者 TF2 直接报 extrapolation error。多数时候矩阵本身没错，查询时刻才是问题。TF2 保存的是随时间变化的坐标树，帧名和时间戳缺一个都不完整。 定义父子坐标系 → 发布静态或动态变换 → 保留传感器采样时间 → 按该时间查询 TF → 处理过期与外推失败 T...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">Projects</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if (toggleMenu.classList.contains("active")) {
+            toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        } else {
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-05-21&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E6%A0%87%E5%AE%9A/">#标定</a>
+                            
+                                <a href="/tag/ROS-2/">#ROS 2</a>
+                            
+                                <a href="/tag/TF2/">#TF2</a>
+                            
+                                <a href="/tag/%E5%9D%90%E6%A0%87%E7%B3%BB/">#坐标系</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>相机识别出的目标位置看起来没问题，转换到 <code>base_link</code> 后却跳动，或者 TF2 直接报 extrapolation error。多数时候矩阵本身没错，查询时刻才是问题。TF2 保存的是随时间变化的坐标树，帧名和时间戳缺一个都不完整。</p>
+<div class="note-flow"><span>定义父子坐标系</span><i>→</i><span>发布静态或动态变换</span><i>→</i><span>保留传感器采样时间</span><i>→</i><span>按该时间查询 TF</span><i>→</i><span>处理过期与外推失败</span></div>
+
+<figure class="note-visual"><figcaption><span>TF2 时间树</span>坐标树说明“相对谁”，时间戳说明“什么时候”。</figcaption><div class="note-map"><span><b>map</b><small>全局一致坐标，可在重定位后相对 odom 修正。</small></span><span><b>odom</b><small>短时间连续但允许漂移，适合局部控制。</small></span><span><b>base_link</b><small>机器人机体参考坐标，传感器和执行器从这里挂接。</small></span><span><b>sensor frame</b><small>相机或雷达坐标，外参应由安装和标定确定。</small></span><span><b>static TF</b><small>固定安装关系，通常发布一次并缓存。</small></span><span><b>dynamic TF</b><small>随里程计或关节变化，查询必须落在缓存时间范围内。</small></span></div></figure>
+
+<h2 id="先把坐标树画出来"><a href="#先把坐标树画出来" class="headerlink" title="先把坐标树画出来"></a>先把坐标树画出来</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ros2 run tf2_tools view_frames</span><br><span class="line">ros2 run tf2_ros tf2_echo base_link camera_link</span><br><span class="line">ros2 run tf2_ros tf2_monitor base_link camera_link</span><br></pre></td></tr></table></figure>
+
+<p><code>view_frames</code> 用来检查树是否连通、有无重复父节点。<code>tf2_echo</code> 查看当前数值，<code>tf2_monitor</code> 更适合观察延迟和发布频率。树必须是清晰的父子关系，不能让同一个 frame 同时被两个来源发布。</p>
+<h2 id="静态变换和动态变换别混用"><a href="#静态变换和动态变换别混用" class="headerlink" title="静态变换和动态变换别混用"></a>静态变换和动态变换别混用</h2><p>相机固定在机身上时，<code>base_link -&gt; camera_link</code> 通常是静态外参。底盘在世界中的位置 <code>odom -&gt; base_link</code> 会随运动更新，是动态变换。关节机械臂的 link 关系也随 joint state 变化。</p>
+<p>静态变换示例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ros2 run tf2_ros static_transform_publisher \</span><br><span class="line">  --x 0.20 --y 0.00 --z 0.35 \</span><br><span class="line">  --roll 0 --pitch 0 --yaw 0 \</span><br><span class="line">  --frame-id base_link --child-frame-id camera_link</span><br></pre></td></tr></table></figure>
+
+<p>数值只是命令格式示例，不能当作真实相机外参。实际值应来自机械尺寸和标定。</p>
+<h2 id="查询要使用传感器采样时间"><a href="#查询要使用传感器采样时间" class="headerlink" title="查询要使用传感器采样时间"></a>查询要使用传感器采样时间</h2><p>图像在 <code>t_capture</code> 采集，机器人随后继续移动。若检测结束后用 <code>now()</code> 查询 TF，会把旧图像里的目标放到新姿态上。更合理的是用图像 <code>header.stamp</code> 查询对应时刻的变换。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">target_in_base = lookup_transform(</span><br><span class="line">    target=&quot;base_link&quot;,</span><br><span class="line">    source=&quot;camera_link&quot;,</span><br><span class="line">    time=image.header.stamp)</span><br></pre></td></tr></table></figure>
+
+<p>这是接口语义示意。具体 C++&#x2F;Python API 还要设置 timeout，并处理变换暂时不可用。</p>
+<h2 id="Extrapolation-error-在说什么"><a href="#Extrapolation-error-在说什么" class="headerlink" title="Extrapolation error 在说什么"></a>Extrapolation error 在说什么</h2><p>请求时间早于 TF 缓存最早记录，叫向过去外推；请求时间晚于最新记录，叫向未来外推。常见原因包括传感器和主机时钟不同步、驱动填错时间戳、TF 发布太慢、回放时没有使用 <code>/clock</code>，或者消息在队列里积压太久。</p>
+<p>先记录四个时间：传感器采样、节点收到消息、TF 最新时间、控制器消费时间。只看错误字符串，很难区分时钟问题和排队问题。</p>
+<h2 id="frame-id-也属于接口契约"><a href="#frame-id-也属于接口契约" class="headerlink" title="frame_id 也属于接口契约"></a>frame_id 也属于接口契约</h2><p>同一个位置数值，在 <code>camera_link</code>、<code>base_link</code> 和 <code>map</code> 下含义不同。消息必须填写正确 <code>frame_id</code>，单位和轴方向也要一致。相机光学坐标常有自己的轴约定，不能凭名字猜。</p>
+<p>当 TF 过期或不连通时，控制器应拒绝该结果、重新采样或降速。返回单位矩阵继续运行，会把坐标错误隐藏成后续规划问题。</p>
+<h2 id="常见故障怎样分开看"><a href="#常见故障怎样分开看" class="headerlink" title="常见故障怎样分开看"></a>常见故障怎样分开看</h2><table>
+<thead>
+<tr>
+<th>现象</th>
+<th>先检查</th>
+<th>常见根因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>frame does not exist</code></td>
+<td><code>view_frames</code>、frame 拼写</td>
+<td>节点未启动、命名不一致</td>
+</tr>
+<tr>
+<td>past extrapolation</td>
+<td>消息时间与缓存起点</td>
+<td>队列积压、回放跳转、缓存太短</td>
+</tr>
+<tr>
+<td>future extrapolation</td>
+<td>传感器与主机时钟</td>
+<td>硬件时钟偏移、错误使用 <code>now()</code></td>
+</tr>
+<tr>
+<td>数值稳定但位置偏</td>
+<td>静态外参和轴方向</td>
+<td>标定错误、光学坐标约定不一致</td>
+</tr>
+<tr>
+<td>快速运动时抖动</td>
+<td>TF 频率、图像年龄</td>
+<td>发布太慢、时间戳含义错误</td>
+</tr>
+</tbody></table>
+<p>排查时先确认树是否连通，再确认查询时间是否存在，最后才看数值和标定。三个问题混在一起调参数，会让错误暂时消失却无法复现。</p>
+<h2 id="从坐标基础走到视觉控制"><a href="#从坐标基础走到视觉控制" class="headerlink" title="从坐标基础走到视觉控制"></a>从坐标基础走到视觉控制</h2><p>TF2 只负责保存和查询坐标关系，不判断视觉结果是否足够新。理解本篇后，可以继续看<a href="/2026/08/05/ai-robot-rolling-shutter-motion-blur/">Rolling Shutter 与运动模糊</a>和<a href="/2026/08/04/ai-robot-visual-servo-latency-budget/">视觉伺服延迟预算</a>，把相机采样、TF 查询和控制截止期连成一条时间线。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Tf2.html">ROS 2 tf2 concepts</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Tutorials/Intermediate/Tf2/Introduction-To-Tf2.html">Introduction to tf2</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.ros.org/reps/rep-0105.html">REP 105 Coordinate Frames</a></li>
+<li><a target="_blank" rel="noopener" href="https://design.ros2.org/articles/clock_and_time.html">ROS 2 Clock and Time Design</a></li>
+</ul>
+<p><strong>证据边界：</strong>命令中的静态变换数值仅用于演示参数格式。TF 树、外参、缓存长度和时钟同步必须在目标机器人上验证。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/05/21/ros2-tf2-frame-time-basics/">https://quchaosheng.github.io/2026/05/21/ros2-tf2-frame-time-basics/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/24/ai-robot-rosbag2-failure-replay/">
+                            <span>rosbag2 故障回放：怎样把一次机器人超时变成可重复实验</span>
+                            <time datetime="2026-08-24T01:30:00.000Z">2026-08-24</time>
+                        </a>
+                    
+                        <a href="/2026/08/06/ai-robot-tactile-force-ros2-safety/">
+                            <span>触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</span>
+                            <time datetime="2026-08-06T01:30:00.000Z">2026-08-06</time>
+                        </a>
+                    
+                        <a href="/2026/08/05/ai-robot-rolling-shutter-motion-blur/">
+                            <span>Rolling Shutter、曝光与运动模糊：为什么移动机器人会错一拍</span>
+                            <time datetime="2026-08-05T01:30:00.000Z">2026-08-05</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E6%A0%87%E5%AE%9A/"># 标定</a>
+                    
+                        <a href="/tag/ROS-2/"># ROS 2</a>
+                    
+                        <a href="/tag/TF2/"># TF2</a>
+                    
+                        <a href="/tag/%E5%9D%90%E6%A0%87%E7%B3%BB/"># 坐标系</a>
+                    
+                        <a href="/tag/%E6%97%B6%E9%97%B4%E6%88%B3/"># 时间戳</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/buildroot-system-image/">Buildroot：生成可复现的嵌入式 Linux 系统镜像</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/embedded-low-power/">嵌入式低功耗：从功耗预算到睡眠唤醒</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

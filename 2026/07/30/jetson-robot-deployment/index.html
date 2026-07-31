@@ -18,14 +18,14 @@
 
 <title>Jetson 机器人部署：功耗、算力与实时控制怎样分工 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。 选择 JetPack 与...">
+    <meta name="description" content="同一块 Jetson 上，相机、TensorRT、录包和 ROS 2 都在正常工作，电机控制却偶尔晚一个周期。通常不是 GPU “算不过来”，而是 CPU 回调、内存带宽、温度降频和队列一起把实时路径拖慢。JetPack 把 Linux for Tegra、CUDA、TensorRT 和多媒体组件放在一起，部署时仍要把感知与控制的职责分开。 选择 Je...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Jetson 机器人部署：功耗、算力与实时控制怎样分工 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。 选择 JetPack 与...">
+    <meta property="og:description" content="同一块 Jetson 上，相机、TensorRT、录包和 ROS 2 都在正常工作，电机控制却偶尔晚一个周期。通常不是 GPU “算不过来”，而是 CPU 回调、内存带宽、温度降频和队列一起把实时路径拖慢。JetPack 把 Linux for Tegra、CUDA、TensorRT 和多媒体组件放在一起，部署时仍要把感知与控制的职责分开。 选择 Je...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Jetson 机器人部署：功耗、算力与实时控制怎样分工 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。 选择 JetPack 与...">
+    <meta name="twitter:description" content="同一块 Jetson 上，相机、TensorRT、录包和 ROS 2 都在正常工作，电机控制却偶尔晚一个周期。通常不是 GPU “算不过来”，而是 CPU 回调、内存带宽、温度降频和队列一起把实时路径拖慢。JetPack 把 Linux for Tegra、CUDA、TensorRT 和多媒体组件放在一起，部署时仍要把感知与控制的职责分开。 选择 Je...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
@@ -264,17 +264,29 @@
                             
                         </span>
                     
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/Jetson/">#Jetson</a>
+                            
+                                <a href="/tag/CUDA/">#CUDA</a>
+                            
+                                <a href="/tag/JetPack/">#JetPack</a>
+                            
+                        </span>
+                    
                 </div>
             
         </header>
 
         <div class="post-content">
-            <p>Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。</p>
+            <p>同一块 Jetson 上，相机、TensorRT、录包和 ROS 2 都在正常工作，电机控制却偶尔晚一个周期。通常不是 GPU “算不过来”，而是 CPU 回调、内存带宽、温度降频和队列一起把实时路径拖慢。JetPack 把 Linux for Tegra、CUDA、TensorRT 和多媒体组件放在一起，部署时仍要把感知与控制的职责分开。</p>
 <div class="note-flow"><span>选择 JetPack 与功耗模式</span><i>→</i><span>部署模型和 ROS 2 节点</span><i>→</i><span>测量 CPU/GPU/内存负载</span><i>→</i><span>分离推理与实时控制</span><i>→</i><span>在温度稳定后复测长尾</span></div>
 
 <figure class="note-visual"><figcaption><span>资源图</span>Jetson 是感知和任务平台，实时控制与安全链路应有更确定的执行边界。</figcaption><div class="note-map"><span><b>相机与多媒体</b><small>采集、颜色转换、编码和解码会占用专用引擎与内存带宽。</small></span><span><b>GPU 推理</b><small>TensorRT、CUDA stream 和显存使用影响模型吞吐与尾延迟。</small></span><span><b>CPU 与 DDS</b><small>ROS 2 回调、序列化、规划和驱动仍会争抢 ARM CPU。</small></span><span><b>共享内存</b><small>多路相机和大模型常先受带宽与队列限制，而不是 GPU 算力。</small></span><span><b>MCU/RT 控制</b><small>电流、速度、限位和 watchdog 放在可预测、可独立失效的链路。</small></span><span><b>安全停止</b><small>急停和驱动抑制不依赖 GPU、ROS 2 或普通进程调度。</small></span></div></figure>
 
-<h2 id="Jetson-上实际要争抢哪些资源"><a href="#Jetson-上实际要争抢哪些资源" class="headerlink" title="Jetson 上实际要争抢哪些资源"></a>Jetson 上实际要争抢哪些资源</h2><p>推理不只占 GPU。摄像头采集和图像颜色转换可能使用 ISP 或 VIC，视频解码会使用专用引擎，TensorRT 占 GPU 和显存带宽，ROS 2 节点、DDS 和驱动则会占用 CPU。多路相机加上大模型时，瓶颈往往从 GPU 算力变成内存带宽、CPU 回调排队或散热引起的降频。</p>
+<h2 id="先看谁在抢资源"><a href="#先看谁在抢资源" class="headerlink" title="先看谁在抢资源"></a>先看谁在抢资源</h2><p>推理不只占 GPU。摄像头采集和图像颜色转换可能使用 ISP 或 VIC，视频解码会使用专用引擎，TensorRT 占 GPU 和显存带宽，ROS 2 节点、DDS 和驱动则会占用 CPU。多路相机加上大模型时，瓶颈往往从 GPU 算力变成内存带宽、CPU 回调排队或散热引起的降频。</p>
 <p>因此应同时观察以下维度，而不是只看 FPS：</p>
 <ul>
 <li><strong>模型侧</strong>：每帧推理延迟、GPU 利用率、显存占用、输入队列长度。</li>
@@ -285,11 +297,11 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> nvpmodel -q          <span class="comment"># 查看当前功耗/性能模式</span></span><br><span class="line">tegrastats                <span class="comment"># 连续观察 CPU、GPU、内存、温度与频率</span></span><br><span class="line"><span class="built_in">sudo</span> jetson_clocks --show <span class="comment"># 查看可锁定的时钟状态</span></span><br></pre></td></tr></table></figure>
 
 <p><code>jetson_clocks</code> 很适合做可重复的性能测试，但在产品上长期强制最高频率会带来功耗、温升和续航成本。正确顺序是先测清热稳定后的长尾，再决定是否改变功耗模式、风扇策略或模型规模。</p>
-<h2 id="一个更稳妥的职责划分"><a href="#一个更稳妥的职责划分" class="headerlink" title="一个更稳妥的职责划分"></a>一个更稳妥的职责划分</h2><p>常见结构是 Jetson 运行相机、感知、地图、规划与 ROS 2 Action；一个 MCU、专用驱动器或独立实时线程负责编码器读取、电流环、速度环、限位与急停。两者之间只交换有限的、高层的命令和反馈，例如 <code>cmd_vel</code>、目标轨迹、状态字与故障码。</p>
+<h2 id="让-Jetson-和控制器各管一段"><a href="#让-Jetson-和控制器各管一段" class="headerlink" title="让 Jetson 和控制器各管一段"></a>让 Jetson 和控制器各管一段</h2><p>常见结构是 Jetson 运行相机、感知、地图、规划与 ROS 2 Action；一个 MCU、专用驱动器或独立实时线程负责编码器读取、电流环、速度环、限位与急停。两者之间只交换有限的、高层的命令和反馈，例如 <code>cmd_vel</code>、目标轨迹、状态字与故障码。</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Jetson: camera -&gt; TensorRT -&gt; perception -&gt; planner -&gt; bounded velocity command</span><br><span class="line">MCU/RT controller: watchdog -&gt; limit check -&gt; motor loop -&gt; encoder feedback</span><br><span class="line">Safety path: emergency stop -&gt; power/driver inhibit, independent of GPU process</span><br></pre></td></tr></table></figure>
 
 <p>不要让推理进程直接写 PWM，也不要把急停实现成一个普通 ROS topic。前者把不确定的 GPU 负载带进控制环，后者会在网络、进程或 DDS 出问题时失效。</p>
-<h2 id="部署前后的检查顺序"><a href="#部署前后的检查顺序" class="headerlink" title="部署前后的检查顺序"></a>部署前后的检查顺序</h2><ol>
+<h2 id="部署前要主动制造压力"><a href="#部署前要主动制造压力" class="headerlink" title="部署前要主动制造压力"></a>部署前要主动制造压力</h2><ol>
 <li>固定 JetPack、CUDA、TensorRT 和模型版本，记录设备型号及功耗模式。</li>
 <li>先跑单相机、单模型的冷启动与热稳定测试，再逐个加入相机、规划和录包负载。</li>
 <li>用 <code>tegrastats</code> 与 ROS 2 时间戳一起记录，观察 P95&#x2F;P99，而不是只看平均 FPS。</li>
@@ -297,6 +309,7 @@
 </ol>
 <p>这些情况都跑过后，才知道这套 Jetson 配置在机器人上遇到压力时会怎样反应。</p>
 <p>参考：<a target="_blank" rel="noopener" href="https://docs.nvidia.com/jetson/">NVIDIA Jetson Documentation</a> · <a target="_blank" rel="noopener" href="https://docs.nvidia.com/jetson/archives/">Jetson Linux Developer Guide</a></p>
+<p><strong>证据边界：</strong>命令和职责划分适用于排查与部署设计，不代表所有 Jetson 型号、JetPack 版本或散热条件都会得到相同延迟。本文没有给出功耗模式下的具体 FPS、温度或 P99 数值。</p>
 
         </div>
 
@@ -330,19 +343,19 @@
                 <h2 id="related-posts-title">同主题继续阅读</h2>
                 <div class="related-post-list">
                     
-                        <a href="/2026/07/30/nvidia-groot-robot-foundation-model/">
-                            <span>NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层</span>
-                            <time datetime="2026-07-28T06:00:00.000Z">2026-07-28</time>
+                        <a href="/2026/08/14/ai-robot-edge-model-ota-rollback/">
+                            <span>边缘模型升级与回滚：签名、兼容性和灰度发布怎样接起来</span>
+                            <time datetime="2026-08-14T01:30:00.000Z">2026-08-14</time>
                         </a>
                     
-                        <a href="/2026/07/30/deepstream-multicamera-robot/">
-                            <span>DeepStream 多相机机器人：视频流怎样批量进入 AI 管线</span>
-                            <time datetime="2026-07-27T06:00:00.000Z">2026-07-27</time>
+                        <a href="/2026/08/10/ai-robot-tensorrt-precision-regression/">
+                            <span>TensorRT FP16 和 INT8 精度回归：别只看推理时间</span>
+                            <time datetime="2026-08-10T01:30:00.000Z">2026-08-10</time>
                         </a>
                     
-                        <a href="/2026/07/30/isaac-ros-vslam-nvblox/">
-                            <span>Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间</span>
-                            <time datetime="2026-07-24T06:00:00.000Z">2026-07-24</time>
+                        <a href="/2026/08/04/ai-robot-visual-servo-latency-budget/">
+                            <span>视觉伺服的端到端延迟预算：目标为什么总是慢半拍</span>
+                            <time datetime="2026-08-04T01:30:00.000Z">2026-08-04</time>
                         </a>
                     
                 </div>
@@ -356,9 +369,9 @@
                     
                         <a href="/tag/Jetson/"># Jetson</a>
                     
-                        <a href="/tag/JetPack/"># JetPack</a>
-                    
                         <a href="/tag/CUDA/"># CUDA</a>
+                    
+                        <a href="/tag/JetPack/"># JetPack</a>
                     
                         
                 </span>

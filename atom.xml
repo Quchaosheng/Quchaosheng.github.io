@@ -4,23 +4,95 @@
   <id>https://quchaosheng.github.io/atom.xml</id>
   <link href="https://quchaosheng.github.io/"/>
   <link href="https://quchaosheng.github.io/atom.xml" rel="self"/>
-  <updated>2026-07-28T06:00:00.000Z</updated>
+  <updated>2026-08-25T01:30:00.000Z</updated>
   <author><name>Quchaosheng</name></author>
+  <entry>
+    <title>从实验室到现场：AI 机器人验收报告怎样区分证据</title>
+    <id>https://quchaosheng.github.io/2026/08/25/ai-robot-acceptance-evidence/</id>
+    <link href="https://quchaosheng.github.io/2026/08/25/ai-robot-acceptance-evidence/"/>
+    <published>2026-08-25T01:30:00.000Z</published>
+    <updated>2026-08-25T01:30:00.000Z</updated>
+    <summary type="html">演示视频里机器人连续抓取了五次，现场验收却没有通过。评审问的是环境温度、模型版本、失败时怎么停、结果年龄是多少，报告里只有一张成功率截图。问题不一定是系统变差，而是报告把仿真、台架和真机证据混在了一起，读者无法知道每个结论到底由什么支持。 AI 机器人验收不该只写一个总分。感知、规划、控制和安全链路需要不同证据；成功率、P99 延迟、人工接管率和安全事件也不能互相替代。报告的任务是让别人知道“在哪些条件下观察到了什么”，以及“哪些地方还没有证据”。 定义任务和失败条件 → 固定代码、模型和设备指纹 → 分别收集仿真、台架、真机证据 → 记录成功、拒...</summary>
+  </entry>
+  <entry>
+    <title>rosbag2 故障回放：怎样把一次机器人超时变成可重复实验</title>
+    <id>https://quchaosheng.github.io/2026/08/24/ai-robot-rosbag2-failure-replay/</id>
+    <link href="https://quchaosheng.github.io/2026/08/24/ai-robot-rosbag2-failure-replay/"/>
+    <published>2026-08-24T01:30:00.000Z</published>
+    <updated>2026-08-24T01:30:00.000Z</updated>
+    <summary type="html">机器人在现场偶尔导航超时，回到实验室却怎么也复现不了。开发者通常会加几条日志，再跑一次任务。等真正需要分析时才发现，录包里没有相机时间戳、TF、诊断状态或控制命令，留下的只有一行“action timeout”。 rosbag2 能保存一次运行中的消息，但它不会自动让实验变得确定。要复现故障，必须提前定义录哪些话题、使用哪种 QoS、回放时是否使用仿真时间，以及哪些硬件输入需要替换成回放数据。回放的目标是重建当时的输入和状态，不是把视频重新播放一遍。 定义故障假设和截止期 → 按时间与 QoS 录制闭环输入 → 检查包内容和版本指纹 → 用仿真时间...</summary>
+  </entry>
+  <entry>
+    <title>边缘模型升级与回滚：签名、兼容性和灰度发布怎样接起来</title>
+    <id>https://quchaosheng.github.io/2026/08/14/ai-robot-edge-model-ota-rollback/</id>
+    <link href="https://quchaosheng.github.io/2026/08/14/ai-robot-edge-model-ota-rollback/"/>
+    <published>2026-08-14T01:30:00.000Z</published>
+    <updated>2026-08-14T01:30:00.000Z</updated>
+    <summary type="html">模型更新后，设备能启动，推理进程却在加载 engine 时退出。更麻烦的是，部分设备已经换成新模型，另一部分还在旧版本，现场日志看起来像两个不同的产品。模型文件未必损坏，发布单元却散了：模型、TensorRT、GPU 架构、预处理和配置各走各的版本。 机器人上的模型升级要有回滚路径。签名只能证明文件来自某个发布者，不能证明它适合这台设备；兼容性检查只能筛掉明显不匹配，不能替代小流量运行和任务指标验收。发布系统需要把身份、版本、健康检查和回滚状态连起来。 生成带清单的模型包 → 验证签名和设备兼容性 → 写入备用分区 → 小流量启动并观察健康指标 →...</summary>
+  </entry>
+  <entry>
+    <title>VLA 规划接入机器人：动作候选、人工接管和可取消状态机</title>
+    <id>https://quchaosheng.github.io/2026/08/13/ai-robot-vla-human-intervention-state-machine/</id>
+    <link href="https://quchaosheng.github.io/2026/08/13/ai-robot-vla-human-intervention-state-machine/"/>
+    <published>2026-08-13T01:30:00.000Z</published>
+    <updated>2026-08-13T01:30:00.000Z</updated>
+    <summary type="html">把视觉语言模型接到机械臂上，演示往往很顺：给一句“把红杯子放到托盘”，模型返回一串动作，机械臂开始执行。真正接近现场后，问题变成了另一种形式。目标被遮住了，动作执行到一半有人走进来，模型给了一个格式正确但不可达的位姿，或者网络断了却没有取消正在运行的任务。 VLA 的输出不应该直接变成关节命令。中间至少需要一个任务接口，负责约束、校验、取消、人工接管和审计。ROS 2 Action 的反馈、取消和结果语义适合承载这层接口，但它本身不会替你做安全判断。 读 RT-2、Diffusion Policy、Octo 或 OpenVLA 时，可以把它们看成几...</summary>
+  </entry>
+  <entry>
+    <title>三维场景记忆的显存预算：体素地图为什么越跑越大</title>
+    <id>https://quchaosheng.github.io/2026/08/11/ai-robot-voxel-memory-budget/</id>
+    <link href="https://quchaosheng.github.io/2026/08/11/ai-robot-voxel-memory-budget/"/>
+    <published>2026-08-11T01:30:00.000Z</published>
+    <updated>2026-08-11T01:30:00.000Z</updated>
+    <summary type="html">机器人刚启动时避障正常，跑了十几分钟后 GPU 内存不断上涨，最后要么丢帧，要么地图更新直接停住。另一个看似相反的现象是，内存没有上涨，旧障碍却一直留在地图里。两种问题都和“三维记忆”有关，但一个是空间没有回收，一个是清除策略没有生效。 体素地图不是一张静态图片。相机每次观测都会更新一批体素块，位姿、分辨率、最大观测距离、动态障碍物清除和 ESDF 计算都会影响存储量。把地图当成无限大的缓存，最终一定会遇到显存或尾延迟问题。 固定体素尺寸和观测范围 → 记录活跃体素块与显存 → 验证障碍物清除规则 → 限制地图窗口和更新频率 → 在长时间运行中复测...</summary>
+  </entry>
+  <entry>
+    <title>TensorRT FP16 和 INT8 精度回归：别只看推理时间</title>
+    <id>https://quchaosheng.github.io/2026/08/10/ai-robot-tensorrt-precision-regression/</id>
+    <link href="https://quchaosheng.github.io/2026/08/10/ai-robot-tensorrt-precision-regression/"/>
+    <published>2026-08-10T01:30:00.000Z</published>
+    <updated>2026-08-10T01:30:00.000Z</updated>
+    <summary type="html">模型换成 TensorRT 以后，FPS 上去了，机器人却更容易把相似物体认错。很多团队到这一步才开始比较几张输出图，结果很难定位：问题可能来自 FP16 的累积误差、INT8 校准集、动态 shape、算子替换，也可能只是预处理的颜色顺序变了。 精度回归应该和性能回归分开测。先固定输入和预处理，把原始框架输出当作参考；再逐层比较 TensorRT 输出；最后把差异放进真正的任务指标，例如抓取目标是否选对、深度排序是否改变、控制器拒绝率是否上升。单独报告“平均误差很小”不够。 锁定输入和预处理 → 保存 FP32 参考输出 → 逐层定位差异 → 重...</summary>
+  </entry>
+  <entry>
+    <title>触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</title>
+    <id>https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/</id>
+    <link href="https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/"/>
+    <published>2026-08-06T01:30:00.000Z</published>
+    <updated>2026-08-06T01:30:00.000Z</updated>
+    <summary type="html">机械臂夹住一个物体后，力传感器的曲线偶尔会突然归零，下一周期又跳回去。另一个常见现象是：传感器显示力已经超过阈值，夹爪却没有停。排查时不要先把锅甩给滤波器。消息是否带了正确时间，读数是否排队，阈值触发是否走了独立的安全通道，这些问题更常见。 触觉和力信号有两个用途。一个是给策略或模型提供“接触发生了”的观测，允许稍微延迟；另一个是保护人和设备，必须在可预期的时间内触发。把两者共用一个 ROS 2 话题和同一套队列，后面很难证明急停真的可靠。 确认传感器时间戳和单位 → 记录原始数据与消息年龄 → 做零点和滤波基线 → 分别设计控制阈值与急停通道 →...</summary>
+  </entry>
+  <entry>
+    <title>Rolling Shutter、曝光与运动模糊：为什么移动机器人会错一拍</title>
+    <id>https://quchaosheng.github.io/2026/08/05/ai-robot-rolling-shutter-motion-blur/</id>
+    <link href="https://quchaosheng.github.io/2026/08/05/ai-robot-rolling-shutter-motion-blur/"/>
+    <published>2026-08-05T01:30:00.000Z</published>
+    <updated>2026-08-05T01:30:00.000Z</updated>
+    <summary type="html">相机固定在桌上时，AprilTag 和目标框都很稳。把相机装到底盘上，转一个弯，画面里的标记开始倾斜，深度点云也跟着抖。模型没有换，参数也没有改，变化来自相机本身：Rolling Shutter 逐行读图，图像顶部和底部并不属于同一时刻；曝光时间太长时，单行内部又会积累一段运动轨迹。 我会先把这两个误差分开。行读出造成时间错位，曝光造成运动模糊。它们都能让位姿抖动，但修法不一样。 确认快门和时间戳含义 → 记录曝光、分辨率和帧率 → 固定相机做静态基线 → 加入已知速度的运动 → 把误差接入拒绝条件 时空图 一帧 Rolling Shutter 图...</summary>
+  </entry>
+  <entry>
+    <title>视觉伺服的端到端延迟预算：目标为什么总是慢半拍</title>
+    <id>https://quchaosheng.github.io/2026/08/04/ai-robot-visual-servo-latency-budget/</id>
+    <link href="https://quchaosheng.github.io/2026/08/04/ai-robot-visual-servo-latency-budget/"/>
+    <published>2026-08-04T01:30:00.000Z</published>
+    <updated>2026-08-04T01:30:00.000Z</updated>
+    <summary type="html">机械臂对着一个静止目标来回摆，日志里相机明明有 30 Hz，推理也写着 20 ms。这样的系统很容易被误判成“模型不够准”。我会先问另一个问题：控制器用到的那张图，究竟是几毫秒以前拍的？ 视觉伺服用的是一条链路，不是一个单独的推理时间。相机曝光、读出和传输，驱动排队，图像转换，推理，坐标变换，规划以及执行器命令，每一段都可能把结果推迟。只盯着网络或模型的平均耗时，通常看不到真正让末端抖起来的长尾。 给图像和命令打时间戳 → 拆开采集到执行的各段耗时 → 测量 P50 与 P99 → 把结果年龄接入控制截止期 → 超时则降速或拒绝 延迟预算图 闭环判...</summary>
+  </entry>
   <entry>
     <title>NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层</title>
     <id>https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/</id>
     <link href="https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/"/>
     <published>2026-07-28T06:00:00.000Z</published>
     <updated>2026-07-28T06:00:00.000Z</updated>
-    <summary type="html">GR00T 代表视觉-语言-动作（VLA）模型进入机器人任务的一条路线：模型接收图像、语言、状态等多模态信息，输出任务步骤、动作候选或连续控制参考。它的价值在于把过去需要大量手工规则的泛化理解交给数据驱动模型；它的风险也很直接，模型输出会受训练分布、上下文、延迟和硬件状态影响，不能因为“看起来懂了”就越过安全边界直接驱动执行器。 接收视觉与语言指令 → 模型生成任务/动作候选 → 运行时校验场景与约束 → 控制器执行有限动作 → 反馈结果或安全停止 边界图 模型负责提出候选，确定性的校验、规划和控制层决定动作能否落到硬件。 多模态输入 图像、语言和...</summary>
+    <summary type="html">“把红杯子放到托盘里”这句话，GR00T 之类的 VLA 模型可能能给出一串看似合理的动作。目标被遮住、相机画面变旧或规划器找不到可达姿态时，模型仍可能返回格式正确的结果。它接收图像、语言和状态并生成任务或动作候选，但候选必须经过运行时校验，不能直接越过控制器和安全 I&amp;#x2F;O。 接收视觉与语言指令 → 模型生成任务/动作候选 → 运行时校验场景与约束 → 控制器执行有限动作 → 反馈结果或安全停止 边界图 模型负责提出候选，确定性的校验、规划和控制层决定动作能否落到硬件。 多模态输入 图像、语言和机器人状态都要带版本、坐标与新鲜度 VLA ...</summary>
   </entry>
   <entry>
-    <title>DeepStream 多相机机器人：视频流怎样批量进入 AI 管线</title>
+    <title>DeepStream 多相机机器人：帧率正常，控制为什么还是迟钝</title>
     <id>https://quchaosheng.github.io/2026/07/30/deepstream-multicamera-robot/</id>
     <link href="https://quchaosheng.github.io/2026/07/30/deepstream-multicamera-robot/"/>
     <published>2026-07-27T06:00:00.000Z</published>
     <updated>2026-07-27T06:00:00.000Z</updated>
-    <summary type="html">当机器人同时挂着前视、侧视、深度或鱼眼相机时，逐路手写“解码、缩放、推理、跟踪、发布 ROS 2 消息”很快会变成难以维护的管线。DeepStream 基于 GStreamer 组织这些阶段，可将硬件解码、GPU 预处理、TensorRT 推理、跟踪和元数据传递串起来。它擅长多流吞吐，但机器人更在意每条视频从采集到被决策模块消费时已经“老了多久”。 多路相机采集 → 硬件解码与预处理 → 组批进入 TensorRT → 目标跟踪与元数据 → ROS 2 节点消费结果 时延图 每个队列都可能让帧变旧，最终应以规划器消费时的感知年龄衡量。 采集时间戳 ...</summary>
+    <summary type="html">前视相机的 FPS 看着很漂亮，底盘却总在拐弯后才开始刹车。检查日志才发现，侧视相机偶尔晚到一帧， nvstreammux 为了凑 batch 把前视画面留在队列里。DeepStream 能把解码、预处理、TensorRT 推理、跟踪和元数据串起来，但这些队列也会把机器人看到的世界变旧。 多路相机采集 → 硬件解码与预处理 → 组批进入 TensorRT → 目标跟踪与元数据 → ROS 2 节点消费结果 时延图 每个队列都可能让帧变旧，最终应以规划器消费时的感知年龄衡量。 采集时间戳 记录相机曝光时刻，不能在 ROS 2 发布时用 now() 替...</summary>
   </entry>
   <entry>
     <title>Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间</title>
@@ -28,7 +100,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/isaac-ros-vslam-nvblox/"/>
     <published>2026-07-24T06:00:00.000Z</published>
     <updated>2026-07-24T06:00:00.000Z</updated>
-    <summary type="html">机器人要自主移动，至少需要回答两个问题：自己在哪里，以及周围哪些空间安全。Visual SLAM 通过相机特征与 IMU 估计连续位姿；nvblox 将深度观测按位姿融合，维护 TSDF、占据栅格或 ESDF 等空间表示。前者提供“运动轨迹”，后者提供“可通行距离”，二者接到导航栈后，规划器才有可靠的起点与障碍信息。 同步相机与 IMU → Visual SLAM 估计位姿 → 深度数据按位姿融合 → 生成三维地图/距离场 → 导航规划并反馈新观测 坐标图 定位、建图和导航共享一条时间与 TF 链，任一环错位都会污染后续结果。 camera_lin...</summary>
+    <summary type="html">机器人在走廊里定位正常，一到玻璃门或急转弯处就开始漂。此时别急着换特征点算法，先看相机、IMU、深度帧和 TF 是否属于同一段时间。Visual SLAM 提供连续位姿，nvblox 按位姿融合深度并生成 TSDF、占据栅格或 ESDF；其中任何一个时间或坐标关系错了，规划器拿到的地图就会跟着错。 同步相机与 IMU → Visual SLAM 估计位姿 → 深度数据按位姿融合 → 生成三维地图/距离场 → 导航规划并反馈新观测 坐标图 定位、建图和导航共享一条时间与 TF 链，任一环错位都会污染后续结果。 camera_link 相机外参与采集时...</summary>
   </entry>
   <entry>
     <title>Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界</title>
@@ -36,7 +108,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/"/>
     <published>2026-07-23T06:00:00.000Z</published>
     <updated>2026-07-23T06:00:00.000Z</updated>
-    <summary type="html">Isaac Sim 不是一个只用来看机器人动画的 3D 工具。它基于 USD 场景描述和物理仿真，可以组合机器人模型、关节、传感器、材质、光照与环境，并通过 ROS 2 Bridge、Replicator 等组件接入算法联调、合成数据和自动化回归。真正的 Sim-to-Real 目标也不是“画面逼真”，而是让部署到真实机器人后最重要的误差来源已被识别、建模或留有安全余量。 建立机器人与传感器模型 → 标定物理和噪声参数 → 随机化场景与扰动 → 批量训练和回归 → 实机小范围验证再迭代 验证图 仿真覆盖已知误差，实机暴露新误差，两边通过同一指标和版...</summary>
+    <summary type="html">仿真里的机械臂能连续抓到杯子，真机却在逆光和轻微打滑时频繁抓空。问题通常不在“画面够不够像”，而在仿真有没有覆盖相机曝光、标定误差、执行器延迟和摩擦变化。Isaac Sim 用 USD、物理仿真、ROS 2 Bridge 和 Replicator 把这些变量放进同一套可回放的场景里，价值也在这里。 Domain Randomization 的经典工作已经说明，模拟图像不必追求照片级真实，关键是随机化范围能覆盖真实任务里的变化。这个结论可以指导 Isaac Sim 的参数选择，但不能替代真机测量。论文和工程实现的对应关系，放在 《VLA 论文怎么读》...</summary>
   </entry>
   <entry>
     <title>TensorRT 机器人推理：从训练模型到稳定延迟</title>
@@ -44,7 +116,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/"/>
     <published>2026-07-21T06:00:00.000Z</published>
     <updated>2026-07-21T06:00:00.000Z</updated>
-    <summary type="html">训练模型在电脑上能跑，不代表它放到机器人上就稳定。TensorRT 会解析 ONNX 等模型，融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine。FP16 和 INT8 往往能减小计算量和带宽，但还要测持续输入、温度变化和其他节点抢资源时，结果会不会变慢或过期。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 engine → 预分配并预热推理 → 测量端到端延迟与精度 时延图 模型、engine、缓冲区和队列要一起看，单独缩短 GPU 时间不等于感知结果更及时。 ONNX 输入契约 opset、形状、颜色、...</summary>
+    <summary type="html">电脑上单张图片推理很快，放到机器人连续跑半小时后，检测结果却越来越晚。TensorRT 会解析 ONNX、融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine；FP16&amp;#x2F;INT8 只解决其中一部分计算成本，队列、温度和其他节点仍可能让结果过期。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 engine → 预分配并预热推理 → 测量端到端延迟与精度 时延图 模型、engine、缓冲区和队列要一起看，单独缩短 GPU 时间不等于感知结果更及时。 ONNX 输入契约 opset、形状、颜色、归一化和后...</summary>
   </entry>
   <entry>
     <title>Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU</title>
@@ -52,7 +124,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/isaac-ros-nitros-zero-copy/"/>
     <published>2026-07-20T06:00:00.000Z</published>
     <updated>2026-07-20T06:00:00.000Z</updated>
-    <summary type="html">机器人视觉链路里，模型本身只跑几毫秒，结果却晚很多才出来，很常见。时间通常花在图像从驱动到 ROS 消息、颜色转换、CPU 内存和 GPU 内存之间的复制与排队上。Isaac ROS 的 NITROS 用 ROS 2 类型适配和 GXF 让兼容节点协商数据格式，尽量让图像和张量留在加速内存里继续处理。 相机产生图像 → NITROS 协商兼容格式 → 缓冲区留在加速内存 → GPU 节点连续处理 → 只在边界转换数据 数据图 判断少拷贝是否成立，要沿着每个缓冲区检查位置、格式、所有权和同步点。 相机输出 先确认原始帧位于哪里、是什么格式、由谁拥有。...</summary>
+    <summary type="html">开启 NITROS 后，某个节点的日志可能显示“推理只用了几毫秒”，但控制器收到结果仍然很晚。真正消耗时间的地方通常在驱动到 ROS 消息、颜色转换、CPU&amp;#x2F;GPU 拷贝和队列等待之间。NITROS 通过 ROS 2 类型适配和 GXF 让兼容节点协商缓冲区，能减少一部分复制，却不会自动消除所有边界。 相机产生图像 → NITROS 协商兼容格式 → 缓冲区留在加速内存 → GPU 节点连续处理 → 只在边界转换数据 数据图 判断少拷贝是否成立，要沿着每个缓冲区检查位置、格式、所有权和同步点。 相机输出 先确认原始帧位于哪里、是什么格式、...</summary>
   </entry>
   <entry>
     <title>Jetson 机器人部署：功耗、算力与实时控制怎样分工</title>
@@ -60,7 +132,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/"/>
     <published>2026-07-17T06:00:00.000Z</published>
     <updated>2026-07-17T06:00:00.000Z</updated>
-    <summary type="html">Jetson 把 ARM CPU、NVIDIA GPU、内存和多媒体加速器放在一块边缘板上。JetPack 提供 Linux for Tegra、CUDA、TensorRT、cuDNN 等组件，能让相机、视觉推理和 ROS 2 在机器人本体上运行。它适合做感知和任务处理，但 GPU 跑得快不代表电机控制回路的最长延迟就可预测。 选择 JetPack 与功耗模式 → 部署模型和 ROS 2 节点 → 测量 CPU/GPU/内存负载 → 分离推理与实时控制 → 在温度稳定后复测长尾 资源图 Jetson 是感知和任务平台，实时控制与安全链路应有更确定的...</summary>
+    <summary type="html">同一块 Jetson 上，相机、TensorRT、录包和 ROS 2 都在正常工作，电机控制却偶尔晚一个周期。通常不是 GPU “算不过来”，而是 CPU 回调、内存带宽、温度降频和队列一起把实时路径拖慢。JetPack 把 Linux for Tegra、CUDA、TensorRT 和多媒体组件放在一起，部署时仍要把感知与控制的职责分开。 选择 JetPack 与功耗模式 → 部署模型和 ROS 2 节点 → 测量 CPU/GPU/内存负载 → 分离推理与实时控制 → 在温度稳定后复测长尾 资源图 Jetson 是感知和任务平台，实时控制与安全链...</summary>
   </entry>
   <entry>
     <title>NVIDIA Physical AI 技术栈：机器人从模型到执行器要经过什么</title>
@@ -68,7 +140,7 @@
     <link href="https://quchaosheng.github.io/2026/07/30/nvidia-physical-ai-stack/"/>
     <published>2026-07-16T06:00:00.000Z</published>
     <updated>2026-07-16T06:00:00.000Z</updated>
-    <summary type="html">“Physical AI”听起来像一个大模型控制机器人，实际是一条比聊天模型长得多的工程链路：传感器要可靠地产生时间对齐的数据，模型要在目标硬件上稳定推理，规划器要把语义意图拆成受约束的动作，底层控制器还要能在模型失误时独立把系统带回安全状态。NVIDIA 的 Cosmos、Isaac Sim、Isaac ROS、TensorRT 与 Jetson 分别覆盖数据、仿真、机器人计算图、推理和边缘算力，而 ROS 2、控制器和安全 I&amp;#x2F;O 负责把这些能力接入真实机器。 采集或生成机器人数据 → 训练感知/决策模型 → Isaac Sim 仿真...</summary>
+    <summary type="html">以“相机看到 AprilTag，底盘停到指定距离”为例，真正要接通的是时间戳、模型、规划、控制和急停，而不是一个孤立的大模型。NVIDIA 的 Cosmos、Isaac Sim、Isaac ROS、TensorRT 和 Jetson 分别覆盖数据、仿真、机器人计算图、推理和边缘算力；ROS 2、控制器与安全 I&amp;#x2F;O 决定这些组件在异常时怎样停下来。 采集或生成机器人数据 → 训练感知/决策模型 → Isaac Sim 仿真验证 → Jetson 边缘推理 → ROS 2 与控制器安全执行 数据与模型 传感器数据要带时间戳、置信度与失效状态...</summary>
   </entry>
   <entry>
     <title>实时回归测试：把一次调优变成可持续的延迟基线</title>
@@ -93,77 +165,5 @@
     <published>2026-07-10T06:00:00.000Z</published>
     <updated>2026-07-10T06:00:00.000Z</updated>
     <summary type="html">把实时线程独占一个 CPU 后，仍可能发现执行时间随“其他核在干什么”而波动。原因是核心并不独占整台芯片：同一 NUMA 节点中的 CPU 可能共享末级缓存（LLC）、内存控制器和互连带宽；跨节点访问还会经过更长路径。另一个核心上大规模 memcpy、GPU DMA、数据库或网络包处理，都可能让实时线程的缓存命中率下降、内存访问排队变长。 实时线程命中本地数据 → 邻核任务争用 LLC/带宽 → 缓存失效或排队增加 → 最坏执行时间变长 → 重新规划 CPU 与内存布局 CPU 亲和性不等于内存亲和性 Linux 常用“首次触碰”分配策略：一页虚拟...</summary>
-  </entry>
-  <entry>
-    <title>容器里的实时任务：cgroup、权限和 CPU 配额如何共同生效</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-cgroup-containers/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-cgroup-containers/"/>
-    <published>2026-07-09T06:00:00.000Z</published>
-    <updated>2026-07-09T06:00:00.000Z</updated>
-    <summary type="html">容器把进程、文件系统和资源视图隔开，却不提供一套新的实时内核。容器中的线程仍由宿主机同一个调度器、同一组 IRQ、同一块缓存和同一套功耗策略管理。因此“进容器后 chrt 成功了”只证明进程拿到了调度权限，不证明它已经获得稳定的 CPU、内存或设备时延。 授予最小调度权限 → 配置 cpuset 与内存节点 → 核对 CPU/RT 预算 → 迁移宿主 IRQ 与杂务 → 在容器内外联合压测 容器里实时性由哪几层共同决定 进程能否设置实时策略通常受 CAP_SYS_NICE 、 RLIMIT_RTPRIO 和宿主机安全策略约束；能在哪些 CPU 上运...</summary>
-  </entry>
-  <entry>
-    <title>SCHED_DEADLINE：用运行预算和截止期调度周期任务</title>
-    <id>https://quchaosheng.github.io/2026/07/30/sched-deadline-cbs/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/sched-deadline-cbs/"/>
-    <published>2026-07-08T06:00:00.000Z</published>
-    <updated>2026-07-08T06:00:00.000Z</updated>
-    <summary type="html">当一个任务可以明确说出“我每 10 ms 来一次、最坏需要 1 ms CPU、最晚 8 ms 必须完成”时， SCHED_DEADLINE 往往比手工安排一堆 FIFO 优先级更贴近问题本身。它采用最早截止期优先（EDF）选择任务，并使用 Constant Bandwidth Server（CBS）为每个任务分配运行预算。这样某个任务突然超量执行时，不会无休止侵占其他 deadline 任务的带宽。 声明 runtime/deadline/period → 内核执行准入检查 → 按最早截止期运行 → 消耗完预算后节流 → 下周期补充并重排 三个参数...</summary>
-  </entry>
-  <entry>
-    <title>SMI 与固件延迟：Linux 追踪不到的实时尖峰从哪里来</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-smi-firmware-latency/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-smi-firmware-latency/"/>
-    <published>2026-07-07T06:00:00.000Z</published>
-    <updated>2026-07-07T06:00:00.000Z</updated>
-    <summary type="html">有一种实时尖峰特别让人困惑： cyclictest 明确记录到几百微秒甚至毫秒级延迟，ftrace 时间线上却没有足够长的 IRQ、锁或调度事件。对于 x86 平台，系统管理中断（SMI）会让 CPU 进入 System Management Mode 执行固件代码；普通操作系统不能抢占它，也通常看不到里面的调用栈。热管理、BIOS 服务、硬件纠错与平台管理都可能在这里引入不可见时间。 实时测试捕获尖峰 → 内核事件无法解释 → 核对 NMI/SMI 与硬件计数 → 调整 BIOS/固件策略 → 同负载长时间复测 为什么 Linux 看不见这段时间...</summary>
-  </entry>
-  <entry>
-    <title>CPU 频率与空闲态：实时延迟中容易忽略的硬件变量</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-cpu-frequency-idle/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-cpu-frequency-idle/"/>
-    <published>2026-07-06T06:00:00.000Z</published>
-    <updated>2026-07-06T06:00:00.000Z</updated>
-    <summary type="html">实时线程按时被唤醒，只代表它开始有机会运行；它之后多久完成还取决于当时 CPU 的频率、缓存与电源状态。动态调频会改变每条指令的执行时间，深度 idle&amp;#x2F;C-state 则要付出退出延迟。它们能显著节能，却会引入与负载、温度、固件决策相关的长尾，所以一个空闲时非常漂亮的实时测试，在热稳定或低负载唤醒后可能突然变差。 CPU 负载下降 → 降低频率或进入深度空闲 → 实时事件到来 → 硬件恢复频率与状态 → 任务开始执行 频率与 idle 影响的是两段不同时间 cpufreq 主要影响任务开始执行后的计算速度：同一段算法在低频和高频下耗时不...</summary>
-  </entry>
-  <entry>
-    <title>Linux 实时节流：SCHED_FIFO 为什么会突然让出 CPU</title>
-    <id>https://quchaosheng.github.io/2026/07/30/linux-realtime-throttling/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/linux-realtime-throttling/"/>
-    <published>2026-07-03T06:00:00.000Z</published>
-    <updated>2026-07-03T06:00:00.000Z</updated>
-    <summary type="html">SCHED_FIFO 线程若从不阻塞，可以永远占着一个 CPU。对控制环而言这似乎很诱人，对整台 Linux 机器却很危险：同核上的内核维护、SSH、日志、网络处理甚至恢复机制都可能没有机会运行。Linux 因此提供实时节流机制，用一个统计周期和其中可供实时调度类使用的运行预算，为普通任务和系统维护留出 CPU 时间。 实时线程开始运行 → 消耗 RT 运行预算 → 达到周期上限 → 实时类被暂时节流 → 下个周期补充预算 两个 sysctl 的含义 kernel.sched_rt_period_us 定义预算统计的周期； kernel.sched...</summary>
-  </entry>
-  <entry>
-    <title>osnoise tracer：把 Linux 实时抖动拆成可解释的噪声</title>
-    <id>https://quchaosheng.github.io/2026/07/30/linux-osnoise-tracer/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/linux-osnoise-tracer/"/>
-    <published>2026-07-02T06:00:00.000Z</published>
-    <updated>2026-07-02T06:00:00.000Z</updated>
-    <summary type="html">实时延迟出现尖峰时，先要知道那段时间被谁占走了。 osnoise tracer 在指定 CPU 上运行采样线程，比较它本该运行的时间和实际得到的时间，再把缺口和 IRQ、softirq、NMI、调度等内核事件对上。它适合用来拆开“偶尔抖一下”到底是哪类干扰。 建立采样时间窗 → 持续读取运行时间 → 发现时间缺口 → 关联 IRQ/线程等事件 → 锁定主要噪声源 osnoise 与 timerlat 的分工 timerlat 从定时器到期开始，关注 IRQ 延迟和被唤醒线程真正获得 CPU 的延迟； osnoise 则在一个 CPU 上持续观察“本...</summary>
-  </entry>
-  <entry>
-    <title>Linux 高精度定时器：实时任务为何不再依赖系统节拍</title>
-    <id>https://quchaosheng.github.io/2026/07/30/linux-high-resolution-timers/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/linux-high-resolution-timers/"/>
-    <published>2026-06-30T06:00:00.000Z</published>
-    <updated>2026-06-30T06:00:00.000Z</updated>
-    <summary type="html">一个周期任务若每 1 ms 运行一次，最直观的写法是“睡 1 ms，再做一次工作”。但如果每轮工作多花了 80 微秒，下一轮又从当前时刻开始睡，误差会不断累积，最终周期已经悄悄漂移。Linux 的高精度定时器（hrtimer）配合硬件 clock event，可以把到期时刻表达为绝对时间，并按下一次最近到期事件编程硬件定时器。它解决的是“什么时候该触发”，不是“触发后什么时候一定能拿到 CPU”。 任务设置到期时间 → hrtimer 入队排序 → 编程 clock event → 定时中断触发回调 → 唤醒任务并参与调度 clocksource、...</summary>
-  </entry>
-  <entry>
-    <title>Linux 实时系统落地检查清单</title>
-    <id>https://quchaosheng.github.io/2026/07/30/realtime-linux-checklist/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/realtime-linux-checklist/"/>
-    <published>2026-06-29T12:00:00.000Z</published>
-    <updated>2026-06-29T12:00:00.000Z</updated>
-    <summary type="html">实时化不是“装一个 PREEMPT_RT 内核，再把线程优先级调到 99”。一个可交付的实时系统必须能回答：哪个任务多久运行一次、最晚何时完成、在什么工况下仍然成立、失败时做什么、由什么数据证明。只有把需求、平台、软件、观测和验收连起来，调优才不会沦为一次偶然的 benchmark。 定义 deadline 与最坏延迟 → 配置 PREEMPT_RT 与调度 → 隔离 CPU/IRQ/内存 → 施加组合压力测试 → 追踪尖峰并形成回归基线 从需求写出可验收的数字 先避免“系统要实时”这种无法测试的说法。对每条关键链路写出周期、截止期、最坏执行时间、...</summary>
-  </entry>
-  <entry>
-    <title>TSN：以太网怎样提供确定性时延</title>
-    <id>https://quchaosheng.github.io/2026/07/30/tsn-deterministic-network/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/tsn-deterministic-network/"/>
-    <published>2026-06-26T02:00:00.000Z</published>
-    <updated>2026-06-26T02:00:00.000Z</updated>
-    <summary type="html">传统以太网的核心优点是共享与尽力而为：大包可以占用链路，突发流量可以在交换机队列里等待。TSN（Time-Sensitive Networking）并不是把以太网换成另一种网络，而是在标准以太网上叠加共同时间、流量分类、整形、门控和可靠性机制，使关键流有预先安排的发送窗口和可计算的端到端时延。 PTP 同步全网时间 → 识别关键业务流 → 配置队列与 Gate Control List → 按时间窗发送 → 监控延迟、丢包与时钟偏差 TSN 不是一个 qdisc，而是一组配合机制 IEEE 802.1AS&amp;#x2F;gPTP 提供共同时间；802....</summary>
   </entry>
 </feed>

@@ -4,6 +4,50 @@
     <loc>https://quchaosheng.github.io/</loc>
   </url>
   <url>
+    <loc>https://quchaosheng.github.io/2026/02/06/linux-thread-cpu-affinity/</loc>
+    <lastmod>2026-02-06</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/02/17/ros2-executor-callback-groups-basics/</loc>
+    <lastmod>2026-02-17</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/02/27/linux-periodic-control-loop-basics/</loc>
+    <lastmod>2026-02-27</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/03/10/vla-paper-reading-guide/</loc>
+    <lastmod>2026-03-10</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/03/19/linux-process-thread-task-basics/</loc>
+    <lastmod>2026-03-19</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/03/31/ros2-communication-basics/</loc>
+    <lastmod>2026-03-31</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/04/30/ros2-qos-basics/</loc>
+    <lastmod>2026-04-30</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/05/21/ros2-tf2-frame-time-basics/</loc>
+    <lastmod>2026-05-21</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/06/11/robot-kinematics-jacobian-basics/</loc>
+    <lastmod>2026-06-11</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/06/22/cuda-memory-stream-basics/</loc>
+    <lastmod>2026-06-22</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/07/01/aloha-act-paper-reading/</loc>
+    <lastmod>2026-07-01</lastmod>
+  </url>
+  <url>
     <loc>https://quchaosheng.github.io/2026/07/29/alloc-pages-path/</loc>
     <lastmod>2026-04-03</lastmod>
   </url>
@@ -538,6 +582,42 @@
   <url>
     <loc>https://quchaosheng.github.io/2026/07/30/tsn-deterministic-network/</loc>
     <lastmod>2026-06-26</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/04/ai-robot-visual-servo-latency-budget/</loc>
+    <lastmod>2026-08-04</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/05/ai-robot-rolling-shutter-motion-blur/</loc>
+    <lastmod>2026-08-05</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/</loc>
+    <lastmod>2026-08-06</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/10/ai-robot-tensorrt-precision-regression/</loc>
+    <lastmod>2026-08-10</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/11/ai-robot-voxel-memory-budget/</loc>
+    <lastmod>2026-08-11</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/13/ai-robot-vla-human-intervention-state-machine/</loc>
+    <lastmod>2026-08-13</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/14/ai-robot-edge-model-ota-rollback/</loc>
+    <lastmod>2026-08-14</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/24/ai-robot-rosbag2-failure-replay/</loc>
+    <lastmod>2026-08-24</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/25/ai-robot-acceptance-evidence/</loc>
+    <lastmod>2026-08-25</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/404.html</loc>
