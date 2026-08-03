@@ -181,7 +181,7 @@
 </div>
 
 <div class="project-facts">
-  <div><span>目标环境</span><strong>Ubuntu 22.04 · ROS 2 Humble</strong></div>
+  <div><span>正式环境</span><strong>Ubuntu 24.04 · ROS 2 Jazzy</strong></div>
   <div><span>运行时信号</span><strong>RuntimeEvent · tracing · eBPF · CAN</strong></div>
   <div><span>处理方式</span><strong>先定位，再调参数</strong></div>
 </div>
@@ -190,6 +190,23 @@
 <div class="note-flow"><span>应用事件<br>RuntimeEvent</span><i>→</i><span>ROS 2 / eBPF / CAN<br>收集记录</span><i>→</i><span>按时间关联<br>留下来源</span><i>→</i><span>找可疑位置<br>允许未知</span><i>→</i><span>改一个设置<br>重新测试</span></div>
 
 <h2 id="处理时会看什么"><a href="#处理时会看什么" class="headerlink" title="处理时会看什么"></a>处理时会看什么</h2><div class="note-map"><span><b>运行路径</b><small>先写清某类工作负载会经过哪些阶段。</small></span><span><b>事件匹配</b><small>每条系统事件都标记为匹配、未匹配或不确定。</small></span><span><b>关联结果</b><small>Trace、回调、DDS、调度和 ACK 都保留来源。</small></span><span><b>无法判断</b><small>记录缺失或冲突时，结果会明确写成证据不足。</small></span><span><b>可改设置</b><small>只尝试与问题有关的配置项。</small></span><span><b>重新测试</b><small>每次改动都要重跑，失败时保留回滚信息。</small></span></div>
+
+<h2 id="正式实验结果"><a href="#正式实验结果" class="headerlink" title="正式实验结果"></a>正式实验结果</h2><p>在原生 Ubuntu 24.04、ROS 2 Jazzy 环境中执行 F3/F4 control 与 injected 条件，共 40 次运行，40/40 成功；每个条件包含 10 次按 repetition 配对的平衡重复，保留环境、运行顺序、artifact manifest 与完整性校验。</p>
+<ul>
+<li>F3 CPU 压力下完整生命周期恢复率由 95.30% 降至 67.56%。压力条件下完成样本存在选择偏差，因此不把其较低中位延迟解释为性能改善或调度层因果结论。</li>
+<li>F4 的 100 ms 应用层阻塞使 request-response 中位延迟由 0.875 ms 增至 101.212 ms；10 次配对的中位增量约 100.337 ms。</li>
+</ul>
+<figure class="project-hero-image"><img src="/image/projects/robotraceopt-f4-formal.svg" alt="RoboTraceOpt F4 正式实验中控制组与阻塞注入组的应用层延迟对比"></figure>
+
+<h2 id="论文留出关联评估"><a href="#论文留出关联评估" class="headerlink" title="论文留出关联评估"></a>论文留出关联评估（单独报告）</h2><p>已有 WSL2、Ubuntu 22.04、ROS 2 Humble 重叠日志按独立运行划分：每个场景用 run 01–05 校准时间窗，用 run 06–10 做留出测试。预测阶段只读取事件身份、trace ID、sequence ID、stage 和时间戳，生成公开分组后才接入 oracle 评分。</p>
+<table>
+<thead><tr><th>留出场景</th><th>oracle 路径</th><th>precision</th><th>recall</th><th>F1</th><th>运行级 95% F1 CI</th></tr></thead>
+<tbody>
+<tr><td>双 10 Hz</td><td>6,024</td><td>1.0000</td><td>0.9772</td><td>0.9884</td><td>[0.9793, 0.9939]</td></tr>
+<tr><td>双混合频率</td><td>5,178</td><td>1.0000</td><td>1.0000</td><td>1.0000</td><td>[1.0000, 1.0000]</td></tr>
+</tbody>
+</table>
+<p>这组结果只评价路径关联和合同准入，不是 F1–F6 根因分类。运行来自同一主机和 boot，采用 mock 延迟，采集时源码工作区为 dirty；因此它属于论文支撑证据，和 clean commit 的原生 F3/F4 正式数据分开陈述。</p>
 
 <h2 id="仓库里有什么"><a href="#仓库里有什么" class="headerlink" title="仓库里有什么"></a>仓库里有什么</h2><table>
 <thead>
@@ -228,17 +245,18 @@
 <h2 id="先跑一次"><a href="#先跑一次" class="headerlink" title="先跑一次"></a>先跑一次</h2><p>下面的命令先确认核心工作区能构建、软件 smoke 能通过。性能和调度问题还要在目标环境里单独测。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bash scripts/build_core.sh</span><br><span class="line"><span class="built_in">source</span> ~/.cache/robotraceopt_build/install/setup.bash</span><br><span class="line">bash scripts/run_smoke_workload.sh all 8</span><br><span class="line">python3 -m unittest discover -s tests -q</span><br></pre></td></tr></table></figure>
 
-<p>在 RDK X5 上，先跑只读能力检查，再决定哪些测试能放到原生 Linux 或 X5 上。预检、dry-run、WSL 和 vcan 的结果只用于开发检查。</p>
+<p>原生 Linux F3/F4 已形成正式测试分区。RDK X5 的预检、dry-run、WSL 和 vcan 仍只用于开发检查或平台准备，不能替代对应平台的正式测量。</p>
 <h2 id="现在能说明什么"><a href="#现在能说明什么" class="headerlink" title="现在能说明什么"></a>现在能说明什么</h2><ul>
 <li>代码里有 RuntimeEvent v2 插桩、<code>ros2_tracing</code>、eBPF 调度记录、SocketCAN&#x2F;vcan ACK 适配、关联和配置搜索逻辑。</li>
-<li>WSL dry-run、RuntimeEvent-only 和 vcan 可以检查链路和协议，不能用来说明正式调度归因或物理 CAN。</li>
-<li>要下正式结论，还要有原生 Linux 或 X5 测试、环境报告和完整的输出文件。</li>
+<li>原生 Linux F4 支持应用层阻塞延迟结论；F3 支持完整生命周期恢复率结论，不支持调度层因果归因。</li>
+<li>WSL2 独立运行留出评估支持所测重叠工作负载上的路径身份关联与合同准入结论，不支持根因分类结论。</li>
+<li>当前正式数据尚未单独证明 F1-F6 全类诊断准确率、弃权表现或优化收益。</li>
 </ul>
-<h2 id="真机测试还缺什么"><a href="#真机测试还缺什么" class="headerlink" title="真机测试还缺什么"></a>真机测试还缺什么</h2><ol>
-<li>先确认目标平台上的 ROS 2、tracing 和 eBPF 都可用。</li>
-<li>开始前确定测试用例、输入、seed 和输出目录。</li>
-<li>成功时写入 <code>artifact_manifest.json</code>，保留输出文件的来源和哈希。</li>
-<li>通过、失败和中断的测试都保留；下一次测试用新的目录，不覆盖旧结果。</li>
+<h2 id="正式证据还缺什么"><a href="#正式证据还缺什么" class="headerlink" title="正式证据还缺什么"></a>正式证据还缺什么</h2><ol>
+<li>测量观测链开启前后的 CPU、内存、完整率与 P50/P95/P99 开销。</li>
+<li>在冻结根因规则后的 held-out 诊断数据上报告 Top-1、Macro-F1、弃权率和数据源消融；已有路径关联留出评估不能替代这一项。</li>
+<li>完成一条异常、证据图、候选配置、10 次配对复验到接受或回滚的正式闭环。</li>
+<li>X5 作为可迁移性和部署补充，不用复制整套原生 Linux 矩阵。</li>
 </ol>
 <p><strong>入口：</strong> <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/RoboTraceOpt">GitHub 源码与运行说明</a> · <a href="/projects/">项目总览</a> · <a href="/paths/">学习路径</a></p>
 
