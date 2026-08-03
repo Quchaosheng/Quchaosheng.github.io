@@ -208,6 +208,12 @@
 </table>
 <p>这组结果只评价路径关联和合同准入，不是 F1–F6 根因分类。运行来自同一主机和 boot，采用 mock 延迟，采集时源码工作区为 dirty；因此它属于论文支撑证据，和 clean commit 的原生 F3/F4 正式数据分开陈述。</p>
 
+<h2 id="有限支撑证据"><a href="#有限支撑证据" class="headerlink" title="有限支撑证据"></a>有限支撑证据</h2><ul>
+<li>WSL2 RuntimeEvent 代理开销包含 disabled、buffered 和逐事件 flush 三种模式，在 5 Hz 与 20 Hz 下各 10 次、每次 60 秒。三种模式的进程 CPU 中位数在 5 Hz 下分别为 2.037%、3.476%、3.250%，在 20 Hz 下分别为 4.075%、7.607%、7.253%。采集按条件分块且源码工作区为 dirty，因此不能替代原生 Linux 四模式开销实验。</li>
+<li>RDK X5 双 CANable 正常 ACK smoke 保留 34 次发送与 34 次匹配 ACK，payload 匹配率 100%，send-to-ACK P50/P95 为 6.039/6.238 ms。该会话没有 drop/timeout 对照且 planner 为 mock，因此只支持实体 SocketCAN 传输链路，不支持 ECU HIL、模型安全或 F6 根因结论。</li>
+</ul>
+<p>四类公开包的协议、哈希和适用边界见 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/RoboTraceOpt/tree/main/docs/evidence">证据索引</a>；不同环境和证据等级不合并统计。</p>
+
 <h2 id="仓库里有什么"><a href="#仓库里有什么" class="headerlink" title="仓库里有什么"></a>仓库里有什么</h2><table>
 <thead>
 <tr>
@@ -245,7 +251,7 @@
 <h2 id="先跑一次"><a href="#先跑一次" class="headerlink" title="先跑一次"></a>先跑一次</h2><p>下面的命令先确认核心工作区能构建、软件 smoke 能通过。性能和调度问题还要在目标环境里单独测。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bash scripts/build_core.sh</span><br><span class="line"><span class="built_in">source</span> ~/.cache/robotraceopt_build/install/setup.bash</span><br><span class="line">bash scripts/run_smoke_workload.sh all 8</span><br><span class="line">python3 -m unittest discover -s tests -q</span><br></pre></td></tr></table></figure>
 
-<p>原生 Linux F3/F4 已形成正式测试分区。RDK X5 的预检、dry-run、WSL 和 vcan 仍只用于开发检查或平台准备，不能替代对应平台的正式测量。</p>
+<p>原生 Linux F3/F4 已形成正式测试分区。RDK X5 已有双 CANable 正常 ACK 硬件 smoke，但缺少 drop/timeout 对照；dry-run、WSL 和 vcan 仍只用于开发检查或平台准备，不能替代对应平台的正式测量。</p>
 <h2 id="现在能说明什么"><a href="#现在能说明什么" class="headerlink" title="现在能说明什么"></a>现在能说明什么</h2><ul>
 <li>代码里有 RuntimeEvent v2 插桩、<code>ros2_tracing</code>、eBPF 调度记录、SocketCAN&#x2F;vcan ACK 适配、关联和配置搜索逻辑。</li>
 <li>原生 Linux F4 支持应用层阻塞延迟结论；F3 支持完整生命周期恢复率结论，不支持调度层因果归因。</li>
@@ -253,7 +259,7 @@
 <li>当前正式数据尚未单独证明 F1-F6 全类诊断准确率、弃权表现或优化收益。</li>
 </ul>
 <h2 id="正式证据还缺什么"><a href="#正式证据还缺什么" class="headerlink" title="正式证据还缺什么"></a>正式证据还缺什么</h2><ol>
-<li>测量观测链开启前后的 CPU、内存、完整率与 P50/P95/P99 开销。</li>
+<li>在原生 Linux 上测量关闭、RuntimeEvent、tracing 和完整融合四种模式的 CPU、内存、完整率与 P50/P95/P99 开销；现有 WSL 代理数据不能替代这一项。</li>
 <li>在冻结根因规则后的 held-out 诊断数据上报告 Top-1、Macro-F1、弃权率和数据源消融；已有路径关联留出评估不能替代这一项。</li>
 <li>完成一条异常、证据图、候选配置、10 次配对复验到接受或回滚的正式闭环。</li>
 <li>X5 作为可迁移性和部署补充，不用复制整套原生 Linux 矩阵。</li>
