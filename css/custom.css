@@ -42,6 +42,16 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
+.project-group-title {
+  margin: 1.65rem 0 0.35rem;
+  font-size: 1.2em;
+  letter-spacing: 0;
+}
+.project-group-copy {
+  max-width: 48em;
+  margin: 0 0 0.9rem;
+  color: $light-font-secondary-color;
+}
 .project-item {
   overflow: hidden;
   border: 1px solid rgba(102,112,133,0.24);
@@ -292,6 +302,9 @@
 .dark-theme .project-intro {
   color: $dark-font-secondary-color;
 }
+.dark-theme .project-group-copy {
+  color: $dark-font-secondary-color;
+}
 .dark-theme .recent-notes {
   background: rgba(255,255,255,0.035);
 }
@@ -329,6 +342,9 @@
   .project-showcase h2 {
     font-size: 1.5em;
     line-height: 1.45;
+  }
+  .project-group-title {
+    font-size: 1.08em;
   }
   .project-media--runtime {
     padding: 0.9rem;
@@ -619,6 +635,14 @@
 .note-visual .note-flow,
 .note-visual .note-map {
   margin: 0.55rem 0 0;
+}
+.post-content > table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
 }
 .note-flow {
   display: flex;

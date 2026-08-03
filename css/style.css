@@ -1430,6 +1430,16 @@ body.dark-theme .highlight .code .meta {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
+.project-group-title {
+  margin: 1.65rem 0 0.35rem;
+  font-size: 1.2em;
+  letter-spacing: 0;
+}
+.project-group-copy {
+  max-width: 48em;
+  margin: 0 0 0.9rem;
+  color: #a9a9b3;
+}
 .project-item {
   overflow: hidden;
   border: 1px solid rgba(102,112,133,0.24);
@@ -1680,6 +1690,9 @@ body.dark-theme .highlight .code .meta {
 .dark-theme .project-intro {
   color: #87878d;
 }
+.dark-theme .project-group-copy {
+  color: #87878d;
+}
 .dark-theme .recent-notes {
   background: rgba(255,255,255,0.035);
 }
@@ -1717,6 +1730,9 @@ body.dark-theme .highlight .code .meta {
   .project-showcase h2 {
     font-size: 1.5em;
     line-height: 1.45;
+  }
+  .project-group-title {
+    font-size: 1.08em;
   }
   .project-media--runtime {
     padding: 0.9rem;
@@ -2007,6 +2023,14 @@ body.dark-theme .highlight .code .meta {
 .note-visual .note-flow,
 .note-visual .note-map {
   margin: 0.55rem 0 0;
+}
+.post-content > table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
 }
 .note-flow {
   display: flex;
