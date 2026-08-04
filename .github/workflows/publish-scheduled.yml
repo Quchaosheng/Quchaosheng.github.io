@@ -48,14 +48,24 @@ jobs:
           npm run clean
           npm run build
 
-      - name: Keep scheduler on the default branch
-        run: |
-          mkdir -p public/.github/workflows
-          cp .github/workflows/publish-scheduled.yml public/.github/workflows/publish-scheduled.yml
-
-      - name: Publish to master
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Checkout pages branch
+        uses: actions/checkout@v5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: master
-          publish_dir: ./public
+          ref: master
+          path: .pages
+          fetch-depth: 1
+
+      - name: Sync and publish to master
+        run: |
+          rsync -a --delete --exclude='.git/' --exclude='.github/' public/ .pages/
+          touch .pages/.nojekyll
+          cd .pages
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No site changes to publish.'
+          else
+            git commit -m "site: publish ${GITHUB_SHA::7}"
+            git push origin HEAD:master
+          fi
