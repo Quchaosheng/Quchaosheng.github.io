@@ -2,11 +2,11 @@
 title: Embodied Agent Runtime
 date: 2026-07-30 16:00:00
 layout: page
-description: 受任务契约约束的 AI 到 ROS 2 Action、SocketCAN 与运行时历史链路。
+description: 受任务契约约束的 ROS 2 任务运行时、设备桥与历史链路。
 cover: /image/projects/embodied-runtime.jpg
 ---
 
-<div class="page-lead"><p class="section-kicker">项目说明</p><p>Embodied Agent Runtime 把规则、模型输出和相机触发器接进 ROS 2 的任务流程。它们只能申请已有的工作流，不能直接往 CAN 总线发命令；任务会经过固定的 BehaviorTree、ROS 2 Action、设备桥和历史记录。</p></div>
+<div class="page-lead"><p class="section-kicker">项目说明</p><p>Embodied Agent Runtime 把规则、模型输入和相机触发器接进 ROS 2 的任务流程。它们只能申请已有的工作流，不能直接往 CAN 总线发命令；任务会经过固定的 BehaviorTree、ROS 2 Action、设备桥和历史记录。</p></div>
 
 <figure class="project-hero-image"><img src="/image/projects/embodied-runtime.jpg" alt="Embodied Agent Runtime 的 X5 相机和 ArUco 识别演示"></figure>
 

@@ -2,13 +2,13 @@
 title: RoboTraceOpt
 date: 2026-07-30 15:10:00
 layout: page
-description: 面向 ROS 2 的跨层运行时追踪、证据图诊断与受约束配置优化项目。
+description: 面向 ROS 2 的跨层运行时追踪、证据准入与配对验证项目。
 cover: /image/projects/robotraceopt.png
 ---
 
 <div class="page-lead">
   <p class="section-kicker">项目说明</p>
-  <p>RoboTraceOpt 用来查 ROS 2 机器人里的超时、抖动和 CAN ACK 问题。它把应用事件、ROS 2 trace、Linux 调度记录和 CAN ACK 的时间放到一起，方便看问题发生在哪一层。</p>
+  <p>RoboTraceOpt 把 ROS 2 应用、中间件与内核事件按可比身份和受控时间窗口归属到证据图；证据不足时拒绝下诊断结论。它可以帮助排查超时、抖动和 CAN ACK 问题，但不把关联结果包装成根因证明。</p>
 </div>
 
 <div class="project-facts">

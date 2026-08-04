@@ -6,39 +6,39 @@ layout: page
 
 ## 项目说明
 
-这里放的是可以直接看代码和运行说明的项目。每个项目页都会写清它做什么、在哪个环境跑过，以及哪些结论还不能下。`vcan`、Gazebo 和 QEMU 只能说明软件或仿真路径跑通，不能代替真机测试。
+这里列出五个公开项目的简短 About 文案。每个项目页都会写清主线、证据环境和未验证范围；`vcan`、Gazebo 和 QEMU 只能说明软件或仿真路径跑通，不能代替真机测试。
 
 ### RoboTraceOpt
 
-- 用来把 ROS 2 事件、调度 trace 和 CAN ACK 放在一起排查超时和抖动。
-- 仓库已有 RuntimeEvent 插桩、trace 关联、诊断和配置尝试的代码。
-- WSL、RuntimeEvent-only 和 vcan 只用于开发检查；调度器问题和 X5 上的结论还要在原生环境测。
+- **About：** 把 ROS 2 应用、中间件与内核事件按可比身份和受控时间窗口归属成证据图；证据不足时拒绝下诊断结论。
+- **证据：** RuntimeEvent、ROS 2 tracing、eBPF/CAN 适配、关联和配对验证流程。
+- **边界：** 仓库当前以 Ubuntu 22.04 / ROS 2 Humble 和开发检查为主，不把它写成通用 24.04 / Jazzy 路径。
 - [看项目说明](/projects/robotraceopt/) · [源码与运行步骤](https://github.com/Quchaosheng/RoboTraceOpt)
 
 ### Embodied Agent Runtime
 
-- 模型或视觉模块只能提交允许的工作流，不能直接发 CAN 帧。
-- 已跑过 X5/Humble、UVC ArUco、双 CANable 和受限 Provider 的链路。
-- 还没有拿它验证电机运动、硬件急停或闭环控制。
+- **About：** 受任务契约约束的 ROS 2 运行时；规则、模型输入和视觉触发器只能申请固定工作流，不能直接发送 CAN 命令。
+- **证据：** X5/Humble、UVC ArUco、双 CANable 通信和受限 Provider 集成。
+- **边界：** 未验证真实电机运动、硬件急停、DDS 安全或闭环机器人控制。
 - [看项目说明](/projects/embodied-agent-runtime/) · [源码与演示](https://github.com/Quchaosheng/embodied-agent-runtime)
 
 ### ros2_control vcan Motor Demo
 
-- 把 `cmd_vel` 经过 `ros2_control` 和 SocketCAN 送到两只虚拟电机。
-- 可以复现 ACK、反馈、watchdog、bus-off、超时和 safe-stop。
-- 没有模拟真实电机负载和电气 CAN。
+- **About：** ROS 2 Humble 差速驱动的软件链路，把 `cmd_vel` 经 `ros2_control` 和 SocketCAN 送到双虚拟电机。
+- **证据：** ACK、反馈超时、watchdog、错误注入、原始 CAN 检查和软件 safe-stop。
+- **边界：** vcan/虚拟电机不模拟真实电机负载、电气 CAN、ECU HIL 或硬件急停。
 - [看项目说明](/projects/ros2-control-vcan/) · [源码与演示](https://github.com/Quchaosheng/ros2-control-vcan-motor-demo)
 
 ### AprilTag Docking Demo
 
-- 在 Gazebo 中把 AprilTag 观测、Guard 和 Nav2 Docking 接起来。
-- 已测试任务触发、取消和 Tag 状态处理。
-- 这不是一套真机自主停靠验证。
+- **About：** Jazzy/Gazebo 中的 AprilTag 感知到停靠软件链路；自定义映射、观测门限和 Guard，复用 Nav2 `SimpleChargingDock` 完成最后接近。
+- **证据：** 低置信、多 Tag、连续有效观测、位姿跳变、取消和状态诊断路径。
+- **边界：** 不声明真实相机、底盘、充电接点或生产级自主停靠；不把诊断消息去重写成检测帧去重。
 - [看项目说明](/projects/apriltag-docking/) · [源码与演示](https://github.com/Quchaosheng/ros2-apriltag-docking-demo)
 
 ### Quard Star RISC-V64
 
-- 用 OpenSBI 启动七个普通内核 hart 和一个独立 FreeRTOS hart。
-- 在 QEMU/TAP 中测试了 VirtIO、FatFs、TCP/IP 和 PMP 隔离。
-- 隔离和性能结论目前只适用于 QEMU 模型。
+- **About：** 基于 rCore-Tutorial 设计的 C 语言 RISC-V64 SMP 重实现；OpenSBI domain 策略连接七个普通 hart、一个 FreeRTOS trusted hart 和 VirtIO/TAP。
+- **证据：** QEMU 中的 DTS 权限声明、固件输出和双向访问异常探针共同验证预期边界。
+- **边界：** 第一方工作是 domain 策略与验证；真实芯片、DMA、物理时序和性能结论仍未验证。
 - [看项目说明](/projects/quard-star-riscv64/) · [源码与测试记录](https://github.com/Quchaosheng/quard-star-riscv64-net)

@@ -15,4 +15,6 @@ layout: page
 
 <section class="update-entry"><time datetime="2026-07-30">2026-07-30</time><div><h2>项目展示与归档整理</h2><ul><li>RoboTraceOpt 加入首页项目区与项目总览，并使用项目自身的 GitHub 预览图。</li><li>既有笔记按 4 月初到 7 月底的整理节奏重新分布，保留原有永久链接。</li><li>文章与项目逐步补齐流程图、系统图、来源链接和可验证的边界说明。</li></ul></div></section>
 
+<section class="update-entry"><time datetime="2026-09-05">2026-09-05 起</time><div><h2>下一批工程文章规划</h2><ul><li><strong>2026-09-05：</strong><a href="/2026/09/05/behavior-tree-cpp-auditable-workflow/">BehaviorTree.CPP 与固定工作流的可审查性边界</a>，对应 Embodied Agent Runtime。</li><li><strong>2026-09-12：</strong><a href="/2026/09/12/ros2-control-hardware-interface-deadlines/">ros2_control 硬件接口的生命周期与实时性约束</a>，对应 vcan Demo 的 read/write、watchdog 和 safe-stop。</li><li><strong>2026-09-19：</strong><a href="/2026/09/19/opensbi-domain-pmp-access-probes/">OpenSBI domain 与 PMP 的 DTS 策略、固件执行和异常探针</a>，对应 Quard Star RISC-V64。</li><li>三篇文章已有草稿；目标日期只表示排期。发布前必须补齐可运行命令、验证环境、来源和未验证边界，未完成文章不提前进入生成站点。</li></ul></div></section>
+
 后续更新会在实际发布、项目资料或验证范围变化时追加；不会用更新日志替代实验记录本身。

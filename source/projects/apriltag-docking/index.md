@@ -2,11 +2,11 @@
 title: AprilTag Docking Demo
 date: 2026-07-30 16:04:00
 layout: page
-description: 将 AprilTag 观测、置信门、Guard 和 Nav2 Docking 串成可复现的 Gazebo 停靠流程。
+description: 将 AprilTag 观测、置信门、Guard 和复用的 Nav2 SimpleChargingDock 串成可复现的 Gazebo 停靠流程。
 cover: /image/projects/apriltag-docking.png
 ---
 
-<div class="page-lead"><p class="section-kicker">项目说明</p><p>AprilTag Docking Demo 在 Gazebo 中让 TurtleBot3 靠近充电桩。连续看到 AprilTag 后，任务才会交给 Nav2 Docking 做最后接近；低置信、多 Tag、位姿跳变、Guard 失效和取消都会走明确的处理分支。</p></div>
+<div class="page-lead"><p class="section-kicker">项目说明</p><p>AprilTag Docking Demo 在 Gazebo 中让 TurtleBot3 靠近充电桩。连续有效观测通过门控后，任务才会交给复用的 Nav2 SimpleChargingDock 做最后接近；低置信、多 Tag、位姿跳变、Guard 失效和取消都会走明确的处理分支。</p></div>
 
 <figure class="project-hero-image"><img src="/image/projects/apriltag-docking.png" alt="Gazebo 中的 AprilTag 视觉停靠演示"></figure>
 

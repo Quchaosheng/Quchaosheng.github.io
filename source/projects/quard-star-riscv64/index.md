@@ -2,11 +2,11 @@
 title: Quard Star RISC-V64
 date: 2026-07-30 16:06:00
 layout: page
-description: 面向自定义 QEMU quard-star 机器的 RISC-V64 SMP 内核、FreeRTOS trusted hart、VirtIO 与 PMP 隔离项目。
+description: 面向自定义 QEMU quard-star 机器的 RISC-V64 SMP 内核、OpenSBI domain 策略与 PMP 访问探针项目。
 cover: /image/projects/quard-qemu.png
 ---
 
-<div class="page-lead"><p class="section-kicker">项目说明</p><p>Quard Star RISC-V64 是一个 RISC-V64 SMP 操作系统项目。七个普通 hart 运行自写的 C 内核，一个独立 FreeRTOS hart 运行在受限域中；OpenSBI、VirtIO、FatFs、TCP/IP 和 PMP 分别负责启动、设备、存储、网络和隔离。</p></div>
+<div class="page-lead"><p class="section-kicker">项目说明</p><p>Quard Star RISC-V64 是一个基于 rCore-Tutorial 设计的 C 语言 RISC-V64 SMP 重实现。七个普通 hart 运行自写的 C 内核，一个 FreeRTOS hart 运行在受限域中；我编写 OpenSBI domain 的 DTS 策略和访问探针，由固件完成 PMP 资源配置，再用 QEMU 日志与双向异常结果验证预期边界。</p></div>
 
 <figure class="project-hero-image"><img src="/image/projects/quard-qemu.png" alt="Quard Star RISC-V64 的 QEMU 验收演示"></figure>
 

@@ -2,7 +2,7 @@
 title: ros2_control vcan Motor Demo
 date: 2026-07-30 16:02:00
 layout: page
-description: 基于 SocketCAN 与双虚拟电机的 ros2_control 差速驱动、安全停止和故障注入演示。
+description: 基于 SocketCAN 与双虚拟电机的 ros2_control 差速驱动软件链路、safe-stop 和故障注入演示。
 cover: /image/projects/vcan-diffbot.png
 ---
 

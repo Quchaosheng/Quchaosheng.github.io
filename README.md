@@ -7,6 +7,22 @@
 - `source` 分支保存 Hexo 源码、Markdown 和发布脚本。
 - `master` 分支保存 Hexo 生成的网站，由脚本自动更新。
 
+## 关于我
+
+**Robot Systems Developer** · Deterministic task runtimes · Cross-layer observability · RISC-V systems
+
+我关注机器人系统软件与嵌入式系统，主要做 ROS 2 任务运行时、设备通信、跨层观测，以及 RISC-V 启动与隔离。公开项目按代码、测试和运行证据说明，不把 AI 辅助开发、仿真或虚拟总线结果包装成个人全量原创或真机结论。
+
+## 文章发布规划
+
+项目主线文章按证据准备情况推进，当前优先顺序如下：
+
+1. `2026-09-05`：BehaviorTree.CPP 与固定工作流的可审查性边界。
+2. `2026-09-12`：`ros2_control` 硬件接口的生命周期与实时性约束。
+3. `2026-09-19`：OpenSBI domain 与 PMP 的 DTS 策略、固件执行和异常探针。
+
+这些文章已有草稿；未来日期只表示计划，不代表已经发布。每篇发布前补齐可运行命令、验证环境、来源和未验证边界；站点 `_config.yml` 保持 `future: false`，未完成文章不提前进入生成站点。
+
 ## 一键发布
 
 把 Markdown 文件交给脚本即可：
