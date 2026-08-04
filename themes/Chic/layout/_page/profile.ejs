@@ -1,4 +1,5 @@
-<div class="container profile-container">
+<main class="container profile-container">
+  <h1 class="visually-hidden">Quchaosheng 的技术笔记与项目记录</h1>
   <div class="profile-hero">
     <div class="intro">
         <div class="avatar">
@@ -29,14 +30,36 @@
         </section>
     </div>
 
-    <section class="project-showcase" aria-labelledby="projects-title">
-        <div class="section-kicker">SELECTED PROJECTS</div>
-        <h2 id="projects-title">机器人运行时与系统工程</h2>
-        <p class="project-intro">所有演示均标明验证环境，不将仿真、vcan 或 QEMU 结果描述为物理硬件能力。</p>
-        <div class="project-grid">
-            <%- partial('_partial/project_cards') %>
+    <section class="topic-hub" aria-labelledby="topic-hub-title">
+        <div class="topic-hub-heading">
+            <div>
+                <div class="section-kicker">START BY TOPIC</div>
+                <h2 id="topic-hub-title">从一个具体方向开始</h2>
+            </div>
+            <a href="<%- url_for('/paths/') %>">查看学习路径 <span aria-hidden="true">→</span></a>
         </div>
-        <a class="projects-more" href="<%- url_for('/projects/') %>">查看全部项目与验证范围 →</a>
+        <div class="topic-grid">
+            <a class="topic-link" href="<%- url_for('/category/技术/Linux实时/') %>">
+                <span>01 · REAL-TIME</span>
+                <strong>Linux 实时</strong>
+                <small>绑核、抢占、IRQ、延迟测量与回归基线</small>
+            </a>
+            <a class="topic-link" href="<%- url_for('/category/技术/Linux内核/') %>">
+                <span>02 · KERNEL</span>
+                <strong>Linux 内核</strong>
+                <small>调度、内存、驱动、文件系统与网络路径</small>
+            </a>
+            <a class="topic-link" href="<%- url_for('/category/技术/嵌入式/') %>">
+                <span>03 · EMBEDDED</span>
+                <strong>嵌入式系统</strong>
+                <small>启动、总线、可靠性、工具链与设备软件</small>
+            </a>
+            <a class="topic-link" href="<%- url_for('/category/技术/AI机器人/') %>">
+                <span>04 · ROBOTICS</span>
+                <strong>AI 机器人</strong>
+                <small>ROS 2、部署、VLA、仿真和安全执行边界</small>
+            </a>
+        </div>
     </section>
 
     <section class="recent-notes" aria-labelledby="recent-notes-title">
@@ -51,4 +74,15 @@
             </article>
         <% }) %>
     </section>
-    </div>
+
+    <section class="project-showcase" aria-labelledby="projects-title">
+        <div class="section-kicker">SELECTED PROJECTS</div>
+        <h2 id="projects-title">机器人运行时与系统工程</h2>
+        <p class="project-intro">首页只放三项代表性项目；完整项目与验证边界见项目页。</p>
+        <div class="project-grid">
+            <%- partial('_partial/project_cards') %>
+        </div>
+        <a class="projects-more" href="<%- url_for('/projects/') %>">查看全部项目与验证范围 →</a>
+    </section>
+  </div>
+</main>

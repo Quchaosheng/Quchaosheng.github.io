@@ -31,10 +31,21 @@
 
 
         .menu-toggle 
-          display: flex;
+          display: flex
+          width 44px
+          height 44px
+          padding 0
+          border 0
+          align-items center
+          justify-content center
+          background transparent
+          color inherit
           cursor: pointer
-          line-height: 5.5em
+          line-height 1
           user-select none
+          &:focus-visible
+            outline 2px solid #087f5b
+            outline-offset 2px
           
           .menu-icon
             display: block

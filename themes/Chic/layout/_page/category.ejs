@@ -1,5 +1,5 @@
 <%# single category page%>
-<div class="container">
+<main class="container">
     <div class="post-wrap categories">
         <div class="section-kicker">CATEGORY</div>
         <h1 class="post-title">分类：<%- page.category %></h1>
@@ -34,4 +34,4 @@
     <h2 class="category-hub-archive-title">全部技术文章</h2>
     <% } %>
     <%- partial('archive', {pagination: config.category, index: true}) %>
-</div>
+</main>

@@ -1,8 +1,8 @@
 <%# single tag page%>
-<div class="container">
+<main class="container">
     <div class="post-wrap tags">
         <div class="section-kicker">TAG</div>
         <h1 class="post-title">标签：<%- page.tag %></h1>
     </div>
     <%- partial('archive', {pagination: config.tag, index: true}) %>
-</div>
+</main>

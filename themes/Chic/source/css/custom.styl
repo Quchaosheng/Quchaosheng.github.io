@@ -3,6 +3,16 @@
 // ==============================
 //  Also You can override the variables in variable.styl to customize the style
 
+.visually-hidden
+  position absolute !important
+  width 1px !important
+  height 1px !important
+  padding 0 !important
+  overflow hidden !important
+  clip rect(0, 0, 0, 0) !important
+  white-space nowrap !important
+  border 0 !important
+
 .profile-container
   width 100%
   max-width 1040px
@@ -14,7 +24,7 @@
   width 100%
   display grid
   grid-template-columns minmax(240px, .8fr) minmax(360px, 1.2fr)
-  gap 5rem
+  gap 4rem 5rem
   align-items start
 
 .profile-hero > .intro
@@ -25,9 +35,14 @@
   grid-column 2
   grid-row 1
 
-.project-showcase
+.topic-hub
   grid-column 1 / -1
   grid-row 2
+  width 100%
+
+.project-showcase
+  grid-column 1 / -1
+  grid-row 3
   width 100%
   margin-top 1rem
   h2
@@ -40,6 +55,55 @@
   max-width 48em
   margin 0 0 1.5rem
   color $light-font-secondary-color
+
+.topic-hub-heading
+  display flex
+  align-items end
+  justify-content space-between
+  gap 2rem
+  margin-bottom 1.25rem
+  h2
+    margin .35rem 0 0
+    font-size 1.7em
+    font-weight normal
+  > a
+    flex-shrink 0
+    padding-bottom .2rem
+    border-bottom 1px solid currentColor
+    font-size .9em
+
+.topic-grid
+  display grid
+  grid-template-columns repeat(4, minmax(0, 1fr))
+  gap 1.25rem
+
+.topic-link
+  display flex
+  min-height 8.5rem
+  box-sizing border-box
+  flex-direction column
+  padding 1rem .2rem .35rem
+  border-top 2px solid rgba(92,141,113,.42)
+  color $light-font-color
+  text-decoration none
+  &:hover
+    border-color #087f5b
+    color $light-font-color
+    strong
+      color #087f5b
+  span
+    color #087f5b
+    font-size .68em
+    font-weight bold
+    letter-spacing .1em
+  strong
+    margin .6rem 0 .45rem
+    font-size 1.15em
+    font-weight normal
+  small
+    color $light-font-secondary-color
+    font-size .82em
+    line-height 1.65
 
 .project-grid
   display grid
@@ -265,6 +329,18 @@
       color #e8f3eb
   .project-intro
     color $dark-font-secondary-color
+  .topic-link
+    border-color rgba(145,195,165,.35)
+    color $dark-font-color
+    &:hover
+      border-color #91c3a5
+      color $dark-font-color
+      strong
+        color #91c3a5
+    span
+      color #91c3a5
+    small
+      color $dark-font-secondary-color
   .recent-notes
     background rgba(255,255,255,.035)
   .intro .description, .now-card p, .recent-note time
@@ -284,11 +360,23 @@
     gap 3rem
   .profile-hero > .intro,
   .profile-hero > .recent-notes,
+  .topic-hub,
   .project-showcase
     grid-column 1
     grid-row auto
   .project-grid
     grid-template-columns 1fr
+  .topic-hub-heading
+    display block
+    > a
+      display inline-block
+      margin-top .75rem
+  .topic-grid
+    grid-template-columns 1fr
+    gap .85rem
+  .topic-link
+    min-height 0
+    padding .9rem .1rem .25rem
   .project-showcase h2
     font-size 1.5em
     line-height 1.45
@@ -324,6 +412,9 @@
       margin-top .25rem
   .now-card
     text-align left
+  .post-wrap .post-content
+    font-size 16px
+    line-height 1.85
 
 // Reading surfaces: give secondary pages the same hierarchy as the homepage.
 .archive-page

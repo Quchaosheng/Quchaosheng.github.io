@@ -1,0 +1,56 @@
+name: Scheduled Hexo Publish
+
+on:
+  push:
+    branches:
+      - source
+  schedule:
+    # 09:17 Asia/Shanghai. Scheduled runs may start a few minutes late.
+    - cron: '17 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scheduled-hexo-publish
+  cancel-in-progress: true
+
+jobs:
+  publish-scheduled-site:
+    name: Build and Publish Scheduled Posts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v5
+        with:
+          ref: source
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test post dates
+        run: npm run test:post-dates
+
+      - name: Test batch publishing
+        run: bash tests/test-publish-batch.sh
+
+      - name: Clean and build Hexo site
+        run: |
+          npm run clean
+          npm run build
+
+      - name: Publish to master
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: master
+          publish_dir: ./public

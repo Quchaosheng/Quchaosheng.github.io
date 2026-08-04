@@ -84,6 +84,40 @@ var openGraphLocale = String(config.language || 'zh-CN').replace('-', '_');
 <% if (shareImageUrl){ %>
     <meta name="twitter:image" content="<%= shareImageUrl %>">
 <% } %>
+<% if (page.layout === 'post') {
+    var categoryNames = [];
+    var tagNames = [];
+    if (page.categories && typeof page.categories.forEach === 'function') {
+        page.categories.forEach(function (item) { categoryNames.push(item.name); });
+    }
+    if (page.tags && typeof page.tags.forEach === 'function') {
+        page.tags.forEach(function (item) { tagNames.push(item.name); });
+    }
+    var articleSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        headline: String(page.title || ''),
+        description: pageDescription,
+        datePublished: page.date ? page.date.toISOString() : undefined,
+        dateModified: page.updated ? page.updated.toISOString() : (page.date ? page.date.toISOString() : undefined),
+        inLanguage: config.language || 'zh-CN',
+        mainEntityOfPage: canonicalUrl,
+        author: {
+            '@type': 'Person',
+            name: config.author || theme.nickname
+        },
+        publisher: {
+            '@type': 'Person',
+            name: config.author || theme.nickname
+        },
+        articleSection: categoryNames.join(' / ') || undefined,
+        keywords: tagNames.join(', ') || undefined
+    };
+    if (shareImageUrl) articleSchema.image = [shareImageUrl];
+    var articleSchemaJson = JSON.stringify(articleSchema).replace(/</g, '\\u003c');
+%>
+    <script type="application/ld+json"><%- articleSchemaJson %></script>
+<% } %>
 
 <%# favicon %>
 <% if (theme.favicon){ %>
