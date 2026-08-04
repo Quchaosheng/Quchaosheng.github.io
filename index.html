@@ -202,7 +202,7 @@
         <section class="now-card" aria-labelledby="now-title">
             <div class="section-kicker">NOW</div>
             <h2 id="now-title">正在推进</h2>
-            <p><strong>RoboTraceOpt</strong> 已完成原生 Ubuntu 24.04 / ROS 2 Jazzy 的 F3/F4 正式实验，下一步收口诊断评估与优化闭环。</p>
+            <p><strong>RoboTraceOpt</strong> 的项目档案，以及原生 Linux / X5 的真实环境验证准备。</p>
             <div class="now-links"><a href="/projects/robotraceopt/">项目档案 →</a><a href="/category/">文章分类 →</a></div>
         </section>
     </div>
@@ -291,21 +291,12 @@
     <span class="runtime-visual-steps" aria-hidden="true"><span><b>应用事件</b><small>RuntimeEvent</small></span><span><b>跨层追踪</b><small>ROS 2 · eBPF</small></span><span><b>证据图</b><small>关联与诊断</small></span><span><b>受约束验证</b><small>优化与回滚</small></span></span>
     <span class="runtime-visual-note">Trace · Scheduler · CAN ACK</span>
   </a>
-  <div class="project-body"><span class="project-status">Native Linux 正式 F3/F4</span><h3>RoboTraceOpt</h3><p>面向 ROS 2 的跨层运行时追踪与受约束配置优化；40 次原生 Linux 实验保留环境、顺序、完整性和配对统计证据。</p><div class="project-links"><a href="/projects/robotraceopt/">项目详情 →</a><a href="https://github.com/Quchaosheng/RoboTraceOpt" target="_blank" rel="noopener">源码 ↗</a></div></div>
+  <div class="project-body"><span class="project-status">开发 / 预检范围</span><h3>RoboTraceOpt</h3><p>面向 ROS 2 的跨层运行时追踪、关联图诊断与受约束配置优化，连接 RuntimeEvent、ros2_tracing、eBPF 和 SocketCAN/vcan 适配器。</p><div class="project-links"><a href="/projects/robotraceopt/">项目详情 →</a><a href="https://github.com/Quchaosheng/RoboTraceOpt" target="_blank" rel="noopener">源码 ↗</a></div></div>
 </article>
 <article class="project-item">
   <a class="project-media" href="/projects/embodied-agent-runtime/"><img src="/image/projects/embodied-runtime.jpg" alt="X5 摄像头识别 ArUco 标记"></a>
   <div class="project-body"><span class="project-status">X5 实体 I/O</span><h3>Embodied Agent Runtime</h3><p>受安全契约约束的 AI 到 ROS 2 Action、SocketCAN 任务链路。已验证 X5、UVC、ArUco 与双 CANable 台架。</p><div class="project-links"><a href="/projects/embodied-agent-runtime/">项目详情 →</a><a href="https://github.com/Quchaosheng/embodied-agent-runtime" target="_blank" rel="noopener">源码 ↗</a></div></div>
 </article>
-<article class="project-item">
-  <a class="project-media" href="/projects/quard-star-riscv64/"><img src="/image/projects/quard-qemu.png" alt="Quard Star RISC-V64 QEMU 验收演示"></a>
-  <div class="project-body"><span class="project-status">QEMU / TAP</span><h3>Quard Star RISC-V64</h3><p>七核 SMP 内核与独立 FreeRTOS hart，覆盖 VirtIO、TCP/IP、存储及 PMP 双向隔离验证。</p><div class="project-links"><a href="/projects/quard-star-riscv64/">项目详情 →</a><a href="https://github.com/Quchaosheng/quard-star-riscv64-net" target="_blank" rel="noopener">源码 ↗</a></div></div>
-</article>
-</div>
-
-<h3 class="project-group-title">工程验证</h3>
-<p class="project-group-copy">两个轻量 Demo 用来展示控制、总线、感知和恢复路径，不与三个主项目等权包装。</p>
-<div class="project-grid project-grid--demos">
 <article class="project-item">
   <a class="project-media" href="/projects/ros2-control-vcan/"><img src="/image/projects/vcan-diffbot.png" alt="ros2_control vcan 双虚拟电机演示"></a>
   <div class="project-body"><span class="project-status">vcan 软件闭环</span><h3>ros2_control vcan Motor Demo</h3><p>双虚拟电机反馈、watchdog、ACK 超时、bus-off 与 safe-stop，不声明真实电机负载。</p><div class="project-links"><a href="/projects/ros2-control-vcan/">项目详情 →</a><a href="https://github.com/Quchaosheng/ros2-control-vcan-motor-demo" target="_blank" rel="noopener">源码 ↗</a></div></div>
@@ -313,6 +304,10 @@
 <article class="project-item">
   <a class="project-media" href="/projects/apriltag-docking/"><img src="/image/projects/apriltag-docking.png" alt="Gazebo AprilTag 视觉停靠演示"></a>
   <div class="project-body"><span class="project-status">Gazebo 仿真</span><h3>AprilTag Docking Demo</h3><p>AprilTag 观测、任务 Guard、Nav2 Docking 与取消路径的可复现仿真，不冒充真实机器人停靠。</p><div class="project-links"><a href="/projects/apriltag-docking/">项目详情 →</a><a href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo" target="_blank" rel="noopener">源码 ↗</a></div></div>
+</article>
+<article class="project-item">
+  <a class="project-media" href="/projects/quard-star-riscv64/"><img src="/image/projects/quard-qemu.png" alt="Quard Star RISC-V64 QEMU 验收演示"></a>
+  <div class="project-body"><span class="project-status">QEMU / TAP</span><h3>Quard Star RISC-V64</h3><p>七核 SMP 内核与独立 FreeRTOS hart，覆盖 VirtIO、TCP/IP、存储及 PMP 双向隔离验证。</p><div class="project-links"><a href="/projects/quard-star-riscv64/">项目详情 →</a><a href="https://github.com/Quchaosheng/quard-star-riscv64-net" target="_blank" rel="noopener">源码 ↗</a></div></div>
 </article>
 
         </div>
