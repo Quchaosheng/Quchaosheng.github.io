@@ -18,14 +18,14 @@
 
 <title>Quard Star RISC-V64 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="面向自定义 QEMU quard-star 机器的 RISC-V64 SMP 内核、FreeRTOS trusted hart、VirtIO 与 PMP 隔离项目。">
+    <meta name="description" content="运行于 QEMU quard-star 机器的 RISC-V64 SMP 操作系统，集成 FreeRTOS trusted hart、VirtIO、FatFs、TCP/IP 和 PMP 隔离。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/projects/quard-star-riscv64/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Quard Star RISC-V64 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="面向自定义 QEMU quard-star 机器的 RISC-V64 SMP 内核、FreeRTOS trusted hart、VirtIO 与 PMP 隔离项目。">
+    <meta property="og:description" content="运行于 QEMU quard-star 机器的 RISC-V64 SMP 操作系统，集成 FreeRTOS trusted hart、VirtIO、FatFs、TCP/IP 和 PMP 隔离。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/projects/quard-star-riscv64/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Quard Star RISC-V64 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="面向自定义 QEMU quard-star 机器的 RISC-V64 SMP 内核、FreeRTOS trusted hart、VirtIO 与 PMP 隔离项目。">
+    <meta name="twitter:description" content="运行于 QEMU quard-star 机器的 RISC-V64 SMP 操作系统，集成 FreeRTOS trusted hart、VirtIO、FatFs、TCP/IP 和 PMP 隔离。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/quard-qemu.png">
@@ -174,7 +174,7 @@
         <h1 class="post-title">Quard Star RISC-V64</h1>
         
         <section class="post-content">
-            <div class="page-lead"><p class="section-kicker">项目说明</p><p>Quard Star RISC-V64 是一个 RISC-V64 SMP 操作系统项目。七个普通 hart 运行自写的 C 内核，一个独立 FreeRTOS hart 运行在受限域中；OpenSBI、VirtIO、FatFs、TCP/IP 和 PMP 分别负责启动、设备、存储、网络和隔离。</p></div>
+            <div class="page-lead"><p class="section-kicker">项目说明</p><p>Quard Star RISC-V64 是运行在 QEMU quard-star 机器上的 RISC-V64 SMP 操作系统。七个 hart 运行独立实现的 C 内核，另一个 FreeRTOS hart 运行在隔离域中；OpenSBI、VirtIO、FatFs、TCP/IP 和 PMP 分别承担启动、设备、存储、网络和隔离职责。</p></div>
 
 <figure class="project-hero-image"><img src="/image/projects/quard-qemu.png" alt="Quard Star RISC-V64 的 QEMU 验收演示"></figure>
 
