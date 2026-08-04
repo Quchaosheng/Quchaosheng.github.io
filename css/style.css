@@ -1170,9 +1170,21 @@ header .menu label {
   }
   .navbar-mobile .container .navbar-header .menu-toggle {
     display: flex;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: inherit;
     cursor: pointer;
-    line-height: 5.5em;
+    line-height: 1;
     user-select: none;
+  }
+  .navbar-mobile .container .navbar-header .menu-toggle:focus-visible {
+    outline: 2px solid #087f5b;
+    outline-offset: 2px;
   }
   .navbar-mobile .container .navbar-header .menu-toggle .menu-icon {
     display: block;
@@ -1386,6 +1398,16 @@ body.dark-theme .highlight .code .deletion,
 body.dark-theme .highlight .code .meta {
   color: #7f7f7f;
 }
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
 .profile-container {
   width: 100%;
   max-width: 1040px;
@@ -1397,7 +1419,7 @@ body.dark-theme .highlight .code .meta {
   width: 100%;
   display: grid;
   grid-template-columns: minmax(240px, 0.8fr) minmax(360px, 1.2fr);
-  gap: 5rem;
+  gap: 4rem 5rem;
   align-items: start;
 }
 .profile-hero > .intro {
@@ -1408,9 +1430,14 @@ body.dark-theme .highlight .code .meta {
   grid-column: 2;
   grid-row: 1;
 }
-.project-showcase {
+.topic-hub {
   grid-column: 1/-1;
   grid-row: 2;
+  width: 100%;
+}
+.project-showcase {
+  grid-column: 1/-1;
+  grid-row: 3;
   width: 100%;
   margin-top: 1rem;
 }
@@ -1424,6 +1451,62 @@ body.dark-theme .highlight .code .meta {
   max-width: 48em;
   margin: 0 0 1.5rem;
   color: #a9a9b3;
+}
+.topic-hub-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 1.25rem;
+}
+.topic-hub-heading h2 {
+  margin: 0.35rem 0 0;
+  font-size: 1.7em;
+  font-weight: normal;
+}
+.topic-hub-heading > a {
+  flex-shrink: 0;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid currentColor;
+  font-size: 0.9em;
+}
+.topic-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+.topic-link {
+  display: flex;
+  min-height: 8.5rem;
+  box-sizing: border-box;
+  flex-direction: column;
+  padding: 1rem 0.2rem 0.35rem;
+  border-top: 2px solid rgba(92,141,113,0.42);
+  color: #161209;
+  text-decoration: none;
+}
+.topic-link:hover {
+  border-color: #087f5b;
+  color: #161209;
+}
+.topic-link:hover strong {
+  color: #087f5b;
+}
+.topic-link span {
+  color: #087f5b;
+  font-size: 0.68em;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+}
+.topic-link strong {
+  margin: 0.6rem 0 0.45rem;
+  font-size: 1.15em;
+  font-weight: normal;
+}
+.topic-link small {
+  color: #a9a9b3;
+  font-size: 0.82em;
+  line-height: 1.65;
 }
 .project-grid {
   display: grid;
@@ -1693,6 +1776,23 @@ body.dark-theme .highlight .code .meta {
 .dark-theme .project-group-copy {
   color: #87878d;
 }
+.dark-theme .topic-link {
+  border-color: rgba(145,195,165,0.35);
+  color: #a9a9b3;
+}
+.dark-theme .topic-link:hover {
+  border-color: #91c3a5;
+  color: #a9a9b3;
+}
+.dark-theme .topic-link:hover strong {
+  color: #91c3a5;
+}
+.dark-theme .topic-link span {
+  color: #91c3a5;
+}
+.dark-theme .topic-link small {
+  color: #87878d;
+}
 .dark-theme .recent-notes {
   background: rgba(255,255,255,0.035);
 }
@@ -1720,12 +1820,28 @@ body.dark-theme .highlight .code .meta {
   }
   .profile-hero > .intro,
   .profile-hero > .recent-notes,
+  .topic-hub,
   .project-showcase {
     grid-column: 1;
     grid-row: auto;
   }
   .project-grid {
     grid-template-columns: 1fr;
+  }
+  .topic-hub-heading {
+    display: block;
+  }
+  .topic-hub-heading > a {
+    display: inline-block;
+    margin-top: 0.75rem;
+  }
+  .topic-grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+  .topic-link {
+    min-height: 0;
+    padding: 0.9rem 0.1rem 0.25rem;
   }
   .project-showcase h2 {
     font-size: 1.5em;
@@ -1778,6 +1894,10 @@ body.dark-theme .highlight .code .meta {
   }
   .now-card {
     text-align: left;
+  }
+  .post-wrap .post-content {
+    font-size: 16px;
+    line-height: 1.85;
   }
 }
 .archive-page {

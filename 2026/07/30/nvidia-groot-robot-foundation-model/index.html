@@ -42,6 +42,9 @@
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层","description":"“把红杯子放到托盘里”这句话，GR00T 之类的 VLA 模型可能能给出一串看似合理的动作。目标被遮住、相机画面变旧或规划器找不到可达姿态时，模型仍可能返回格式正确的结果。它接收图像、语言和状态并生成任务或动作候选，但候选必须经过运行时校验，不能直接越过控制器和安全 I&#x2F;O。 接收视觉与语言指令 → 模型生成任务/动作候选 → 运行时校验场景...","datePublished":"2026-07-28T06:00:00.000Z","dateModified":"2026-07-28T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"GR00T, VLA, 具身智能","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
 
 
     <link rel="icon" href="/bitbug_favicon.ico">
@@ -100,7 +103,7 @@
             <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
             <div class="menu navbar-right">
                 
-                <a class="menu-item" href="/projects">Projects</a>
+                <a class="menu-item" href="/projects">项目</a>
                 
                 <a class="menu-item" href="/modules">模块</a>
                 
@@ -128,14 +131,14 @@
                 <div>
                     <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
                 </div>
-                <div class="menu-toggle" onclick="mobileBtn()">
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
                     <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
                     <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
-                </div>
+                </button>
             </div>
             <div class="menu" id="mobile-menu">
                 
-                <a class="menu-item" href="/projects">Projects</a>
+                <a class="menu-item" href="/projects">项目</a>
                 
                 <a class="menu-item" href="/modules">模块</a>
                 
@@ -155,21 +158,19 @@
 
 </header>
 <script>
-    var mobileBtn = function f() {
-        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
         var mobileMenu = document.getElementById("mobile-menu");
-        if (toggleMenu.classList.contains("active")) {
-            toggleMenu.classList.remove("active")
-            mobileMenu.classList.remove("active")
-        } else {
-            toggleMenu.classList.add("active")
-            mobileMenu.classList.add("active")
-        }
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
     }
 </script>
 
             <div class="main">
-                <div class="container">
+                <main class="container">
     
     
         <div class="post-toc">
@@ -268,11 +269,11 @@
                         <span class="post-topics">
                             主题：
                             
+                                <a href="/tag/GR00T/">#GR00T</a>
+                            
                                 <a href="/tag/VLA/">#VLA</a>
                             
                                 <a href="/tag/%E5%85%B7%E8%BA%AB%E6%99%BA%E8%83%BD/">#具身智能</a>
-                            
-                                <a href="/tag/GR00T/">#GR00T</a>
                             
                         </span>
                     
@@ -334,19 +335,19 @@
                 <h2 id="related-posts-title">同主题继续阅读</h2>
                 <div class="related-post-list">
                     
-                        <a href="/2026/09/01/gemini-robotics-embodied-reasoning/">
-                            <span>Gemini Robotics 论文拆解：具身推理和直接控制是两条不同路线</span>
-                            <time datetime="2026-09-01T01:30:00.000Z">2026-09-01</time>
-                        </a>
-                    
-                        <a href="/2026/08/13/ai-robot-vla-human-intervention-state-machine/">
-                            <span>VLA 规划接入机器人：动作候选、人工接管和可取消状态机</span>
-                            <time datetime="2026-08-13T01:30:00.000Z">2026-08-13</time>
-                        </a>
-                    
                         <a href="/2026/03/10/vla-paper-reading-guide/">
                             <span>VLA 论文怎么读：从 RT-1 到 OpenVLA，先看数据和动作接口</span>
                             <time datetime="2026-03-10T01:30:00.000Z">2026-03-10</time>
+                        </a>
+                    
+                        <a href="/2026/08/04/ai-robot-visual-servo-latency-budget/">
+                            <span>视觉伺服的端到端延迟预算：目标为什么总是慢半拍</span>
+                            <time datetime="2026-08-04T01:30:00.000Z">2026-08-04</time>
+                        </a>
+                    
+                        <a href="/2026/07/30/deepstream-multicamera-robot/">
+                            <span>DeepStream 多相机机器人：帧率正常，控制为什么还是迟钝</span>
+                            <time datetime="2026-07-27T06:00:00.000Z">2026-07-27</time>
                         </a>
                     
                 </div>
@@ -358,11 +359,11 @@
                 <span class="tag">
                     
                     
+                        <a href="/tag/GR00T/"># GR00T</a>
+                    
                         <a href="/tag/VLA/"># VLA</a>
                     
                         <a href="/tag/%E5%85%B7%E8%BA%AB%E6%99%BA%E8%83%BD/"># 具身智能</a>
-                    
-                        <a href="/tag/GR00T/"># GR00T</a>
                     
                         
                 </span>
@@ -384,7 +385,7 @@
 
 
     </article>
-</div>
+</main>
 
             </div>
             <footer id="footer" class="footer">
