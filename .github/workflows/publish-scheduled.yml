@@ -48,6 +48,11 @@ jobs:
           npm run clean
           npm run build
 
+      - name: Keep scheduler on the default branch
+        run: |
+          mkdir -p public/.github/workflows
+          cp .github/workflows/publish-scheduled.yml public/.github/workflows/publish-scheduled.yml
+
       - name: Publish to master
         uses: peaceiris/actions-gh-pages@v4
         with:
