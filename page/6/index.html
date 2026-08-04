@@ -44,6 +44,7 @@
 
 
 
+
     <link rel="icon" href="/bitbug_favicon.ico">
 
 <link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
@@ -100,7 +101,7 @@
             <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
             <div class="menu navbar-right">
                 
-                <a class="menu-item" href="/projects">Projects</a>
+                <a class="menu-item" href="/projects">项目</a>
                 
                 <a class="menu-item" href="/modules">模块</a>
                 
@@ -128,14 +129,14 @@
                 <div>
                     <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
                 </div>
-                <div class="menu-toggle" onclick="mobileBtn()">
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
                     <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
                     <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
-                </div>
+                </button>
             </div>
             <div class="menu" id="mobile-menu">
                 
-                <a class="menu-item" href="/projects">Projects</a>
+                <a class="menu-item" href="/projects">项目</a>
                 
                 <a class="menu-item" href="/modules">模块</a>
                 
@@ -155,22 +156,21 @@
 
 </header>
 <script>
-    var mobileBtn = function f() {
-        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
         var mobileMenu = document.getElementById("mobile-menu");
-        if (toggleMenu.classList.contains("active")) {
-            toggleMenu.classList.remove("active")
-            mobileMenu.classList.remove("active")
-        } else {
-            toggleMenu.classList.add("active")
-            mobileMenu.classList.add("active")
-        }
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
     }
 </script>
 
             <div class="main">
                 
-    <div class="container profile-container">
+    <main class="container profile-container">
+  <h1 class="visually-hidden">Quchaosheng 的技术笔记与项目记录</h1>
   <div class="profile-hero">
     <div class="intro">
         <div class="avatar">
@@ -207,10 +207,83 @@
         </section>
     </div>
 
+    <section class="topic-hub" aria-labelledby="topic-hub-title">
+        <div class="topic-hub-heading">
+            <div>
+                <div class="section-kicker">START BY TOPIC</div>
+                <h2 id="topic-hub-title">从一个具体方向开始</h2>
+            </div>
+            <a href="/paths/">查看学习路径 <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="topic-grid">
+            <a class="topic-link" href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">
+                <span>01 · REAL-TIME</span>
+                <strong>Linux 实时</strong>
+                <small>绑核、抢占、IRQ、延迟测量与回归基线</small>
+            </a>
+            <a class="topic-link" href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%86%85%E6%A0%B8/">
+                <span>02 · KERNEL</span>
+                <strong>Linux 内核</strong>
+                <small>调度、内存、驱动、文件系统与网络路径</small>
+            </a>
+            <a class="topic-link" href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">
+                <span>03 · EMBEDDED</span>
+                <strong>嵌入式系统</strong>
+                <small>启动、总线、可靠性、工具链与设备软件</small>
+            </a>
+            <a class="topic-link" href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">
+                <span>04 · ROBOTICS</span>
+                <strong>AI 机器人</strong>
+                <small>ROS 2、部署、VLA、仿真和安全执行边界</small>
+            </a>
+        </div>
+    </section>
+
+    <section class="recent-notes" aria-labelledby="recent-notes-title">
+        <div class="section-kicker">LATEST NOTES</div>
+        <h2 id="recent-notes-title">最近更新</h2>
+        
+            <article class="recent-note">
+                <a href="/2026/08/04/ai-robot-visual-servo-latency-budget/">
+                    <span class="recent-note-title">视觉伺服的端到端延迟预算：目标为什么总是慢半拍</span>
+                    <time datetime="2026-08-04T01:30:00.000Z">2026-08-04</time>
+                </a>
+            </article>
+        
+            <article class="recent-note">
+                <a href="/2026/07/30/nvidia-groot-robot-foundation-model/">
+                    <span class="recent-note-title">NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层</span>
+                    <time datetime="2026-07-28T06:00:00.000Z">2026-07-28</time>
+                </a>
+            </article>
+        
+            <article class="recent-note">
+                <a href="/2026/07/30/deepstream-multicamera-robot/">
+                    <span class="recent-note-title">DeepStream 多相机机器人：帧率正常，控制为什么还是迟钝</span>
+                    <time datetime="2026-07-27T06:00:00.000Z">2026-07-27</time>
+                </a>
+            </article>
+        
+            <article class="recent-note">
+                <a href="/2026/07/30/isaac-ros-vslam-nvblox/">
+                    <span class="recent-note-title">Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间</span>
+                    <time datetime="2026-07-24T06:00:00.000Z">2026-07-24</time>
+                </a>
+            </article>
+        
+            <article class="recent-note">
+                <a href="/2026/07/30/isaac-sim-sim-to-real/">
+                    <span class="recent-note-title">Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界</span>
+                    <time datetime="2026-07-23T06:00:00.000Z">2026-07-23</time>
+                </a>
+            </article>
+        
+    </section>
+
     <section class="project-showcase" aria-labelledby="projects-title">
         <div class="section-kicker">SELECTED PROJECTS</div>
         <h2 id="projects-title">机器人运行时与系统工程</h2>
-        <p class="project-intro">所有演示均标明验证环境，不将仿真、vcan 或 QEMU 结果描述为物理硬件能力。</p>
+        <p class="project-intro">首页只放三项代表性项目；完整项目与验证边界见项目页。</p>
         <div class="project-grid">
             <article class="project-item project-item--featured">
   <a class="project-media project-media--runtime" href="/projects/robotraceopt/" aria-label="查看 RoboTraceOpt 项目详情">
@@ -228,60 +301,12 @@
   <a class="project-media" href="/projects/ros2-control-vcan/"><img src="/image/projects/vcan-diffbot.png" alt="ros2_control vcan 双虚拟电机演示"></a>
   <div class="project-body"><span class="project-status">vcan 软件闭环</span><h3>ros2_control vcan Motor Demo</h3><p>双虚拟电机反馈、watchdog、ACK 超时、bus-off 与 safe-stop，不声明真实电机负载。</p><div class="project-links"><a href="/projects/ros2-control-vcan/">项目详情 →</a><a href="https://github.com/Quchaosheng/ros2-control-vcan-motor-demo" target="_blank" rel="noopener">源码 ↗</a></div></div>
 </article>
-<article class="project-item">
-  <a class="project-media" href="/projects/apriltag-docking/"><img src="/image/projects/apriltag-docking.png" alt="Gazebo AprilTag 视觉停靠演示"></a>
-  <div class="project-body"><span class="project-status">Gazebo 仿真</span><h3>AprilTag Docking Demo</h3><p>AprilTag 观测、任务 Guard、Nav2 Docking 与取消路径的可复现仿真，不冒充真实机器人停靠。</p><div class="project-links"><a href="/projects/apriltag-docking/">项目详情 →</a><a href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo" target="_blank" rel="noopener">源码 ↗</a></div></div>
-</article>
-<article class="project-item">
-  <a class="project-media" href="/projects/quard-star-riscv64/"><img src="/image/projects/quard-qemu.png" alt="Quard Star RISC-V64 QEMU 验收演示"></a>
-  <div class="project-body"><span class="project-status">QEMU / TAP</span><h3>Quard Star RISC-V64</h3><p>七核 SMP 内核与独立 FreeRTOS hart，覆盖 VirtIO、TCP/IP、存储及 PMP 双向隔离验证。</p><div class="project-links"><a href="/projects/quard-star-riscv64/">项目详情 →</a><a href="https://github.com/Quchaosheng/quard-star-riscv64-net" target="_blank" rel="noopener">源码 ↗</a></div></div>
-</article>
 
         </div>
         <a class="projects-more" href="/projects/">查看全部项目与验证范围 →</a>
     </section>
-
-    <section class="recent-notes" aria-labelledby="recent-notes-title">
-        <div class="section-kicker">LATEST NOTES</div>
-        <h2 id="recent-notes-title">最近更新</h2>
-        
-            <article class="recent-note">
-                <a href="/2026/09/05/flow-matching-diffusion-robot-policy/">
-                    <span class="recent-note-title">Flow Matching 与 Diffusion Policy：机器人为什么开始生成一段动作</span>
-                    <time datetime="2026-09-05T01:30:00.000Z">2026-09-05</time>
-                </a>
-            </article>
-        
-            <article class="recent-note">
-                <a href="/2026/09/04/simpler-vla-sim-evaluation/">
-                    <span class="recent-note-title">SIMPLER 论文拆解：仿真评测怎样预测 VLA 的真机表现</span>
-                    <time datetime="2026-09-04T01:30:00.000Z">2026-09-04</time>
-                </a>
-            </article>
-        
-            <article class="recent-note">
-                <a href="/2026/09/03/robot-data-open-x-droid-schema/">
-                    <span class="recent-note-title">Open X-Embodiment 与 DROID：跨机器人数据最难的是动作含义一致</span>
-                    <time datetime="2026-09-03T01:30:00.000Z">2026-09-03</time>
-                </a>
-            </article>
-        
-            <article class="recent-note">
-                <a href="/2026/09/02/cosmos-world-model-physical-ai/">
-                    <span class="recent-note-title">Cosmos 世界模型论文拆解：生成未来视频以后，机器人能拿它做什么</span>
-                    <time datetime="2026-09-02T01:30:00.000Z">2026-09-02</time>
-                </a>
-            </article>
-        
-            <article class="recent-note">
-                <a href="/2026/09/01/gemini-robotics-embodied-reasoning/">
-                    <span class="recent-note-title">Gemini Robotics 论文拆解：具身推理和直接控制是两条不同路线</span>
-                    <time datetime="2026-09-01T01:30:00.000Z">2026-09-01</time>
-                </a>
-            </article>
-        
-    </section>
-    </div>
+  </div>
+</main>
 
 
             </div>

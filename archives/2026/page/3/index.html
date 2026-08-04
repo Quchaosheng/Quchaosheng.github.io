@@ -44,6 +44,7 @@
 
 
 
+
     <link rel="icon" href="/bitbug_favicon.ico">
 
 <link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
@@ -100,7 +101,7 @@
             <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
             <div class="menu navbar-right">
                 
-                <a class="menu-item" href="/projects">Projects</a>
+                <a class="menu-item" href="/projects">项目</a>
                 
                 <a class="menu-item" href="/modules">模块</a>
                 
@@ -128,14 +129,14 @@
                 <div>
                     <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
                 </div>
-                <div class="menu-toggle" onclick="mobileBtn()">
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
                     <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
                     <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
-                </div>
+                </button>
             </div>
             <div class="menu" id="mobile-menu">
                 
-                <a class="menu-item" href="/projects">Projects</a>
+                <a class="menu-item" href="/projects">项目</a>
                 
                 <a class="menu-item" href="/modules">模块</a>
                 
@@ -155,21 +156,19 @@
 
 </header>
 <script>
-    var mobileBtn = function f() {
-        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
         var mobileMenu = document.getElementById("mobile-menu");
-        if (toggleMenu.classList.contains("active")) {
-            toggleMenu.classList.remove("active")
-            mobileMenu.classList.remove("active")
-        } else {
-            toggleMenu.classList.add("active")
-            mobileMenu.classList.add("active")
-        }
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
     }
 </script>
 
             <div class="main">
-                <div class="container archive-page">
+                <main class="container archive-page">
     <header class="archive-intro">
         <div class="section-kicker">NOTE INDEX</div>
         <h1>文章归档</h1>
@@ -250,14 +249,14 @@
 
         <article class="archive-item">
             <div class="archive-item-main">
-                <a class="archive-item-link" href="/2026/07/30/isaac-sim-sim-to-real/">Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界</a>
+                <a class="archive-item-link" href="/2026/07/30/realtime-linux-checklist/">Linux 实时系统落地检查清单</a>
                 
                     <div class="archive-item-categories" aria-label="文章分类">
                         
                             
                         
                             
-                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">Linux实时</a>
                             
                         
                     </div>
@@ -267,22 +266,22 @@
                         <span class="archive-item-topic-label">主题</span>
                         
                             
-                                <a href="/tag/%E5%90%88%E6%88%90%E6%95%B0%E6%8D%AE/">#合成数据</a>
+                                <a href="/tag/%E5%AE%9E%E6%97%B6Linux/">#实时Linux</a>
                             
                         
                             
-                                <a href="/tag/Sim-to-Real/">#Sim-to-Real</a>
+                                <a href="/tag/%E8%B0%83%E4%BC%98/">#调优</a>
                             
                         
                             
-                                <a href="/tag/Isaac-Sim/">#Isaac Sim</a>
+                                <a href="/tag/%E9%AA%8C%E8%AF%81/">#验证</a>
                             
                         
                         
                     </div>
                 
             </div>
-            <span class="archive-item-date">2026-07-23</span>
+            <span class="archive-item-date">2026-06-29</span>
         </article>
     
         
@@ -291,14 +290,14 @@
 
         <article class="archive-item">
             <div class="archive-item-main">
-                <a class="archive-item-link" href="/2026/07/30/tensorrt-robot-inference/">TensorRT 机器人推理：从训练模型到稳定延迟</a>
+                <a class="archive-item-link" href="/2026/07/30/tsn-deterministic-network/">TSN：以太网怎样提供确定性时延</a>
                 
                     <div class="archive-item-categories" aria-label="文章分类">
                         
                             
                         
                             
-                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">Linux实时</a>
                             
                         
                     </div>
@@ -308,22 +307,22 @@
                         <span class="archive-item-topic-label">主题</span>
                         
                             
-                                <a href="/tag/TensorRT/">#TensorRT</a>
+                                <a href="/tag/PTP/">#PTP</a>
                             
                         
                             
-                                <a href="/tag/ONNX/">#ONNX</a>
+                                <a href="/tag/TSN/">#TSN</a>
                             
                         
                             
-                                <a href="/tag/%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/">#推理优化</a>
+                                <a href="/tag/%E7%A1%AE%E5%AE%9A%E6%80%A7%E7%BD%91%E7%BB%9C/">#确定性网络</a>
                             
                         
                         
                     </div>
                 
             </div>
-            <span class="archive-item-date">2026-07-21</span>
+            <span class="archive-item-date">2026-06-26</span>
         </article>
     
         
@@ -332,14 +331,14 @@
 
         <article class="archive-item">
             <div class="archive-item-main">
-                <a class="archive-item-link" href="/2026/07/30/isaac-ros-nitros-zero-copy/">Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU</a>
+                <a class="archive-item-link" href="/2026/07/30/ptp-clock-sync/">PTP 时间同步：让分布式设备共享微秒级时间</a>
                 
                     <div class="archive-item-categories" aria-label="文章分类">
                         
                             
                         
                             
-                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">Linux实时</a>
                             
                         
                     </div>
@@ -349,22 +348,22 @@
                         <span class="archive-item-topic-label">主题</span>
                         
                             
-                                <a href="/tag/Isaac-ROS/">#Isaac ROS</a>
+                                <a href="/tag/PTP/">#PTP</a>
                             
                         
                             
-                                <a href="/tag/NITROS/">#NITROS</a>
+                                <a href="/tag/PHC/">#PHC</a>
                             
                         
                             
-                                <a href="/tag/%E9%9B%B6%E6%8B%B7%E8%B4%9D/">#零拷贝</a>
+                                <a href="/tag/%E6%97%B6%E9%97%B4%E5%90%8C%E6%AD%A5/">#时间同步</a>
                             
                         
                         
                     </div>
                 
             </div>
-            <span class="archive-item-date">2026-07-20</span>
+            <span class="archive-item-date">2026-06-25</span>
         </article>
     
         
@@ -373,89 +372,7 @@
 
         <article class="archive-item">
             <div class="archive-item-main">
-                <a class="archive-item-link" href="/2026/07/30/jetson-robot-deployment/">Jetson 机器人部署：功耗、算力与实时控制怎样分工</a>
-                
-                    <div class="archive-item-categories" aria-label="文章分类">
-                        
-                            
-                        
-                            
-                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
-                            
-                        
-                    </div>
-                
-                
-                    <div class="archive-item-tags" aria-label="文章主题">
-                        <span class="archive-item-topic-label">主题</span>
-                        
-                            
-                                <a href="/tag/Jetson/">#Jetson</a>
-                            
-                        
-                            
-                                <a href="/tag/CUDA/">#CUDA</a>
-                            
-                        
-                            
-                                <a href="/tag/JetPack/">#JetPack</a>
-                            
-                        
-                        
-                    </div>
-                
-            </div>
-            <span class="archive-item-date">2026-07-17</span>
-        </article>
-    
-        
-
-        
-
-        <article class="archive-item">
-            <div class="archive-item-main">
-                <a class="archive-item-link" href="/2026/07/30/nvidia-physical-ai-stack/">NVIDIA Physical AI 技术栈：机器人从模型到执行器要经过什么</a>
-                
-                    <div class="archive-item-categories" aria-label="文章分类">
-                        
-                            
-                        
-                            
-                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
-                            
-                        
-                    </div>
-                
-                
-                    <div class="archive-item-tags" aria-label="文章主题">
-                        <span class="archive-item-topic-label">主题</span>
-                        
-                            
-                                <a href="/tag/ROS-2/">#ROS 2</a>
-                            
-                        
-                            
-                                <a href="/tag/Physical-AI/">#Physical AI</a>
-                            
-                        
-                            
-                                <a href="/tag/NVIDIA/">#NVIDIA</a>
-                            
-                        
-                        
-                    </div>
-                
-            </div>
-            <span class="archive-item-date">2026-07-16</span>
-        </article>
-    
-        
-
-        
-
-        <article class="archive-item">
-            <div class="archive-item-main">
-                <a class="archive-item-link" href="/2026/07/30/realtime-regression-baseline/">实时回归测试：把一次调优变成可持续的延迟基线</a>
+                <a class="archive-item-link" href="/2026/07/30/cyclictest-latency/">cyclictest：怎样测量 Linux 实时调度延迟</a>
                 
                     <div class="archive-item-categories" aria-label="文章分类">
                         
@@ -476,18 +393,18 @@
                             
                         
                             
-                                <a href="/tag/%E5%9B%9E%E5%BD%92%E6%B5%8B%E8%AF%95/">#回归测试</a>
+                                <a href="/tag/%E5%BB%B6%E8%BF%9F%E6%B5%8B%E8%AF%95/">#延迟测试</a>
                             
                         
                             
-                                <a href="/tag/%E5%BB%B6%E8%BF%9F%E5%9F%BA%E7%BA%BF/">#延迟基线</a>
+                                <a href="/tag/rt-tests/">#rt-tests</a>
                             
                         
                         
                     </div>
                 
             </div>
-            <span class="archive-item-date">2026-07-15</span>
+            <span class="archive-item-date">2026-06-24</span>
         </article>
     
         
@@ -496,7 +413,7 @@
 
         <article class="archive-item">
             <div class="archive-item-main">
-                <a class="archive-item-link" href="/2026/07/30/realtime-network-path/">Linux 实时网络路径：从网卡中断到应用线程</a>
+                <a class="archive-item-link" href="/2026/07/30/realtime-memory-locking/">实时任务的内存锁定：避免缺页与回收抖动</a>
                 
                     <div class="archive-item-categories" aria-label="文章分类">
                         
@@ -513,7 +430,134 @@
                         <span class="archive-item-topic-label">主题</span>
                         
                             
-                                <a href="/tag/NAPI/">#NAPI</a>
+                                <a href="/tag/mlockall/">#mlockall</a>
+                            
+                        
+                            
+                                <a href="/tag/%E7%BC%BA%E9%A1%B5/">#缺页</a>
+                            
+                        
+                            
+                                <a href="/tag/%E5%AE%9E%E6%97%B6%E5%86%85%E5%AD%98/">#实时内存</a>
+                            
+                        
+                        
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-06-23</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/06/22/cuda-memory-stream-basics/">CUDA 推理入门：Host、Device、Pinned Memory 和 Stream</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/CUDA/">#CUDA</a>
+                            
+                        
+                            
+                                <a href="/tag/GPU/">#GPU</a>
+                            
+                        
+                            
+                                <a href="/tag/Pinned-Memory/">#Pinned Memory</a>
+                            
+                        
+                            
+                        
+                            
+                        
+                        <span class="archive-item-more-topics">+2</span>
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-06-22</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/30/linux-cpu-isolation/">CPU 隔离：为实时任务留出安静的核心</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">Linux实时</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/CPU%E9%9A%94%E7%A6%BB/">#CPU隔离</a>
+                            
+                        
+                            
+                                <a href="/tag/nohz-full/">#nohz_full</a>
+                            
+                        
+                            
+                                <a href="/tag/rcu-nocbs/">#rcu_nocbs</a>
+                            
+                        
+                        
+                    </div>
+                
+            </div>
+            <span class="archive-item-date">2026-06-19</span>
+        </article>
+    
+        
+
+        
+
+        <article class="archive-item">
+            <div class="archive-item-main">
+                <a class="archive-item-link" href="/2026/07/30/threaded-irq-affinity/">线程化中断与 IRQ 亲和性：控制实时任务的硬件干扰</a>
+                
+                    <div class="archive-item-categories" aria-label="文章分类">
+                        
+                            
+                        
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">Linux实时</a>
+                            
+                        
+                    </div>
+                
+                
+                    <div class="archive-item-tags" aria-label="文章主题">
+                        <span class="archive-item-topic-label">主题</span>
+                        
+                            
+                                <a href="/tag/PREEMPT-RT/">#PREEMPT_RT</a>
                             
                         
                             
@@ -521,14 +565,14 @@
                             
                         
                             
-                                <a href="/tag/%E5%AE%9E%E6%97%B6%E7%BD%91%E7%BB%9C/">#实时网络</a>
+                                <a href="/tag/%E7%BA%BF%E7%A8%8B%E5%8C%96%E4%B8%AD%E6%96%AD/">#线程化中断</a>
                             
                         
                         
                     </div>
                 
             </div>
-            <span class="archive-item-date">2026-07-14</span>
+            <span class="archive-item-date">2026-06-18</span>
         </article>
     
         
@@ -537,7 +581,7 @@
 
         <article class="archive-item">
             <div class="archive-item-main">
-                <a class="archive-item-link" href="/2026/07/30/realtime-numa-cache-jitter/">NUMA 与共享缓存：实时线程为何会被别的 CPU 干扰</a>
+                <a class="archive-item-link" href="/2026/07/30/priority-inversion-rtmutex/">优先级反转与 rtmutex：低优先级任务为什么会挡住实时任务</a>
                 
                     <div class="archive-item-categories" aria-label="文章分类">
                         
@@ -554,24 +598,22 @@
                         <span class="archive-item-topic-label">主题</span>
                         
                             
-                                <a href="/tag/NUMA/">#NUMA</a>
+                                <a href="/tag/%E4%BC%98%E5%85%88%E7%BA%A7%E5%8F%8D%E8%BD%AC/">#优先级反转</a>
                             
                         
                             
-                                <a href="/tag/%E5%AE%9E%E6%97%B6Linux/">#实时Linux</a>
+                                <a href="/tag/rtmutex/">#rtmutex</a>
                             
                         
                             
-                                <a href="/tag/LLC/">#LLC</a>
+                                <a href="/tag/%E4%BC%98%E5%85%88%E7%BA%A7%E7%BB%A7%E6%89%BF/">#优先级继承</a>
                             
                         
-                            
                         
-                        <span class="archive-item-more-topics">+1</span>
                     </div>
                 
             </div>
-            <span class="archive-item-date">2026-07-10</span>
+            <span class="archive-item-date">2026-06-17</span>
         </article>
     
         
@@ -580,7 +622,7 @@
 
         <article class="archive-item">
             <div class="archive-item-main">
-                <a class="archive-item-link" href="/2026/07/30/realtime-cgroup-containers/">容器里的实时任务：cgroup、权限和 CPU 配额如何共同生效</a>
+                <a class="archive-item-link" href="/2026/07/30/linux-realtime-scheduling-classes/">Linux 实时调度：SCHED_FIFO、RR 与 DEADLINE</a>
                 
                     <div class="archive-item-categories" aria-label="文章分类">
                         
@@ -597,74 +639,33 @@
                         <span class="archive-item-topic-label">主题</span>
                         
                             
-                                <a href="/tag/cgroup/">#cgroup</a>
+                                <a href="/tag/SCHED-FIFO/">#SCHED_FIFO</a>
                             
                         
                             
-                                <a href="/tag/%E5%AE%B9%E5%99%A8/">#容器</a>
+                                <a href="/tag/SCHED-RR/">#SCHED_RR</a>
                             
-                        
-                            
-                                <a href="/tag/CAP-SYS-NICE/">#CAP_SYS_NICE</a>
-                            
-                        
-                        
-                    </div>
-                
-            </div>
-            <span class="archive-item-date">2026-07-09</span>
-        </article>
-    
-        
-
-        
-
-        <article class="archive-item">
-            <div class="archive-item-main">
-                <a class="archive-item-link" href="/2026/07/30/sched-deadline-cbs/">SCHED_DEADLINE：用运行预算和截止期调度周期任务</a>
-                
-                    <div class="archive-item-categories" aria-label="文章分类">
-                        
-                            
-                        
-                            
-                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">Linux实时</a>
-                            
-                        
-                    </div>
-                
-                
-                    <div class="archive-item-tags" aria-label="文章主题">
-                        <span class="archive-item-topic-label">主题</span>
                         
                             
                                 <a href="/tag/SCHED-DEADLINE/">#SCHED_DEADLINE</a>
                             
                         
-                            
-                                <a href="/tag/EDF/">#EDF</a>
-                            
-                        
-                            
-                                <a href="/tag/CBS/">#CBS</a>
-                            
-                        
                         
                     </div>
                 
             </div>
-            <span class="archive-item-date">2026-07-08</span>
+            <span class="archive-item-date">2026-06-16</span>
         </article>
     
     
     <nav class="pagination">
-        <a class="page-number" href="/archives/2026/">1</a><a class="page-number" href="/archives/2026/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/archives/2026/page/4/">4</a><a class="page-number" href="/archives/2026/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/archives/2026/page/17/">17</a>
+        <a class="page-number" href="/archives/2026/">1</a><a class="page-number" href="/archives/2026/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/archives/2026/page/4/">4</a><a class="page-number" href="/archives/2026/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/archives/2026/page/15/">15</a>
     </nav>
 
 </div>
 
     </section>
-</div>
+</main>
 
             </div>
             <footer id="footer" class="footer">
