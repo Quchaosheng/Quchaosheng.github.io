@@ -31,9 +31,21 @@
   }
   .navbar-mobile .container .navbar-header .menu-toggle {
     display: flex;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: inherit;
     cursor: pointer;
-    line-height: 5.5em;
+    line-height: 1;
     user-select: none;
+  }
+  .navbar-mobile .container .navbar-header .menu-toggle:focus-visible {
+    outline: 2px solid #087f5b;
+    outline-offset: 2px;
   }
   .navbar-mobile .container .navbar-header .menu-toggle .menu-icon {
     display: block;
