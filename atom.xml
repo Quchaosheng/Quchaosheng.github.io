@@ -4,8 +4,16 @@
   <id>https://quchaosheng.github.io/atom.xml</id>
   <link href="https://quchaosheng.github.io/"/>
   <link href="https://quchaosheng.github.io/atom.xml" rel="self"/>
-  <updated>2026-08-04T01:30:00.000Z</updated>
+  <updated>2026-08-05T01:30:00.000Z</updated>
   <author><name>Quchaosheng</name></author>
+  <entry>
+    <title>Rolling Shutter、曝光与运动模糊：为什么移动机器人会错一拍</title>
+    <id>https://quchaosheng.github.io/2026/08/05/ai-robot-rolling-shutter-motion-blur/</id>
+    <link href="https://quchaosheng.github.io/2026/08/05/ai-robot-rolling-shutter-motion-blur/"/>
+    <published>2026-08-05T01:30:00.000Z</published>
+    <updated>2026-08-05T01:30:00.000Z</updated>
+    <summary type="html">相机固定在桌上时，AprilTag 和目标框都很稳。把相机装到底盘上，转一个弯，画面里的标记开始倾斜，深度点云也跟着抖。模型没有换，参数也没有改，变化来自相机本身：Rolling Shutter 逐行读图，图像顶部和底部并不属于同一时刻；曝光时间太长时，单行内部又会积累一段运动轨迹。 我会先把这两个误差分开。行读出造成时间错位，曝光造成运动模糊。它们都能让位姿抖动，但修法不一样。 确认快门和时间戳含义 → 记录曝光、分辨率和帧率 → 固定相机做静态基线 → 加入已知速度的运动 → 把误差接入拒绝条件 时空图 一帧 Rolling Shutter 图...</summary>
+  </entry>
   <entry>
     <title>视觉伺服的端到端延迟预算：目标为什么总是慢半拍</title>
     <id>https://quchaosheng.github.io/2026/08/04/ai-robot-visual-servo-latency-budget/</id>
@@ -157,13 +165,5 @@
     <published>2026-07-01T01:30:00.000Z</published>
     <updated>2026-07-01T01:30:00.000Z</updated>
     <summary type="html">模仿学习策略每个控制周期只预测下一步动作，误差会一小步一小步累积。双臂操作更麻烦，两只手的配合跨越较长时间，单步动作很难表达“抓住后保持、另一只手继续移动”这类连续意图。ALOHA 项目中的 ACT（Action Chunking with Transformers）把一段未来动作作为一个 chunk 预测，试图缓解这种长时间协调问题。 采集双臂示教 → 编码视觉与关节状态 → 预测未来动作 chunk → 时间集成多个预测 → 滚动执行并重新观测 动作分块图 策略一次预测多个未来动作，执行时仍要滚动更新并处理新观测。 示教数据 相机、关节和操作者...</summary>
-  </entry>
-  <entry>
-    <title>Linux 高精度定时器：实时任务为何不再依赖系统节拍</title>
-    <id>https://quchaosheng.github.io/2026/07/30/linux-high-resolution-timers/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/linux-high-resolution-timers/"/>
-    <published>2026-06-30T06:00:00.000Z</published>
-    <updated>2026-06-30T06:00:00.000Z</updated>
-    <summary type="html">一个周期任务若每 1 ms 运行一次，最直观的写法是“睡 1 ms，再做一次工作”。但如果每轮工作多花了 80 微秒，下一轮又从当前时刻开始睡，误差会不断累积，最终周期已经悄悄漂移。Linux 的高精度定时器（hrtimer）配合硬件 clock event，可以把到期时刻表达为绝对时间，并按下一次最近到期事件编程硬件定时器。它解决的是“什么时候该触发”，不是“触发后什么时候一定能拿到 CPU”。 任务设置到期时间 → hrtimer 入队排序 → 编程 clock event → 定时中断触发回调 → 唤醒任务并参与调度 clocksource、...</summary>
   </entry>
 </feed>
