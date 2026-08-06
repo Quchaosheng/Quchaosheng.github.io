@@ -4,8 +4,16 @@
   <id>https://quchaosheng.github.io/atom.xml</id>
   <link href="https://quchaosheng.github.io/"/>
   <link href="https://quchaosheng.github.io/atom.xml" rel="self"/>
-  <updated>2026-08-05T01:30:00.000Z</updated>
+  <updated>2026-08-06T01:30:00.000Z</updated>
   <author><name>Quchaosheng</name></author>
+  <entry>
+    <title>触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</title>
+    <id>https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/</id>
+    <link href="https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/"/>
+    <published>2026-08-06T01:30:00.000Z</published>
+    <updated>2026-08-06T01:30:00.000Z</updated>
+    <summary type="html">机械臂夹住一个物体后，力传感器的曲线偶尔会突然归零，下一周期又跳回去。另一个常见现象是：传感器显示力已经超过阈值，夹爪却没有停。排查时不要先把锅甩给滤波器。消息是否带了正确时间，读数是否排队，阈值触发是否走了独立的安全通道，这些问题更常见。 触觉和力信号有两个用途。一个是给策略或模型提供“接触发生了”的观测，允许稍微延迟；另一个是保护人和设备，必须在可预期的时间内触发。把两者共用一个 ROS 2 话题和同一套队列，后面很难证明急停真的可靠。 确认传感器时间戳和单位 → 记录原始数据与消息年龄 → 做零点和滤波基线 → 分别设计控制阈值与急停通道 →...</summary>
+  </entry>
   <entry>
     <title>Rolling Shutter、曝光与运动模糊：为什么移动机器人会错一拍</title>
     <id>https://quchaosheng.github.io/2026/08/05/ai-robot-rolling-shutter-motion-blur/</id>
@@ -157,13 +165,5 @@
     <published>2026-07-02T06:00:00.000Z</published>
     <updated>2026-07-02T06:00:00.000Z</updated>
     <summary type="html">实时延迟出现尖峰时，先要知道那段时间被谁占走了。 osnoise tracer 在指定 CPU 上运行采样线程，比较它本该运行的时间和实际得到的时间，再把缺口和 IRQ、softirq、NMI、调度等内核事件对上。它适合用来拆开“偶尔抖一下”到底是哪类干扰。 建立采样时间窗 → 持续读取运行时间 → 发现时间缺口 → 关联 IRQ/线程等事件 → 锁定主要噪声源 osnoise 与 timerlat 的分工 timerlat 从定时器到期开始，关注 IRQ 延迟和被唤醒线程真正获得 CPU 的延迟； osnoise 则在一个 CPU 上持续观察“本...</summary>
-  </entry>
-  <entry>
-    <title>ALOHA 与 ACT 论文导读：动作分块为什么能改善双臂模仿学习</title>
-    <id>https://quchaosheng.github.io/2026/07/01/aloha-act-paper-reading/</id>
-    <link href="https://quchaosheng.github.io/2026/07/01/aloha-act-paper-reading/"/>
-    <published>2026-07-01T01:30:00.000Z</published>
-    <updated>2026-07-01T01:30:00.000Z</updated>
-    <summary type="html">模仿学习策略每个控制周期只预测下一步动作，误差会一小步一小步累积。双臂操作更麻烦，两只手的配合跨越较长时间，单步动作很难表达“抓住后保持、另一只手继续移动”这类连续意图。ALOHA 项目中的 ACT（Action Chunking with Transformers）把一段未来动作作为一个 chunk 预测，试图缓解这种长时间协调问题。 采集双臂示教 → 编码视觉与关节状态 → 预测未来动作 chunk → 时间集成多个预测 → 滚动执行并重新观测 动作分块图 策略一次预测多个未来动作，执行时仍要滚动更新并处理新观测。 示教数据 相机、关节和操作者...</summary>
   </entry>
 </feed>
