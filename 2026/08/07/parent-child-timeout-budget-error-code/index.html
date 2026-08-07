@@ -16,33 +16,33 @@
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
-<title>CAN 总线：仲裁、错误处理与可靠通信 | Quchaosheng&#39;s Notes</title>
+<title>父子超时预算错配：一次 113 覆盖 204 的排障记录 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="CAN 是多节点共用的一条总线，消息 ID 同时表示这帧是什么和它有多高优先级。多个节点一起发送时，显性位会覆盖隐性位，ID 更小的帧继续发送，其他节点停下来，等总线空闲后再试。这种逐位仲裁没有把低优先级帧“撞坏”，但它会拉长低优先级消息的等待时间。 多个节点同时发送 → 逐位仲裁 → 最高优先级继续 → CRC/ACK 校验 → 错误计数与重发 总线...">
+    <meta name="description" content="我在一轮取消链路回归里遇到过一个很像调度抖动的问题。同一个故障注入场景，有时返回父层的 SAFE_STOP/113 ，有时返回设备层的 SAFE_STOP/204 。设备层明明已经进入 STOP 流程，最终错误码却不稳定。 当时父任务的取消确认预算和子任务的 STOP ACK 等待预算都配置为 500ms 。两个计时器几乎同时起跑，谁先到期，谁就更可能...">
 
-<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/embedded-can/">
+<link rel="canonical" href="https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
-<meta property="og:title" content="CAN 总线：仲裁、错误处理与可靠通信 | Quchaosheng&#39;s Notes">
+<meta property="og:title" content="父子超时预算错配：一次 113 覆盖 204 的排障记录 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="CAN 是多节点共用的一条总线，消息 ID 同时表示这帧是什么和它有多高优先级。多个节点一起发送时，显性位会覆盖隐性位，ID 更小的帧继续发送，其他节点停下来，等总线空闲后再试。这种逐位仲裁没有把低优先级帧“撞坏”，但它会拉长低优先级消息的等待时间。 多个节点同时发送 → 逐位仲裁 → 最高优先级继续 → CRC/ACK 校验 → 错误计数与重发 总线...">
+    <meta property="og:description" content="我在一轮取消链路回归里遇到过一个很像调度抖动的问题。同一个故障注入场景，有时返回父层的 SAFE_STOP/113 ，有时返回设备层的 SAFE_STOP/204 。设备层明明已经进入 STOP 流程，最终错误码却不稳定。 当时父任务的取消确认预算和子任务的 STOP ACK 等待预算都配置为 500ms 。两个计时器几乎同时起跑，谁先到期，谁就更可能...">
 
-<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/embedded-can/">
+<meta property="og:url" content="https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
 
     <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
-    <meta property="og:image:alt" content="CAN 总线：仲裁、错误处理与可靠通信">
+    <meta property="og:image:alt" content="父子超时预算错配：一次 113 覆盖 204 的排障记录">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="CAN 总线：仲裁、错误处理与可靠通信 | Quchaosheng&#39;s Notes">
+<meta name="twitter:title" content="父子超时预算错配：一次 113 覆盖 204 的排障记录 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="CAN 是多节点共用的一条总线，消息 ID 同时表示这帧是什么和它有多高优先级。多个节点一起发送时，显性位会覆盖隐性位，ID 更小的帧继续发送，其他节点停下来，等总线空闲后再试。这种逐位仲裁没有把低优先级帧“撞坏”，但它会拉长低优先级消息的等待时间。 多个节点同时发送 → 逐位仲裁 → 最高优先级继续 → CRC/ACK 校验 → 错误计数与重发 总线...">
+    <meta name="twitter:description" content="我在一轮取消链路回归里遇到过一个很像调度抖动的问题。同一个故障注入场景，有时返回父层的 SAFE_STOP/113 ，有时返回设备层的 SAFE_STOP/204 。设备层明明已经进入 STOP 流程，最终错误码却不稳定。 当时父任务的取消确认预算和子任务的 STOP ACK 等待预算都配置为 500ms 。两个计时器几乎同时起跑，谁先到期，谁就更可能...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"CAN 总线：仲裁、错误处理与可靠通信","description":"CAN 是多节点共用的一条总线，消息 ID 同时表示这帧是什么和它有多高优先级。多个节点一起发送时，显性位会覆盖隐性位，ID 更小的帧继续发送，其他节点停下来，等总线空闲后再试。这种逐位仲裁没有把低优先级帧“撞坏”，但它会拉长低优先级消息的等待时间。 多个节点同时发送 → 逐位仲裁 → 最高优先级继续 → CRC/ACK 校验 → 错误计数与重发 总线...","datePublished":"2026-05-14T06:00:00.000Z","dateModified":"2026-05-14T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/embedded-can/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式","keywords":"CAN, 仲裁, 总线","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"父子超时预算错配：一次 113 覆盖 204 的排障记录","description":"我在一轮取消链路回归里遇到过一个很像调度抖动的问题。同一个故障注入场景，有时返回父层的 SAFE_STOP/113 ，有时返回设备层的 SAFE_STOP/204 。设备层明明已经进入 STOP 流程，最终错误码却不稳定。 当时父任务的取消确认预算和子任务的 STOP ACK 等待预算都配置为 500ms 。两个计时器几乎同时起跑，谁先到期，谁就更可能...","datePublished":"2026-08-07T01:30:00.000Z","dateModified":"2026-08-07T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 机器人系统","keywords":"ROS 2, CAN, Action, 超时, 排障","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -243,7 +243,7 @@
     
     <article class="post-wrap">
         <header class="post-header">
-            <h1 class="post-title">CAN 总线：仲裁、错误处理与可靠通信</h1>
+            <h1 class="post-title">父子超时预算错配：一次 113 覆盖 204 的排障记录</h1>
             
                 <div class="post-meta">
                     
@@ -252,7 +252,7 @@
 
                     
                         <span class="post-time">
-                        整理日期：<a href="#">2026-05-14&nbsp;&nbsp;14:00:00</a>
+                        整理日期：<a href="#">2026-08-07&nbsp;&nbsp;09:30:00</a>
                         </span>
                     
                     
@@ -261,7 +261,7 @@
                             
                                 <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
                             
-                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E6%9C%BA%E5%99%A8%E4%BA%BA%E7%B3%BB%E7%BB%9F/">机器人系统</a>
                             
                         </span>
                     
@@ -269,11 +269,15 @@
                         <span class="post-topics">
                             主题：
                             
+                                <a href="/tag/ROS-2/">#ROS 2</a>
+                            
                                 <a href="/tag/CAN/">#CAN</a>
                             
-                                <a href="/tag/%E4%BB%B2%E8%A3%81/">#仲裁</a>
+                                <a href="/tag/Action/">#Action</a>
                             
-                                <a href="/tag/%E6%80%BB%E7%BA%BF/">#总线</a>
+                                <a href="/tag/%E8%B6%85%E6%97%B6/">#超时</a>
+                            
+                                
                             
                         </span>
                     
@@ -282,15 +286,28 @@
         </header>
 
         <div class="post-content">
-            <p>CAN 是多节点共用的一条总线，消息 ID 同时表示这帧是什么和它有多高优先级。多个节点一起发送时，显性位会覆盖隐性位，ID 更小的帧继续发送，其他节点停下来，等总线空闲后再试。这种逐位仲裁没有把低优先级帧“撞坏”，但它会拉长低优先级消息的等待时间。</p>
-<div class="note-flow"><span>多个节点同时发送</span><i>→</i><span>逐位仲裁</span><i>→</i><span>最高优先级继续</span><i>→</i><span>CRC/ACK 校验</span><i>→</i><span>错误计数与重发</span></div>
+            <p>我在一轮取消链路回归里遇到过一个很像调度抖动的问题。同一个故障注入场景，有时返回父层的 <code>SAFE_STOP/113</code>，有时返回设备层的 <code>SAFE_STOP/204</code>。设备层明明已经进入 STOP 流程，最终错误码却不稳定。</p>
+<p>当时父任务的取消确认预算和子任务的 STOP ACK 等待预算都配置为 <code>500ms</code>。两个计时器几乎同时起跑，谁先到期，谁就更可能决定最终 Action result。父层先结束时，它只能报告“取消未确认”，也就是 <code>113</code>。稍后设备层形成的 STOP 超时 <code>204</code> 已经没有机会成为最终结果。</p>
+<div class="note-flow"><span>复现 113/204 差异</span><i>→</i><span>对照 Action 时间线</span><i>→</i><span>核对 CAN 帧</span><i>→</i><span>拆分父子预算</span></div>
 
-<figure class="note-visual"><figcaption><span>总线图</span>一个可靠的 CAN 设计同时要看优先级、时间和错误状态。</figcaption><div class="note-map"><span><b>消息 ID</b><small>较小的 ID 在仲裁阶段获胜，也应对应更紧的截止期。</small></span><span><b>位时序</b><small>bitrate、采样点和传播延迟必须在所有节点一致。</small></span><span><b>终端电阻</b><small>总线两端通常需要匹配终端，支线过长会引入反射。</small></span><span><b>ACK</b><small>只说明至少有节点正确接收，不说明执行器已完成动作。</small></span><span><b>错误计数</b><small>发送和接收错误会推动节点进入不同错误状态。</small></span><span><b>bus-off</b><small>节点停止参与总线，恢复策略必须受控且可追踪。</small></span></div></figure>
+<figure class="note-visual"><figcaption><span>错误码归属</span>父层 113 是观察窗口到期，子层 204 是 STOP ACK 等待到期。</figcaption><div class="note-map"><span><b>父任务</b><small>取消请求、状态传播和结果回传。</small></span><span><b>设备层</b><small>发送 STOP 并等待响应。</small></span><span><b>时间戳</b><small>确定哪个终态先形成。</small></span><span><b>CAN 帧</b><small>确认 STOP 是否发出及响应是否存在。</small></span></div></figure>
 
-<h2 id="仲裁优先级要按截止期分配"><a href="#仲裁优先级要按截止期分配" class="headerlink" title="仲裁优先级要按截止期分配"></a>仲裁优先级要按截止期分配</h2><p>给消息分配 ID 时，先列出控制周期、最大允许等待时间和报文长度，再决定优先级。急停、状态闭锁等帧不应与低频诊断、配置下发使用同一优先级。总线在高负载时，高优先级帧仍然会被当前正在发送的一帧挡住，因此预算里还要包含最大帧时间和可能的重发。</p>
-<p>CAN 的 ACK 也容易被误读。它证明有接收节点确认了位级正确性，不证明接收方接受了业务命令，更不证明电机已经运动。需要业务闭环时，应定义独立的状态反馈、序号和超时。</p>
-<h2 id="出错时先分层，不要直接重发"><a href="#出错时先分层，不要直接重发" class="headerlink" title="出错时先分层，不要直接重发"></a>出错时先分层，不要直接重发</h2><p>排查顺序通常是物理层、控制器配置、总线状态和应用协议：确认线缆、地线、终端电阻和收发器供电；确认所有节点 bitrate 与采样点一致；读取 error-active、error-passive、bus-off 状态和错误计数；最后再检查 ID、字节序、长度和信号范围。bus-off 自动恢复可能掩盖持续的物理问题，恢复前应记录原因并限制重试频率。</p>
-<p>参考：<a target="_blank" rel="noopener" href="https://github.com/ZhengNianLi/EmbedSummary">EmbedSummary</a></p>
+<h2 id="为什么我不再把它归因于抖动"><a href="#为什么我不再把它归因于抖动" class="headerlink" title="为什么我不再把它归因于抖动"></a>为什么我不再把它归因于抖动</h2><p>我先沿 Action 层级核对错误码归属：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">rg -n <span class="string">&quot;cancel_timeout_ms|kErrorCancelUnconfirmed&quot;</span> ros2_ws/src/task_executor</span><br><span class="line">rg -n <span class="string">&quot;stop_timeout_ms|kErrorStopTimeout&quot;</span> ros2_ws/src/device_bridge</span><br><span class="line">rg -n <span class="string">&quot;error_code, 113|SAFE_STOP 2 204|assert_stop_can&quot;</span> \</span><br><span class="line">  ros2_ws/src/task_executor/test scripts/run_industrial_e2e.sh</span><br></pre></td></tr></table></figure>
+
+<p><code>task_executor_node.cpp</code> 在父层取消超时后生成 <code>113</code>。只有子结果已经到达，<code>finish_from_child()</code> 才会透传子层错误码。设备桥接层则在 STOP ACK 等待超时后生成 <code>204</code>。</p>
+<p>接下来我把三组记录放在同一条时间线上：Action result、TaskEvent 与观察器时间戳、<code>candump -L vcan0</code> 保存的 CAN 帧。结果不是随机的。返回 <code>113</code> 的运行里，父层终态总是先于子层结果；返回 <code>204</code> 时，设备层结果先完成，父层随后透传它。</p>
+<p>CAN 帧又排除了另一个解释。脚本会检查 opcode 为 <code>0xFF</code> 的 STOP 是否发出，以及对应响应是否存在。故意丢弃 STOP ACK 时，STOP 命令仍然在线上出现，只是没有匹配响应。因此 <code>113</code> 并不说明 STOP 没发，它只说明父层没等到足以解释设备状态的结果。</p>
+<h2 id="根因是预算所有权"><a href="#根因是预算所有权" class="headerlink" title="根因是预算所有权"></a>根因是预算所有权</h2><p>父层预算覆盖的不只是子层那 <code>500ms</code>。它还要容纳取消请求调度、Action 状态传播、线程轮询和子结果回传。把父子预算都设成 <code>500ms</code>，等于没有给这些步骤留任何余量。</p>
+<p>修复后的配置是父层 <code>cancel_timeout = 1000ms</code>，子层 <code>stop_timeout = 500ms</code>。这不是硬实时承诺，而是明确结果归属：设备层先形成权威的 STOP 结果，父层再归并并发布终态。</p>
+<p>我还同时修改了参数文件与节点内建默认值。只改启动 YAML 会让另一种启动方式退回旧预算，测试通过也不能代表部署配置正确。</p>
+<h2 id="回归不能只断言错误码"><a href="#回归不能只断言错误码" class="headerlink" title="回归不能只断言错误码"></a>回归不能只断言错误码</h2><p>修复后的回归分成三条证据链：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">colcon <span class="built_in">test</span> --packages-select task_executor device_bridge runtime_can</span><br><span class="line">./scripts/run_industrial_e2e.sh</span><br><span class="line"><span class="built_in">cat</span> /tmp/runtime-industrial-evidence/summary.tsv</span><br></pre></td></tr></table></figure>
+
+<p>正常取消应得到 <code>CANCELED/0</code>。丢弃 STOP ACK 时，父任务应得到子层透传的 <code>SAFE_STOP/204</code>，不能再被 <code>113</code> 覆盖。同时保存 task JSON、TaskEvent、观察时间戳与 CAN 日志，确认父层何时结束、子层返回什么、线上到底出现了哪些帧。</p>
+<p>这次排障让我改了一个习惯：嵌套超时不能按“每层都给 500ms”来配置。上层观察窗口必须覆盖下层动作预算，以及结果传播所需的余量，否则更具体的错误会被更外层、更模糊的错误抢先覆盖。</p>
+<p>对应实现和完整证据路径可在 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/embodied-agent-runtime/commit/01960cd2d1cd40c146d2b58301be34a00a13a8d6">Embodied Agent Runtime 提交 01960cd</a> 中复核。</p>
+<p><strong>证据边界：</strong>这里的回归使用 <code>vcan0</code>、ROS 2 Action 和软件时间戳。它证明软件协议链路的终态归属，不证明真实执行器已经失能，也不代替硬件急停验收。</p>
 
         </div>
 
@@ -305,7 +322,7 @@
                 
                     <p class="copyright-item">
                         <span>永久链接：</span>
-                        <span><a href="https://quchaosheng.github.io/2026/07/29/embedded-can/">https://quchaosheng.github.io/2026/07/29/embedded-can/</a></span>
+                        <span><a href="https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/">https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/</a></span>
                     </p>
                 
                 
@@ -324,19 +341,19 @@
                 <h2 id="related-posts-title">同主题继续阅读</h2>
                 <div class="related-post-list">
                     
-                        <a href="/2026/07/29/embedded-i2c/">
-                            <span>I2C 总线：寻址、时序与故障恢复</span>
-                            <time datetime="2026-05-13T12:00:00.000Z">2026-05-13</time>
+                        <a href="/2026/03/31/ros2-communication-basics/">
+                            <span>ROS 2 通信入门：Topic、Service、Action 和 Parameter 怎么选</span>
+                            <time datetime="2026-03-31T01:30:00.000Z">2026-03-31</time>
                         </a>
                     
-                        <a href="/2026/08/07/parent-child-timeout-budget-error-code/">
-                            <span>父子超时预算错配：一次 113 覆盖 204 的排障记录</span>
-                            <time datetime="2026-08-07T01:30:00.000Z">2026-08-07</time>
+                        <a href="/2026/08/06/ai-robot-tactile-force-ros2-safety/">
+                            <span>触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</span>
+                            <time datetime="2026-08-06T01:30:00.000Z">2026-08-06</time>
                         </a>
                     
-                        <a href="/2026/07/29/manufacturing-test-interface/">
-                            <span>产测接口：让每块板子都能快速证明自己正常</span>
-                            <time datetime="2026-06-12T02:00:00.000Z">2026-06-12</time>
+                        <a href="/2026/08/04/ai-robot-visual-servo-latency-budget/">
+                            <span>视觉伺服的端到端延迟预算：目标为什么总是慢半拍</span>
+                            <time datetime="2026-08-04T01:30:00.000Z">2026-08-04</time>
                         </a>
                     
                 </div>
@@ -348,11 +365,15 @@
                 <span class="tag">
                     
                     
+                        <a href="/tag/ROS-2/"># ROS 2</a>
+                    
                         <a href="/tag/CAN/"># CAN</a>
                     
-                        <a href="/tag/%E4%BB%B2%E8%A3%81/"># 仲裁</a>
+                        <a href="/tag/Action/"># Action</a>
                     
-                        <a href="/tag/%E6%80%BB%E7%BA%BF/"># 总线</a>
+                        <a href="/tag/%E8%B6%85%E6%97%B6/"># 超时</a>
+                    
+                        <a href="/tag/%E6%8E%92%E9%9A%9C/"># 排障</a>
                     
                         
                 </span>
@@ -365,10 +386,8 @@
         </section>
         <section class="post-nav">
             
-                <a class="prev" rel="prev" href="/2026/07/29/embedded-modbus/">Modbus RTU：帧边界、CRC 与寄存器模型</a>
             
-            
-            <a class="next" rel="next" href="/2026/07/29/embedded-i2c/">I2C 总线：寻址、时序与故障恢复</a>
+            <a class="next" rel="next" href="/2026/08/06/ai-robot-tactile-force-ros2-safety/">触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</a>
             
         </section>
 

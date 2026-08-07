@@ -4,8 +4,16 @@
   <id>https://quchaosheng.github.io/atom.xml</id>
   <link href="https://quchaosheng.github.io/"/>
   <link href="https://quchaosheng.github.io/atom.xml" rel="self"/>
-  <updated>2026-08-06T01:30:00.000Z</updated>
+  <updated>2026-08-07T01:30:00.000Z</updated>
   <author><name>Quchaosheng</name></author>
+  <entry>
+    <title>父子超时预算错配：一次 113 覆盖 204 的排障记录</title>
+    <id>https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/</id>
+    <link href="https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/"/>
+    <published>2026-08-07T01:30:00.000Z</published>
+    <updated>2026-08-07T01:30:00.000Z</updated>
+    <summary type="html">我在一轮取消链路回归里遇到过一个很像调度抖动的问题。同一个故障注入场景，有时返回父层的 SAFE_STOP/113 ，有时返回设备层的 SAFE_STOP/204 。设备层明明已经进入 STOP 流程，最终错误码却不稳定。 当时父任务的取消确认预算和子任务的 STOP ACK 等待预算都配置为 500ms 。两个计时器几乎同时起跑，谁先到期，谁就更可能决定最终 Action result。父层先结束时，它只能报告“取消未确认”，也就是 113 。稍后设备层形成的 STOP 超时 204 已经没有机会成为最终结果。 复现 113/204 差异 → 对...</summary>
+  </entry>
   <entry>
     <title>触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</title>
     <id>https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/</id>
@@ -157,13 +165,5 @@
     <published>2026-07-03T06:00:00.000Z</published>
     <updated>2026-07-03T06:00:00.000Z</updated>
     <summary type="html">SCHED_FIFO 线程若从不阻塞，可以永远占着一个 CPU。对控制环而言这似乎很诱人，对整台 Linux 机器却很危险：同核上的内核维护、SSH、日志、网络处理甚至恢复机制都可能没有机会运行。Linux 因此提供实时节流机制，用一个统计周期和其中可供实时调度类使用的运行预算，为普通任务和系统维护留出 CPU 时间。 实时线程开始运行 → 消耗 RT 运行预算 → 达到周期上限 → 实时类被暂时节流 → 下个周期补充预算 两个 sysctl 的含义 kernel.sched_rt_period_us 定义预算统计的周期； kernel.sched...</summary>
-  </entry>
-  <entry>
-    <title>osnoise tracer：把 Linux 实时抖动拆成可解释的噪声</title>
-    <id>https://quchaosheng.github.io/2026/07/30/linux-osnoise-tracer/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/linux-osnoise-tracer/"/>
-    <published>2026-07-02T06:00:00.000Z</published>
-    <updated>2026-07-02T06:00:00.000Z</updated>
-    <summary type="html">实时延迟出现尖峰时，先要知道那段时间被谁占走了。 osnoise tracer 在指定 CPU 上运行采样线程，比较它本该运行的时间和实际得到的时间，再把缺口和 IRQ、softirq、NMI、调度等内核事件对上。它适合用来拆开“偶尔抖一下”到底是哪类干扰。 建立采样时间窗 → 持续读取运行时间 → 发现时间缺口 → 关联 IRQ/线程等事件 → 锁定主要噪声源 osnoise 与 timerlat 的分工 timerlat 从定时器到期开始，关注 IRQ 延迟和被唤醒线程真正获得 CPU 的延迟； osnoise 则在一个 CPU 上持续观察“本...</summary>
   </entry>
 </feed>
