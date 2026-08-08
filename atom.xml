@@ -4,8 +4,16 @@
   <id>https://quchaosheng.github.io/atom.xml</id>
   <link href="https://quchaosheng.github.io/"/>
   <link href="https://quchaosheng.github.io/atom.xml" rel="self"/>
-  <updated>2026-08-07T01:30:00.000Z</updated>
+  <updated>2026-08-08T01:30:00.000Z</updated>
   <author><name>Quchaosheng</name></author>
+  <entry>
+    <title>为什么我给 PMP 探针配了一个合法的页表映射</title>
+    <id>https://quchaosheng.github.io/2026/08/08/pmp-valid-pte-probe/</id>
+    <link href="https://quchaosheng.github.io/2026/08/08/pmp-valid-pte-probe/"/>
+    <published>2026-08-08T01:30:00.000Z</published>
+    <updated>2026-08-08T01:30:00.000Z</updated>
+    <summary type="html">我想验证普通 S 模式内核不能访问 trusted RAM。第一次描述这个测试时，我很快发现“访问失败了”并不能证明 PMP 生效。缺页、PTE 权限错误、地址未映射和 PMP 拒绝都会触发异常。若探针只等一个 trap，它最多证明某一层拒绝了访问。 为了让结论收敛到 PMP，我故意给探针安装了一条合法的 Sv39 映射。 映射探针 VA → 完成 Sv39 翻译 → 触发 R/W/X 访问 → 核对 scause/stval 先排除页表 合法 PTE 让访问穿过分页，随后由 PMP 成为拒绝点。 VA 0x40000000，独立探针入口。 PTE...</summary>
+  </entry>
   <entry>
     <title>父子超时预算错配：一次 113 覆盖 204 的排障记录</title>
     <id>https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/</id>
@@ -157,13 +165,5 @@
     <published>2026-07-06T06:00:00.000Z</published>
     <updated>2026-07-06T06:00:00.000Z</updated>
     <summary type="html">实时线程按时被唤醒，只代表它开始有机会运行；它之后多久完成还取决于当时 CPU 的频率、缓存与电源状态。动态调频会改变每条指令的执行时间，深度 idle&amp;#x2F;C-state 则要付出退出延迟。它们能显著节能，却会引入与负载、温度、固件决策相关的长尾，所以一个空闲时非常漂亮的实时测试，在热稳定或低负载唤醒后可能突然变差。 CPU 负载下降 → 降低频率或进入深度空闲 → 实时事件到来 → 硬件恢复频率与状态 → 任务开始执行 频率与 idle 影响的是两段不同时间 cpufreq 主要影响任务开始执行后的计算速度：同一段算法在低频和高频下耗时不...</summary>
-  </entry>
-  <entry>
-    <title>Linux 实时节流：SCHED_FIFO 为什么会突然让出 CPU</title>
-    <id>https://quchaosheng.github.io/2026/07/30/linux-realtime-throttling/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/linux-realtime-throttling/"/>
-    <published>2026-07-03T06:00:00.000Z</published>
-    <updated>2026-07-03T06:00:00.000Z</updated>
-    <summary type="html">SCHED_FIFO 线程若从不阻塞，可以永远占着一个 CPU。对控制环而言这似乎很诱人，对整台 Linux 机器却很危险：同核上的内核维护、SSH、日志、网络处理甚至恢复机制都可能没有机会运行。Linux 因此提供实时节流机制，用一个统计周期和其中可供实时调度类使用的运行预算，为普通任务和系统维护留出 CPU 时间。 实时线程开始运行 → 消耗 RT 运行预算 → 达到周期上限 → 实时类被暂时节流 → 下个周期补充预算 两个 sysctl 的含义 kernel.sched_rt_period_us 定义预算统计的周期； kernel.sched...</summary>
   </entry>
 </feed>

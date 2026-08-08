@@ -16,33 +16,33 @@
     <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
-<title>QEMU gdbstub：从启动第一条指令调试系统 | Quchaosheng&#39;s Notes</title>
+<title>为什么我给 PMP 探针配了一个合法的页表映射 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="QEMU 内置 gdbstub，可暂停虚拟 CPU 并通过远程协议让 GDB 查看寄存器、内存、断点和单步执行。它很适合调试固件、Bootloader 与早期内核，因为不需要等真实硬件复位，也可以稳定重现启动初期的状态。最常见的问题不是 GDB 命令，而是符号文件、加载地址和地址空间没有对齐。 QEMU 使用 -S -s 启动 → GDB 加载带符号映...">
+    <meta name="description" content="我想验证普通 S 模式内核不能访问 trusted RAM。第一次描述这个测试时，我很快发现“访问失败了”并不能证明 PMP 生效。缺页、PTE 权限错误、地址未映射和 PMP 拒绝都会触发异常。若探针只等一个 trap，它最多证明某一层拒绝了访问。 为了让结论收敛到 PMP，我故意给探针安装了一条合法的 Sv39 映射。 映射探针 VA → 完成 S...">
 
-<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/qemu-gdbstub-debugging/">
+<link rel="canonical" href="https://quchaosheng.github.io/2026/08/08/pmp-valid-pte-probe/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
-<meta property="og:title" content="QEMU gdbstub：从启动第一条指令调试系统 | Quchaosheng&#39;s Notes">
+<meta property="og:title" content="为什么我给 PMP 探针配了一个合法的页表映射 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="QEMU 内置 gdbstub，可暂停虚拟 CPU 并通过远程协议让 GDB 查看寄存器、内存、断点和单步执行。它很适合调试固件、Bootloader 与早期内核，因为不需要等真实硬件复位，也可以稳定重现启动初期的状态。最常见的问题不是 GDB 命令，而是符号文件、加载地址和地址空间没有对齐。 QEMU 使用 -S -s 启动 → GDB 加载带符号映...">
+    <meta property="og:description" content="我想验证普通 S 模式内核不能访问 trusted RAM。第一次描述这个测试时，我很快发现“访问失败了”并不能证明 PMP 生效。缺页、PTE 权限错误、地址未映射和 PMP 拒绝都会触发异常。若探针只等一个 trap，它最多证明某一层拒绝了访问。 为了让结论收敛到 PMP，我故意给探针安装了一条合法的 Sv39 映射。 映射探针 VA → 完成 S...">
 
-<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/qemu-gdbstub-debugging/">
+<meta property="og:url" content="https://quchaosheng.github.io/2026/08/08/pmp-valid-pte-probe/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
 
     <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
-    <meta property="og:image:alt" content="QEMU gdbstub：从启动第一条指令调试系统">
+    <meta property="og:image:alt" content="为什么我给 PMP 探针配了一个合法的页表映射">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="QEMU gdbstub：从启动第一条指令调试系统 | Quchaosheng&#39;s Notes">
+<meta name="twitter:title" content="为什么我给 PMP 探针配了一个合法的页表映射 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="QEMU 内置 gdbstub，可暂停虚拟 CPU 并通过远程协议让 GDB 查看寄存器、内存、断点和单步执行。它很适合调试固件、Bootloader 与早期内核，因为不需要等真实硬件复位，也可以稳定重现启动初期的状态。最常见的问题不是 GDB 命令，而是符号文件、加载地址和地址空间没有对齐。 QEMU 使用 -S -s 启动 → GDB 加载带符号映...">
+    <meta name="twitter:description" content="我想验证普通 S 模式内核不能访问 trusted RAM。第一次描述这个测试时，我很快发现“访问失败了”并不能证明 PMP 生效。缺页、PTE 权限错误、地址未映射和 PMP 拒绝都会触发异常。若探针只等一个 trap，它最多证明某一层拒绝了访问。 为了让结论收敛到 PMP，我故意给探针安装了一条合法的 Sv39 映射。 映射探针 VA → 完成 S...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"QEMU gdbstub：从启动第一条指令调试系统","description":"QEMU 内置 gdbstub，可暂停虚拟 CPU 并通过远程协议让 GDB 查看寄存器、内存、断点和单步执行。它很适合调试固件、Bootloader 与早期内核，因为不需要等真实硬件复位，也可以稳定重现启动初期的状态。最常见的问题不是 GDB 命令，而是符号文件、加载地址和地址空间没有对齐。 QEMU 使用 -S -s 启动 → GDB 加载带符号映...","datePublished":"2026-03-20T06:00:00.000Z","dateModified":"2026-03-20T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/qemu-gdbstub-debugging/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 调试","keywords":"GDB, QEMU, gdbstub","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"为什么我给 PMP 探针配了一个合法的页表映射","description":"我想验证普通 S 模式内核不能访问 trusted RAM。第一次描述这个测试时，我很快发现“访问失败了”并不能证明 PMP 生效。缺页、PTE 权限错误、地址未映射和 PMP 拒绝都会触发异常。若探针只等一个 trap，它最多证明某一层拒绝了访问。 为了让结论收敛到 PMP，我故意给探针安装了一条合法的 Sv39 映射。 映射探针 VA → 完成 S...","datePublished":"2026-08-08T01:30:00.000Z","dateModified":"2026-08-08T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/08/pmp-valid-pte-probe/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / RISC-V","keywords":"OpenSBI, RISC-V, PMP, Sv39, QEMU","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -243,7 +243,7 @@
     
     <article class="post-wrap">
         <header class="post-header">
-            <h1 class="post-title">QEMU gdbstub：从启动第一条指令调试系统</h1>
+            <h1 class="post-title">为什么我给 PMP 探针配了一个合法的页表映射</h1>
             
                 <div class="post-meta">
                     
@@ -252,7 +252,7 @@
 
                     
                         <span class="post-time">
-                        整理日期：<a href="#">2026-03-20&nbsp;&nbsp;14:00:00</a>
+                        整理日期：<a href="#">2026-08-08&nbsp;&nbsp;09:30:00</a>
                         </span>
                     
                     
@@ -261,7 +261,7 @@
                             
                                 <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
                             
-                                <a href="/category/%E6%8A%80%E6%9C%AF/%E8%B0%83%E8%AF%95/">调试</a>
+                                <a href="/category/%E6%8A%80%E6%9C%AF/RISC-V/">RISC-V</a>
                             
                         </span>
                     
@@ -269,11 +269,15 @@
                         <span class="post-topics">
                             主题：
                             
-                                <a href="/tag/GDB/">#GDB</a>
+                                <a href="/tag/OpenSBI/">#OpenSBI</a>
                             
-                                <a href="/tag/QEMU/">#QEMU</a>
+                                <a href="/tag/RISC-V/">#RISC-V</a>
                             
-                                <a href="/tag/gdbstub/">#gdbstub</a>
+                                <a href="/tag/PMP/">#PMP</a>
+                            
+                                <a href="/tag/Sv39/">#Sv39</a>
+                            
+                                
                             
                         </span>
                     
@@ -282,14 +286,33 @@
         </header>
 
         <div class="post-content">
-            <p>QEMU 内置 gdbstub，可暂停虚拟 CPU 并通过远程协议让 GDB 查看寄存器、内存、断点和单步执行。它很适合调试固件、Bootloader 与早期内核，因为不需要等真实硬件复位，也可以稳定重现启动初期的状态。最常见的问题不是 GDB 命令，而是符号文件、加载地址和地址空间没有对齐。</p>
-<div class="note-flow"><span>QEMU 使用 -S -s 启动</span><i>→</i><span>GDB 加载带符号映像</span><i>→</i><span>target remote 连接</span><i>→</i><span>设置断点并继续</span><i>→</i><span>检查寄存器、页表和调用栈</span></div>
+            <p>我想验证普通 S 模式内核不能访问 trusted RAM。第一次描述这个测试时，我很快发现“访问失败了”并不能证明 PMP 生效。缺页、PTE 权限错误、地址未映射和 PMP 拒绝都会触发异常。若探针只等一个 trap，它最多证明某一层拒绝了访问。</p>
+<p>为了让结论收敛到 PMP，我故意给探针安装了一条合法的 Sv39 映射。</p>
+<div class="note-flow"><span>映射探针 VA</span><i>→</i><span>完成 Sv39 翻译</span><i>→</i><span>触发 R/W/X 访问</span><i>→</i><span>核对 scause/stval</span></div>
 
-<figure class="note-visual"><figcaption><span>地址图</span>GDB 符号地址、QEMU 装载地址和当前虚拟地址必须说的是同一件事。</figcaption><div class="note-map"><span><b>-S</b><small>让虚拟 CPU 在复位后暂停，给 GDB 留出先连接的机会。</small></span><span><b>gdbstub 端口</b><small>QEMU 暴露远程协议端点，GDB 用 `target remote` 连接。</small></span><span><b>符号映像</b><small>ELF 提供函数和行号，不能只加载剥离符号后的二进制。</small></span><span><b>装载地址</b><small>Bootloader、内核和模块可能各自位于不同物理地址。</small></span><span><b>MMU 切换</b><small>开启分页后，断点和内存查看要区分虚拟、物理地址。</small></span><span><b>多 hart</b><small>确认当前 GDB thread 对应哪个 vCPU，避免看错寄存器。</small></span></div></figure>
+<figure class="note-visual"><figcaption><span>先排除页表</span>合法 PTE 让访问穿过分页，随后由 PMP 成为拒绝点。</figcaption><div class="note-map"><span><b>VA</b><small>0x40000000，独立探针入口。</small></span><span><b>PTE</b><small>有效映射并打开 R/W/X。</small></span><span><b>PA</b><small>0xbf800000，trusted RAM。</small></span><span><b>异常</b><small>分别匹配读、写、取指 access fault。</small></span></div></figure>
 
-<h2 id="先确认代码究竟被装到了哪里"><a href="#先确认代码究竟被装到了哪里" class="headerlink" title="先确认代码究竟被装到了哪里"></a>先确认代码究竟被装到了哪里</h2><p><code>file</code> 加载 ELF 后，GDB 以 ELF 中的链接地址理解符号；若 QEMU 或 bootloader 把二进制放在别处，就需要按实际地址添加符号或调整链接脚本。出现“断点能下但永远不命中”“反汇编像乱码”时，先核对镜像加载地址、PC 和符号地址，而不是重复重启 QEMU。</p>
-<h2 id="MMU-之前和之后是两种调试环境"><a href="#MMU-之前和之后是两种调试环境" class="headerlink" title="MMU 之前和之后是两种调试环境"></a>MMU 之前和之后是两种调试环境</h2><p>早期固件通常直接使用物理地址；页表启用后，PC 和数据指针可能是虚拟地址。调试页表问题时，同时查看页表根、当前特权级、映射条目和 QEMU 的物理内存，逐级确认地址转换。多核系统还要明确哪个 hart 负责启动和哪个 hart 触发了异常，否则单步会落在错误上下文。</p>
-<p>参考：<a target="_blank" rel="noopener" href="https://tinylab.org/gdb-and-qemu-gdbstub-debug/">gdb 和 QEMU gdbstub 调试技巧</a></p>
+<h2 id="先让分页成功"><a href="#先让分页成功" class="headerlink" title="先让分页成功"></a>先让分页成功</h2><p>当前系统把 trusted RAM 放在 <code>0xbf800000-0xbfffffff</code>。普通 domain 对这段物理地址没有权限。我从普通内核使用虚拟地址 <code>0x40000000</code>，将它映射到 trusted RAM 的第一页 <code>0xbf800000</code>，叶子 PTE 同时打开 R、W、X：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">VA 0x40000000</span><br><span class="line">  -&gt; valid Sv39 PTE, R/W/X</span><br><span class="line">  -&gt; PA 0xbf800000</span><br><span class="line">  -&gt; PMP protected trusted RAM</span><br></pre></td></tr></table></figure>
+
+<p><code>kernel/src/address.c</code> 在 <code>QS_M9_PMP_TEST</code> 下调用 <code>PageTable_map()</code> 建立这条映射。这样地址翻译和 PTE 权限都不是失败原因。读、写、取指仍然失败时，PMP 才成为符合当前配置的解释。</p>
+<p>如果我省掉映射，访问更可能得到 page fault。RISC-V 中 instruction&#x2F;load&#x2F;store page fault 通常对应 12、13、15，而探针期待的是 instruction&#x2F;load&#x2F;store access fault 1、5、7。二者不能混为一谈。</p>
+<h2 id="只看-scause-仍然不够"><a href="#只看-scause-仍然不够" class="headerlink" title="只看 scause 仍然不够"></a>只看 scause 仍然不够</h2><p>trap handler 不能看到 access fault 就宣布成功。内核里任何无关错误都可能产生同类异常。我给每次探测记录三个条件：</p>
+<ol>
+<li>探针已经处于 armed 状态。</li>
+<li><code>scause</code> 与本次读、写或取指的预期类型一致。</li>
+<li><code>stval</code> 必须等于探针地址 <code>0x40000000</code>。</li>
+</ol>
+<p>只有三项同时成立，handler 才写回恢复 PC，并把状态改为 faulted。cause 或地址不匹配时，异常继续走通用 trap 路径，最后 panic。测试不会吞掉一个与 PMP 无关的内核错误。</p>
+<h2 id="没被拒绝也必须失败"><a href="#没被拒绝也必须失败" class="headerlink" title="没被拒绝也必须失败"></a>没被拒绝也必须失败</h2><p>隔离测试还有一个容易漏掉的分支：访问没有产生异常。如果指令顺利执行并落到恢复标签，状态仍然是 armed。此时代码打印 <code>QS:PMP_UNTRUSTED_DENY_FAIL</code>，随后执行：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">panic(<span class="string">&quot;trusted memory access was not denied&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>这条失败路径很重要。否则一次未被拒绝的访问可能继续运行到绿色终态，让最危险的结果静默通过。</p>
+<p>主机合同测试检查有效 R&#x2F;W&#x2F;X 映射、三类 access-fault 常量、handler 接线和日志标记。QEMU M8 smoke 还要求日志中同时出现三项拒绝标记、汇总标记，以及 OpenSBI 对两个 domain 的区域权限打印：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bash tests/host/test_m8_contracts.sh</span><br><span class="line"><span class="built_in">sudo</span> make m8-smoke</span><br></pre></td></tr></table></figure>
+
+<p>这套探针的设计重点不是“成功触发异常”，而是先排除页表失败，再绑定异常类型、故障地址和恢复点。完整实现可在 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/quard-star-riscv64-net/commit/d995e31335bea05669d3313d6023ff5de413943c">Quard 提交 d995e31</a> 中复核。</p>
+<p><strong>证据边界：</strong>结果止于当前 QEMU RISC-V 模型、OpenSBI domain&#x2F;PMP 配置、Sv39 页表和内核 trap 路径。它不是物理芯片安全认证，也不覆盖 DMA、总线主设备、缓存侧信道或 PMP 硬件缺陷。</p>
 
         </div>
 
@@ -304,7 +327,7 @@
                 
                     <p class="copyright-item">
                         <span>永久链接：</span>
-                        <span><a href="https://quchaosheng.github.io/2026/07/29/qemu-gdbstub-debugging/">https://quchaosheng.github.io/2026/07/29/qemu-gdbstub-debugging/</a></span>
+                        <span><a href="https://quchaosheng.github.io/2026/08/08/pmp-valid-pte-probe/">https://quchaosheng.github.io/2026/08/08/pmp-valid-pte-probe/</a></span>
                     </p>
                 
                 
@@ -323,19 +346,19 @@
                 <h2 id="related-posts-title">同主题继续阅读</h2>
                 <div class="related-post-list">
                     
-                        <a href="/2026/07/29/gdb-crash-debugging/">
-                            <span>GDB 崩溃调试：从信号到调用栈</span>
-                            <time datetime="2026-04-13T06:00:00.000Z">2026-04-13</time>
+                        <a href="/2026/07/29/riscv-nommu-linux/">
+                            <span>RISC-V Non-MMU Linux：没有虚拟内存怎样运行应用</span>
+                            <time datetime="2026-03-23T06:00:00.000Z">2026-03-23</time>
                         </a>
                     
-                        <a href="/2026/07/29/linux-kgdb/">
-                            <span>kGDB：远程单步调试 Linux 内核</span>
-                            <time datetime="2026-04-01T06:00:00.000Z">2026-04-01</time>
+                        <a href="/2026/07/29/riscv-sbi/">
+                            <span>RISC-V SBI：固件与操作系统之间的统一接口</span>
+                            <time datetime="2026-03-13T06:00:00.000Z">2026-03-13</time>
                         </a>
                     
-                        <a href="/2026/08/08/pmp-valid-pte-probe/">
-                            <span>为什么我给 PMP 探针配了一个合法的页表映射</span>
-                            <time datetime="2026-08-08T01:30:00.000Z">2026-08-08</time>
+                        <a href="/2026/07/29/opensbi-boot-flow/">
+                            <span>OpenSBI 启动流程：从 M 模式进入操作系统</span>
+                            <time datetime="2026-03-12T12:00:00.000Z">2026-03-12</time>
                         </a>
                     
                 </div>
@@ -347,11 +370,15 @@
                 <span class="tag">
                     
                     
-                        <a href="/tag/GDB/"># GDB</a>
+                        <a href="/tag/OpenSBI/"># OpenSBI</a>
+                    
+                        <a href="/tag/RISC-V/"># RISC-V</a>
+                    
+                        <a href="/tag/PMP/"># PMP</a>
+                    
+                        <a href="/tag/Sv39/"># Sv39</a>
                     
                         <a href="/tag/QEMU/"># QEMU</a>
-                    
-                        <a href="/tag/gdbstub/"># gdbstub</a>
                     
                         
                 </span>
@@ -364,10 +391,8 @@
         </section>
         <section class="post-nav">
             
-                <a class="prev" rel="prev" href="/2026/07/29/riscv-nommu-linux/">RISC-V Non-MMU Linux：没有虚拟内存怎样运行应用</a>
             
-            
-            <a class="next" rel="next" href="/2026/03/19/linux-process-thread-task-basics/">Linux 进程与线程入门：PID、TID、task 和共享资源</a>
+            <a class="next" rel="next" href="/2026/08/07/parent-child-timeout-budget-error-code/">父子超时预算错配：一次 113 覆盖 204 的排障记录</a>
             
         </section>
 
