@@ -311,104 +311,76 @@
 <hr>
 <h2 id="二、问题定位（三层剖析）"><a href="#二、问题定位（三层剖析）" class="headerlink" title="二、问题定位（三层剖析）"></a>二、问题定位（三层剖析）</h2><h3 id="第一层：硬件排查"><a href="#第一层：硬件排查" class="headerlink" title="第一层：硬件排查"></a>第一层：硬件排查</h3><p><strong>假设</strong>：I2C总线信号质量问题</p>
 <p><strong>验证</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 示波器抓取I2C信号</span></span><br><span class="line"><span class="comment"># SCL频率：400 kHz</span></span><br><span class="line"><span class="comment"># SDA信号：边沿干净，无振铃</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 降低I2C频率测试</span></span><br><span class="line"><span class="built_in">echo</span> 100000 &gt; /sys/bus/i2c/devices/i2c-0/bus_clk_rate  <span class="comment"># 降到100kHz</span></span><br><span class="line"><span class="comment"># 结果：丢包依然存在</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 更换传感器</span></span><br><span class="line"><span class="comment"># 结果：问题依旧</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 示波器抓取I2C信号</span></span><br><span class="line"><span class="comment"># SCL频率：400 kHz</span></span><br><span class="line"><span class="comment"># 记录上升/下降时间、setup/hold、clock stretching、NACK和bus busy</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 通过板级设备树或厂商内核提供的接口降低频率</span></span><br><span class="line"><span class="comment"># 上游 i2c-rk3x 通常读取 DT 的 clock-frequency，不存在通用 bus_clk_rate sysfs ABI</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 更换传感器</span></span><br><span class="line"><span class="comment"># 结果：问题依旧</span></span><br></pre></td></tr></table></figure>
 
-<p><strong>结论</strong>：❌ 不是硬件问题</p>
+<p>降低频率且波形目测正常，只能暂时降低物理层嫌疑，不能排除上拉电阻、总线电容、器件最短采样间隔、clock stretching、NACK 和总线恢复问题。</p>
 <hr>
-<h3 id="第二层：驱动代码审查"><a href="#第二层：驱动代码审查" class="headerlink" title="第二层：驱动代码审查"></a>第二层：驱动代码审查</h3><p><strong>RK3576 I2C驱动关键路径</strong>：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// drivers/i2c/busses/i2c-rk3x.c</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">rk3x_i2c_xfer</span><span class="params">(<span class="keyword">struct</span> i2c_adapter *adap,</span></span><br><span class="line"><span class="params">                         <span class="keyword">struct</span> i2c_msg *msgs, <span class="type">int</span> num)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rk3x_i2c</span> *<span class="title">i2c</span> =</span> i2c_get_adapdata(adap);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 问题1：使用polling模式，CPU一直等待</span></span><br><span class="line">    <span class="keyword">while</span> (!(readl(i2c-&gt;regs + REG_INT_STATUS) &amp; INT_MBRFIS)) &#123;</span><br><span class="line">        <span class="keyword">if</span> (timeout_reached())</span><br><span class="line">            <span class="keyword">return</span> -ETIMEDOUT;  <span class="comment">// 超时返回</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 问题2：没有FIFO缓冲</span></span><br><span class="line">    <span class="comment">// 每次只传输1字节，频繁中断</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong>发现的问题</strong>：</p>
-<ol>
-<li><strong>Polling模式</strong>：CPU一直忙等，浪费CPU资源</li>
-<li><strong>无FIFO利用</strong>：硬件有8字节FIFO，驱动没用</li>
-<li><strong>Hard IRQ处理过长</strong>：I2C传输在中断上下文完成</li>
-</ol>
+<h3 id="第二层：驱动代码审查"><a href="#第二层：驱动代码审查" class="headerlink" title="第二层：驱动代码审查"></a>第二层：驱动代码审查</h3><p>先确认实际运行的内核版本、厂商 commit、设备树和驱动绑定。上游 <code>drivers/i2c/busses/i2c-rk3x.c</code> 的普通 <code>.xfer</code> 由硬中断推进状态机，并通过 wait queue 等待完成；polling 路径主要服务 <code>.xfer_atomic</code>。控制器每批最多处理 32 字节（8 个 32 位数据寄存器），不是“未使用 8 字节 FIFO、每次 1 字节”。若案例使用厂商私有分支，应保存相对上游的 diff，不能用假想代码替代根因证据。</p>
 <p><strong>ftrace分析</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 开启ftrace</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/kernel/debug/tracing/events/i2c/enable</span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/tracing/trace</span><br><span class="line"></span><br><span class="line"><span class="comment"># 关键发现：</span></span><br><span class="line">i2c_transfer: adapter=0, msgs=1, start</span><br><span class="line">  ... (CPU busy waiting 80us)</span><br><span class="line">i2c_transfer: adapter=0, msgs=1, <span class="keyword">done</span>, ret=1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 问题：高频场景下，CPU来不及响应所有I2C请求</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 开启ftrace</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/kernel/debug/tracing/events/i2c/enable</span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/tracing/trace</span><br><span class="line"></span><br><span class="line"><span class="comment"># 常见上游事件包括 i2c_write/read/result/reply，具体取决于内核配置</span></span><br><span class="line"><span class="comment"># 同时采集 sched、irq 和 function_graph 才能区分事务耗时与CPU忙等</span></span><br></pre></td></tr></table></figure>
 
-<p><strong>结论</strong>：✅ 找到根因！</p>
+<p>这里应按返回码分组：<code>-ETIMEDOUT</code>、<code>-ENXIO</code>、<code>-EAGAIN</code> 和 deadline miss 代表不同问题。仅凭一段 80us 间隔不能认定 CPU busy-wait；候选根因需要用 trace、寄存器状态和驱动版本共同闭环。</p>
 <hr>
 <h3 id="第三层：方案设计"><a href="#第三层：方案设计" class="headerlink" title="第三层：方案设计"></a>第三层：方案设计</h3><p><strong>优化策略</strong>：</p>
 <ol>
-<li><strong>使用Threaded IRQ</strong> - 中断处理移到线程</li>
-<li><strong>启用FIFO</strong> - 批量传输，减少中断次数</li>
-<li><strong>DMA可选</strong> - 超大数据量时启用</li>
+<li><strong>先修真实错误路径</strong>：依据 errno、IRQ 状态、NACK&#x2F;bus busy 和 deadline miss 分类</li>
+<li><strong>利用控制器批处理能力</strong>：严格按真实寄存器布局与消息边界推进状态机</li>
+<li><strong>调整采样架构</strong>：连续传感器优先评估 DRDY、器件 FIFO 与 IIO triggered buffer</li>
+<li><strong>条件优化</strong>：只有实测证明 handler 过重或大消息搬运成为瓶颈时，再评估 Threaded IRQ 或 DMA</li>
 </ol>
 <hr>
-<h2 id="三、解决方案"><a href="#三、解决方案" class="headerlink" title="三、解决方案"></a>三、解决方案</h2><h3 id="方案实现"><a href="#方案实现" class="headerlink" title="方案实现"></a>方案实现</h3><p><strong>1. 改用Threaded IRQ</strong></p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原始方案：Hard IRQ</span></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">rk3x_i2c_irq</span><span class="params">(<span class="type">int</span> irqno, <span class="type">void</span> *dev_id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rk3x_i2c</span> *<span class="title">i2c</span> =</span> dev_id;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ❌ 在Hard IRQ中完成传输（延迟高）</span></span><br><span class="line">    handle_i2c_transfer(i2c);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 优化方案：Threaded IRQ</span></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">rk3x_i2c_irq</span><span class="params">(<span class="type">int</span> irqno, <span class="type">void</span> *dev_id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rk3x_i2c</span> *<span class="title">i2c</span> =</span> dev_id;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ✅ 快速读取状态，唤醒线程</span></span><br><span class="line">    i2c-&gt;irq_status = readl(i2c-&gt;regs + REG_INT_STATUS);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> IRQ_WAKE_THREAD;  <span class="comment">// 唤醒线程处理</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">rk3x_i2c_irq_thread</span><span class="params">(<span class="type">int</span> irqno, <span class="type">void</span> *dev_id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rk3x_i2c</span> *<span class="title">i2c</span> =</span> dev_id;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ✅ 在线程上下文处理（可以睡眠、调度）</span></span><br><span class="line">    handle_i2c_transfer(i2c);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 注册Threaded IRQ</span></span><br><span class="line">devm_request_threaded_irq(dev, irq,</span><br><span class="line">    rk3x_i2c_irq,        <span class="comment">// Hard IRQ handler</span></span><br><span class="line">    rk3x_i2c_irq_thread, <span class="comment">// Thread handler</span></span><br><span class="line">    IRQF_ONESHOT, <span class="string">&quot;i2c-rk3x&quot;</span>, i2c);</span><br></pre></td></tr></table></figure>
-
-<p><strong>优势</strong>：</p>
-<ul>
-<li>Hard IRQ快速返回（&lt;5us）</li>
-<li>传输处理在线程中，不阻塞其他中断</li>
-<li>CPU调度更灵活</li>
-</ul>
+<h2 id="三、解决方案"><a href="#三、解决方案" class="headerlink" title="三、解决方案"></a>三、解决方案</h2><h3 id="方案实现"><a href="#方案实现" class="headerlink" title="方案实现"></a>方案实现</h3><p><strong>1. 先判断是否需要 Threaded IRQ</strong></p>
+<p>Threaded IRQ 适合把必须睡眠或耗时较长的工作移出 hard IRQ，但会增加一次线程调度，不天然降低 I2C 传输延迟。上游 <code>i2c-rk3x</code> 的 handler 主要在锁内读取状态、搬运一批寄存器数据并推进状态机；只有 function graph 和 IRQ-off 数据证明 handler 过长，或厂商分支确实放入了不适合 hard IRQ 的工作时，才应评估 threaded IRQ。</p>
+<p>若采用 top half + thread，top half 必须正确 mask&#x2F;ack 中断并安全累积状态，thread 完成后再恢复；简单覆盖一个 <code>irq_status</code> 字段可能丢 pending 位或造成中断风暴。</p>
 <hr>
-<p><strong>2. 启用FIFO缓冲</strong></p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> I2C_FIFO_SIZE 8</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">rk3x_i2c_fill_tx_fifo</span><span class="params">(<span class="keyword">struct</span> rk3x_i2c *i2c)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ✅ 批量填充FIFO（最多8字节）</span></span><br><span class="line">    <span class="keyword">while</span> (count &lt; I2C_FIFO_SIZE &amp;&amp; i2c-&gt;msg-&gt;len &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        writeb(i2c-&gt;msg-&gt;buf[i2c-&gt;msg_ptr++],</span><br><span class="line">               i2c-&gt;regs + REG_TXDATA);</span><br><span class="line">        count++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">rk3x_i2c_drain_rx_fifo</span><span class="params">(<span class="keyword">struct</span> rk3x_i2c *i2c)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ✅ 批量读取FIFO</span></span><br><span class="line">    <span class="keyword">while</span> (readl(i2c-&gt;regs + REG_INT_STATUS) &amp; INT_MBRFIS) &#123;</span><br><span class="line">        i2c-&gt;msg-&gt;buf[i2c-&gt;msg_ptr++] =</span><br><span class="line">            readb(i2c-&gt;regs + REG_RXDATA);</span><br><span class="line">        count++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong>效果</strong>：</p>
-<ul>
-<li>中断次数减少8倍（8字节&#x2F;次 vs 1字节&#x2F;次）</li>
-<li>CPU占用降低70%</li>
-</ul>
+<p><strong>2. 按真实硬件边界批处理</strong></p>
+<p>缓冲优化必须依照控制器真实寄存器布局实现。以当前上游 <code>i2c-rk3x</code> 为例，每批最多处理 32 字节，循环边界必须同时受本批容量与 <code>processed &lt; msg-&gt;len</code> 约束，并正确读取、清除对应 pending 位。中断次数由消息长度、读写组合、硬件阈值和协议开销共同决定，不能从“每批 N 字节”直接推导减少 N 倍；文中短 SMBus 读取尤其不一定受益。</p>
 <hr>
-<p><strong>3. 使用regmap简化寄存器访问</strong></p>
+<p><strong>3. 是否使用 regmap 属于维护性决策</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原始方案：直接readl/writel</span></span><br><span class="line">u32 status = readl(i2c-&gt;regs + REG_INT_STATUS);</span><br><span class="line">writel(status, i2c-&gt;regs + REG_INT_STATUS);  <span class="comment">// Clear interrupt</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 优化方案：使用regmap</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">regmap_config</span> <span class="title">rk3x_i2c_regmap_config</span> =</span> &#123;</span><br><span class="line">    .reg_bits = <span class="number">32</span>,</span><br><span class="line">    .val_bits = <span class="number">32</span>,</span><br><span class="line">    .max_register = <span class="number">0x100</span>,</span><br><span class="line">    .cache_type = REGCACHE_NONE,  <span class="comment">// I2C状态寄存器不缓存</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">i2c-&gt;regmap = devm_regmap_init_mmio(dev, i2c-&gt;regs,</span><br><span class="line">                                     &amp;rk3x_i2c_regmap_config);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用regmap API</span></span><br><span class="line">regmap_read(i2c-&gt;regmap, REG_INT_STATUS, &amp;status);</span><br><span class="line">regmap_write(i2c-&gt;regmap, REG_INT_STATUS, status);</span><br></pre></td></tr></table></figure>
 
-<p><strong>优势</strong>：</p>
-<ul>
-<li>统一的寄存器访问接口</li>
-<li>自动处理锁</li>
-<li>调试更方便（regmap debugfs）</li>
-</ul>
+<p>regmap 可以统一寄存器访问并提供调试能力，但不是丢样或 CPU 占用的通用修复，也不能替代驱动状态机自身的同步。它的抽象和锁还可能增加开销，应由寄存器语义、现有 MMIO helper 和维护需求决定。</p>
 <hr>
-<h2 id="四、性能对比"><a href="#四、性能对比" class="headerlink" title="四、性能对比"></a>四、性能对比</h2><h3 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 测试代码</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TEST_COUNT 100000</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; TEST_COUNT; i++) &#123;</span><br><span class="line">    ret = i2c_smbus_read_byte_data(client, REG_SENSOR_DATA);</span><br><span class="line">    <span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line">        error_count++;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;Total: %d, Errors: %d, Error rate: %.2f%%\n&quot;</span>,</span><br><span class="line">       TEST_COUNT, error_count,</span><br><span class="line">       <span class="number">100.0</span> * error_count / TEST_COUNT);</span><br></pre></td></tr></table></figure>
-
-<h3 id="结果对比"><a href="#结果对比" class="headerlink" title="结果对比"></a>结果对比</h3><table>
+<h2 id="四、性能对比"><a href="#四、性能对比" class="headerlink" title="四、性能对比"></a>四、性能对比</h2><h3 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h3><p>测试应由单调时钟的绝对 deadline 驱动 1kHz 读取，不能使用无节拍的 tight loop。每次采样至少记录计划时间、实际开始&#x2F;结束时间、传感器 sequence、返回 errno 和总线恢复动作，再分别统计 deadline miss、序号缺口、总线错误和传输延迟。</p>
+<h3 id="结果报告"><a href="#结果报告" class="headerlink" title="结果报告"></a>结果报告</h3><p>案例稿中的“5-8% 到 0%”“CPU 40% 到 12%”和中断频率数据缺少原始 trace、驱动 commit 与测试程序，不能当作公开复现结果。正式报告应至少包含：</p>
+<table>
 <thead>
 <tr>
 <th>指标</th>
-<th>优化前</th>
-<th>优化后</th>
-<th>改善</th>
+<th>解释</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>丢包率（1000Hz）</td>
-<td>5-8%</td>
-<td>0%</td>
-<td>✅ 完全消除</td>
+<td>计划&#x2F;实际采样次数</td>
+<td>区分调度未发起与总线事务失败</td>
 </tr>
 <tr>
-<td>CPU占用</td>
-<td>40%</td>
-<td>12%</td>
-<td>⬇️ 70%</td>
+<td>Deadline miss</td>
+<td>报告次数、连续次数、P99&#x2F;P99.9和最大值</td>
 </tr>
 <tr>
-<td>单次传输延迟</td>
-<td>120us</td>
-<td>80us</td>
-<td>⬇️ 33%</td>
+<td>传感器序号缺口</td>
+<td>与 I2C errno 分开统计</td>
 </tr>
 <tr>
-<td>中断频率</td>
-<td>8000次&#x2F;秒</td>
-<td>1000次&#x2F;秒</td>
-<td>⬇️ 87.5%</td>
+<td>errno 分布</td>
+<td>区分 NACK、仲裁丢失、超时和其他错误</td>
+</tr>
+<tr>
+<td>IRQ&#x2F;CPU 数据</td>
+<td>给出消息长度、控制器批次和压力负载</td>
 </tr>
 </tbody></table>
-<h3 id="稳定性测试"><a href="#稳定性测试" class="headerlink" title="稳定性测试"></a>稳定性测试</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 连续运行24小时</span></span><br><span class="line">./i2c_stress_test --duration 86400</span><br><span class="line"></span><br><span class="line"><span class="comment"># 结果：</span></span><br><span class="line">Total transfers: 86,400,000</span><br><span class="line">Errors: 0</span><br><span class="line">Success rate: 100.000%</span><br></pre></td></tr></table></figure>
+<h3 id="稳定性测试"><a href="#稳定性测试" class="headerlink" title="稳定性测试"></a>稳定性测试</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 连续运行24小时</span></span><br><span class="line">./i2c_stress_test --duration 86400</span><br><span class="line"></span><br><span class="line"><span class="comment"># 报告完整配置、计划/实际次数、每类错误与最大连续异常</span></span><br></pre></td></tr></table></figure>
 
+<p>即便在特定条件下 86400000 次事务未观察到错误，也只能给出该条件下的观察结果或统计上限，不能证明真实错误率为 0 或问题被“完全消除”。</p>
 <hr>
 <h2 id="五、技术沉淀"><a href="#五、技术沉淀" class="headerlink" title="五、技术沉淀"></a>五、技术沉淀</h2><h3 id="1-I2C驱动性能优化Checklist"><a href="#1-I2C驱动性能优化Checklist" class="headerlink" title="1. I2C驱动性能优化Checklist"></a>1. I2C驱动性能优化Checklist</h3><ul>
-<li><input disabled="" type="checkbox"> 使用Threaded IRQ（减少Hard IRQ延迟）</li>
-<li><input disabled="" type="checkbox"> 启用硬件FIFO（批量传输）</li>
-<li><input disabled="" type="checkbox"> 考虑DMA（大数据量场景）</li>
-<li><input disabled="" type="checkbox"> 使用regmap（统一寄存器访问）</li>
+<li><input disabled="" type="checkbox"> 固定内核、驱动 commit、设备树和器件版本</li>
+<li><input disabled="" type="checkbox"> 按 errno、序号缺口和 deadline miss 分类</li>
+<li><input disabled="" type="checkbox"> 核对控制器真实批处理容量与消息边界</li>
+<li><input disabled="" type="checkbox"> 评估 DRDY、器件 FIFO 与 IIO triggered buffer</li>
+<li><input disabled="" type="checkbox"> 仅在大消息且控制器支持时评估 DMA</li>
 <li><input disabled="" type="checkbox"> 添加超时机制（防止死锁）</li>
 <li><input disabled="" type="checkbox"> 实现错误恢复（总线recovery）</li>
 </ul>
@@ -417,7 +389,7 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 跟踪I2C传输</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/kernel/debug/tracing/events/i2c/enable</span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/tracing/trace</span><br></pre></td></tr></table></figure>
 
 <p><strong>i2c-tools</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 扫描I2C总线</span></span><br><span class="line">i2cdetect -y 0</span><br><span class="line"></span><br><span class="line"><span class="comment"># 读取寄存器</span></span><br><span class="line">i2cget -y 0 0x50 0x00</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 安全枚举适配器，不发送探测事务</span></span><br><span class="line">i2cdetect -l</span><br><span class="line"></span><br><span class="line"><span class="comment"># i2cdetect -y 和 i2cget 会访问总线；仅在停机维护窗口、</span></span><br><span class="line"><span class="comment"># 确认器件允许且没有绑定驱动竞争时使用</span></span><br></pre></td></tr></table></figure>
 
 <p><strong>示波器&#x2F;逻辑分析仪</strong>：</p>
 <ul>
@@ -428,11 +400,10 @@
 <h3 id="3-常见坑点"><a href="#3-常见坑点" class="headerlink" title="3. 常见坑点"></a>3. 常见坑点</h3><p><strong>坑1：Hard IRQ中睡眠</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ 错误：在Hard IRQ中调用可睡眠函数</span></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">i2c_irq</span><span class="params">(<span class="type">int</span> irq, <span class="type">void</span> *dev_id)</span> &#123;</span><br><span class="line">    msleep(<span class="number">10</span>);  <span class="comment">// BUG！Hard IRQ不能睡眠</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ✅ 正确：使用Threaded IRQ</span></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">i2c_irq_thread</span><span class="params">(<span class="type">int</span> irq, <span class="type">void</span> *dev_id)</span> &#123;</span><br><span class="line">    msleep(<span class="number">10</span>);  <span class="comment">// OK，线程可以睡眠</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p><strong>坑2：FIFO未清空</strong></p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ 传输前忘记清空FIFO</span></span><br><span class="line">i2c_start_transfer();</span><br><span class="line"></span><br><span class="line"><span class="comment">// ✅ 传输前清空FIFO</span></span><br><span class="line">writel(I2C_FIFO_CLR, i2c-&gt;regs + REG_FIFO_CTRL);</span><br><span class="line">i2c_start_transfer();</span><br></pre></td></tr></table></figure>
-
+<p><strong>坑2：照搬其他控制器的 FIFO 寄存器</strong></p>
+<p>不同 I2C 控制器的数据寄存器、pending 位和清除语义不同。只能依据当前 SoC TRM 与实际驱动实现处理残留状态，不能把 <code>FIFO_CLR</code> 之类的占位寄存器当作 RK3576 可直接使用的代码。</p>
 <p><strong>坑3：时钟未配置</strong></p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Device Tree中配置I2C时钟</span></span><br><span class="line">i2c0: i2c@ff110000 &#123;</span><br><span class="line">    compatible = <span class="string">&quot;rockchip,rk3576-i2c&quot;</span>;</span><br><span class="line">    clocks = &lt;&amp;cru SCLK_I2C0&gt;, &lt;&amp;cru PCLK_I2C0&gt;;</span><br><span class="line">    clock-names = <span class="string">&quot;i2c&quot;</span>, <span class="string">&quot;pclk&quot;</span>;</span><br><span class="line">    clock-frequency = &lt;<span class="number">400000</span>&gt;;  <span class="comment">// 400kHz</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight dts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 仅示意板级覆写；地址、IRQ和clock ID来自SoC DTSI/TRM</span></span><br><span class="line"><span class="variable">&amp;i2c0</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">status</span> <span class="operator">=</span> <span class="string">&quot;okay&quot;</span><span class="punctuation">;</span></span><br><span class="line">    <span class="attr">clock-frequency</span> <span class="operator">=</span> <span class="params">&lt;<span class="number">400000</span>&gt;</span><span class="punctuation">;</span>  <span class="comment">// 400kHz</span></span><br><span class="line"><span class="punctuation">&#125;;</span></span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="六、经验总结"><a href="#六、经验总结" class="headerlink" title="六、经验总结"></a>六、经验总结</h2><h3 id="定位方法论"><a href="#定位方法论" class="headerlink" title="定位方法论"></a>定位方法论</h3><ol>
@@ -443,7 +414,7 @@
 <h3 id="优化原则"><a href="#优化原则" class="headerlink" title="优化原则"></a>优化原则</h3><ol>
 <li><strong>先profile，再优化</strong>：不要盲目优化</li>
 <li><strong>优化瓶颈</strong>：找到性能瓶颈（CPU、中断、总线）</li>
-<li><strong>保持简单</strong>：优先用成熟方案（Threaded IRQ、regmap）</li>
+<li><strong>保持证据链</strong>：每个改动都对应一种已测量的瓶颈，并能单独回归</li>
 </ol>
 <h3 id="Trade-off"><a href="#Trade-off" class="headerlink" title="Trade-off"></a>Trade-off</h3><table>
 <thead>
@@ -468,29 +439,32 @@
 </tr>
 <tr>
 <td>Threaded IRQ</td>
-<td>不阻塞</td>
-<td>延迟稍高</td>
-<td>复杂处理</td>
+<td>允许睡眠和复杂处理</td>
+<td>增加调度点</td>
+<td>实测 hard IRQ 过重</td>
 </tr>
 <tr>
 <td>DMA</td>
-<td>CPU占用低</td>
-<td>复杂</td>
-<td>大数据量</td>
+<td>大消息下可降搬运成本</td>
+<td>配置复杂，小消息可能更慢</td>
+<td>控制器支持的大数据量</td>
 </tr>
 </tbody></table>
 <hr>
 <h2 id="七、后续优化方向"><a href="#七、后续优化方向" class="headerlink" title="七、后续优化方向"></a>七、后续优化方向</h2><ol>
-<li><strong>自适应FIFO深度</strong>：根据传输速率动态调整</li>
-<li><strong>错误统计</strong>：记录丢包率、超时次数</li>
-<li><strong>性能监控</strong>：集成到系统监控（Prometheus）</li>
+<li><strong>采样触发</strong>：评估传感器 DRDY 与 IIO triggered buffer</li>
+<li><strong>错误统计</strong>：区分序号缺口、deadline miss 和每类 errno</li>
+<li><strong>性能监控</strong>：由非实时路径导出长期指标</li>
 </ol>
 <hr>
-<p><strong>总结</strong>：通过Threaded IRQ + FIFO优化，将I2C驱动丢包率从5-8%降到0，CPU占用降低70%。关键是<strong>分层定位 + 工具组合 + 量化分析</strong>。</p>
+<p><strong>总结</strong>：这个案例最可靠的沉淀不是固定的“Threaded IRQ + FIFO”组合，而是分层定位和可复核测量。对 1kHz 连续传感器，先确认总线预算与器件采样语义，再评估 DRDY、器件 FIFO 和 IIO 缓冲；只有证据指向驱动 handler 或大消息搬运时，才引入对应的 IRQ 或 DMA 优化。</p>
 <hr>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
 <li><a target="_blank" rel="noopener" href="https://docs.kernel.org/i2c/summary.html">Linux I2C&#x2F;SMBus 子系统文档</a></li>
 <li><a target="_blank" rel="noopener" href="https://docs.kernel.org/core-api/genericirq.html">Linux 通用 IRQ 子系统文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.kernel.org/i2c/dma-considerations.html">Linux I2C DMA 注意事项</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.kernel.org/iio/iio_devbuf.html">Linux IIO 缓冲区</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/torvalds/linux/blob/master/drivers/i2c/busses/i2c-rk3x.c">上游 i2c-rk3x 驱动</a></li>
 </ul>
 
         </div>

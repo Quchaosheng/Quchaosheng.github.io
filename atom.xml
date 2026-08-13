@@ -28,7 +28,7 @@
     <link href="https://quchaosheng.github.io/2026/08/13/ros2-realtime-latency-optimization/"/>
     <published>2026-08-13T09:38:00.000Z</published>
     <updated>2026-08-13T09:38:00.000Z</updated>
-    <summary type="html">证据边界 本文中的延迟、CPU 占用和控制精度数字来自工程案例稿，公开仓库没有提供相同硬件、RT 内核、Perfetto trace 和完整基准脚本。读者应在自己的内核、DDS 实现与控制周期下重新测量，不能直接套用这些结果。 记录控制周期 → 追踪调度延迟 → 隔离实时 CPU → 设置实时策略 → 复测最坏延迟 Trace 用 Perfetto 与 eBPF 找到抢占和唤醒延迟。 调度 SCHED_FIFO 需要权限、优先级与预算设计。 绑核 实时线程与 IRQ、日志和桌面任务分离。 内存 锁页和预分配减少缺页与运行时分配。 DDS 按控制语义...</summary>
+    <summary type="html">证据边界 本文中的延迟、CPU 占用和控制精度数字来自工程案例稿，公开仓库没有提供相同硬件、RT 内核、LTTng trace 和完整基准脚本。读者应在自己的内核、DDS 实现与控制周期下重新测量，不能直接套用这些结果。 记录控制周期 → 追踪调度延迟 → 隔离实时 CPU → 设置实时策略 → 复测最坏延迟 Trace 用 LTTng 与 eBPF 分析回调和唤醒延迟。 调度 SCHED_FIFO 需要权限、优先级与预算设计。 绑核 实时线程与 IRQ、日志和桌面任务分离。 内存 锁页和预分配减少缺页与运行时分配。 DDS 按控制语义选择 QoS...</summary>
   </entry>
   <entry>
     <title>RISC-V 多核启动：7+1 hart 异构 SMP 架构</title>
