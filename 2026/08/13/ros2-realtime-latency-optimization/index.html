@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>ROS 2 实时性优化：从毫秒级抖动到亚毫秒调度 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="结合调度追踪、CPU 隔离、实时优先级和 DDS QoS，梳理 ROS 2 控制链路的延迟定位与优化方法。">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/08/13/ros2-realtime-latency-optimization/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ROS 2 实时性优化：从毫秒级抖动到亚毫秒调度 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="结合调度追踪、CPU 隔离、实时优先级和 DDS QoS，梳理 ROS 2 控制链路的延迟定位与优化方法。">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/08/13/ros2-realtime-latency-optimization/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="ROS 2 实时性优化：从毫秒级抖动到亚毫秒调度">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ROS 2 实时性优化：从毫秒级抖动到亚毫秒调度 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="结合调度追踪、CPU 隔离、实时优先级和 DDS QoS，梳理 ROS 2 控制链路的延迟定位与优化方法。">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 实时性优化：从毫秒级抖动到亚毫秒调度","description":"结合调度追踪、CPU 隔离、实时优先级和 DDS QoS，梳理 ROS 2 控制链路的延迟定位与优化方法。","datePublished":"2026-08-13T09:38:00.000Z","dateModified":"2026-08-13T09:38:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/13/ros2-realtime-latency-optimization/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / ROS 2","keywords":"ROS 2, SCHED_FIFO, 实时系统, CPU 亲和性, Perfetto","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">ROS 2 实时性优化：从毫秒级抖动到亚毫秒调度</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-08-13&nbsp;&nbsp;17:38:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/ROS-2/">ROS 2</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/ROS-2/">#ROS 2</a>
+                            
+                                <a href="/tag/SCHED-FIFO/">#SCHED_FIFO</a>
+                            
+                                <a href="/tag/%E5%AE%9E%E6%97%B6%E7%B3%BB%E7%BB%9F/">#实时系统</a>
+                            
+                                <a href="/tag/CPU-%E4%BA%B2%E5%92%8C%E6%80%A7/">#CPU 亲和性</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文中的延迟、CPU 占用和控制精度数字来自工程案例稿，公开仓库没有提供相同硬件、RT 内核、Perfetto trace 和完整基准脚本。读者应在自己的内核、DDS 实现与控制周期下重新测量，不能直接套用这些结果。</p>
+<div class="note-flow"><span>记录控制周期</span><i>→</i><span>追踪调度延迟</span><i>→</i><span>隔离实时 CPU</span><i>→</i><span>设置实时策略</span><i>→</i><span>复测最坏延迟</span></div>
+
+<div class="note-map"><span><b>Trace</b><small>用 Perfetto 与 eBPF 找到抢占和唤醒延迟。</small></span><span><b>调度</b><small>SCHED_FIFO 需要权限、优先级与预算设计。</small></span><span><b>绑核</b><small>实时线程与 IRQ、日志和桌面任务分离。</small></span><span><b>内存</b><small>锁页和预分配减少缺页与运行时分配。</small></span><span><b>DDS</b><small>按控制语义选择 QoS，不能只追求吞吐。</small></span><span><b>验证</b><small>关注 P99 之外的最大延迟与超限次数。</small></span></div>
+
+<h2 id="一、问题背景"><a href="#一、问题背景" class="headerlink" title="一、问题背景"></a>一、问题背景</h2><p>在开发七轴协作机械臂的实时控制系统时，遇到了一个严重的性能问题：</p>
+<p><strong>系统架构</strong>：</p>
+<figure class="highlight brainfuck"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">任务规划器（Python）</span></span><br><span class="line">    <span class="comment">↓ ROS 2 DDS</span></span><br><span class="line"><span class="comment">运动控制器（C</span><span class="literal">++</span><span class="comment">，1kHz控制频率）</span></span><br><span class="line">    <span class="comment">↓</span></span><br><span class="line"><span class="comment">七轴机械臂</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>故障现象</strong>：</p>
+<ul>
+<li>控制周期：1ms（1000Hz）</li>
+<li><strong>调度延迟抖动：±5ms</strong>（最坏情况）</li>
+<li>导致机械臂运动轨迹抖动</li>
+<li>高速运动时控制精度下降40%</li>
+</ul>
+<p><strong>日志片段</strong>：</p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[WARN] Control <span class="keyword">loop</span> overrun: expected <span class="number">1.0</span>ms, actual <span class="number">6.2</span>ms</span><br><span class="line">[WARN] Control <span class="keyword">loop</span> overrun: expected <span class="number">1.0</span>ms, actual <span class="number">4.8</span>ms</span><br><span class="line">[<span class="keyword">INFO</span>] Control <span class="keyword">loop</span>: <span class="number">1.1</span>ms (OK)</span><br><span class="line">[WARN] Control <span class="keyword">loop</span> overrun: expected <span class="number">1.0</span>ms, actual <span class="number">7.3</span>ms</span><br></pre></td></tr></table></figure>
+
+<p><strong>客户反馈</strong>：</p>
+<blockquote>
+<p>“机械臂装配精度不达标，高速运动时有明显卡顿”</p>
+</blockquote>
+<hr>
+<h2 id="二、问题定位（三步诊断法）"><a href="#二、问题定位（三步诊断法）" class="headerlink" title="二、问题定位（三步诊断法）"></a>二、问题定位（三步诊断法）</h2><h3 id="第一步：Perfetto全链路追踪"><a href="#第一步：Perfetto全链路追踪" class="headerlink" title="第一步：Perfetto全链路追踪"></a>第一步：Perfetto全链路追踪</h3><p><strong>工具选择</strong>：Perfetto（Google开发，支持ROS 2）</p>
+<p><strong>配置追踪</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 安装Perfetto</span></span><br><span class="line"><span class="built_in">sudo</span> apt install ros-humble-tracetools-trace</span><br><span class="line"></span><br><span class="line"><span class="comment"># 开启ROS 2追踪</span></span><br><span class="line">ros2 run tracetools_trace trace --session-name robot_control</span><br></pre></td></tr></table></figure>
+
+<p><strong>追踪配置</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># trace_config.yaml</span></span><br><span class="line">trace:</span><br><span class="line">  events:</span><br><span class="line">    - ros2:rclcpp_publish</span><br><span class="line">    - ros2:rclcpp_callback_start</span><br><span class="line">    - ros2:rclcpp_callback_end</span><br><span class="line">    - sched:sched_wakeup</span><br><span class="line">    - sched:sched_switch</span><br></pre></td></tr></table></figure>
+
+<p><strong>启动追踪</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 运行控制器并追踪</span></span><br><span class="line">ros2 launch robot_control control.launch.py &amp;</span><br><span class="line">ros2 trace --session-name robot_control --duration 10</span><br><span class="line"></span><br><span class="line"><span class="comment"># 转换为Perfetto格式</span></span><br><span class="line">ros2 trace convert perfetto robot_control.perfetto</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>Perfetto分析结果</strong>：</p>
+<p>在 <a target="_blank" rel="noopener" href="https://ui.perfetto.dev/">https://ui.perfetto.dev</a> 打开追踪文件，发现：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">时间轴：</span><br><span class="line">T0.<span class="number">0</span><span class="params">ms:</span> <span class="symbol">/task_planner</span> 发布 <span class="symbol">/joint_command</span></span><br><span class="line">T0.<span class="number">1</span><span class="params">ms:</span> DDS传输中...</span><br><span class="line">T0.<span class="number">3</span><span class="params">ms:</span> <span class="symbol">/motion_controller</span> 收到消息</span><br><span class="line">T0.<span class="number">3</span><span class="params">ms:</span> 回调开始执行</span><br><span class="line">T0.<span class="number">4</span><span class="params">ms:</span> 回调执行中...</span><br><span class="line">T5.<span class="number">8</span><span class="params">ms:</span> ❌ 调度延迟！线程被抢占</span><br><span class="line">T5.<span class="number">8</span><span class="params">ms:</span> CPU上调度了低优先级进程 <span class="symbol">/usr/bin/update-notifier</span></span><br><span class="line">T6.<span class="number">3</span><span class="params">ms:</span> <span class="symbol">/motion_controller</span> 重新调度</span><br><span class="line">T6.<span class="number">5</span><span class="params">ms:</span> 回调完成</span><br><span class="line"></span><br><span class="line">实际耗时：<span class="number">6.2</span>ms（预期<span class="number">1</span>ms）</span><br><span class="line">调度延迟：<span class="number">5.8</span>ms（被低优先级进程抢占）</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键发现</strong>：</p>
+<ul>
+<li>✅ DDS通信正常（延迟&lt;0.3ms）</li>
+<li>✅ 回调执行时间正常（~0.2ms）</li>
+<li>❌ <strong>调度延迟是罪魁祸首</strong>（5-7ms）</li>
+<li>❌ 实时线程被非实时进程抢占</li>
+</ul>
+<hr>
+<h3 id="第二步：eBPF深度分析"><a href="#第二步：eBPF深度分析" class="headerlink" title="第二步：eBPF深度分析"></a>第二步：eBPF深度分析</h3><p><strong>为什么需要eBPF？</strong></p>
+<ul>
+<li>Perfetto看到现象，eBPF找到根因</li>
+<li>eBPF可以统计调度延迟分布</li>
+</ul>
+<p><strong>eBPF脚本</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env bpftrace</span></span><br><span class="line"><span class="comment"># sched_latency.bt - 统计调度延迟</span></span><br><span class="line"></span><br><span class="line">BEGIN &#123;</span><br><span class="line">    printf(<span class="string">&quot;Tracing scheduler latency... Hit Ctrl-C to end.\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">tracepoint:sched:sched_wakeup &#123;</span><br><span class="line"><span class="meta">    @wakeup_time[args-&gt;pid] = nsecs;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">tracepoint:sched:sched_switch &#123;</span><br><span class="line">    $prev_pid = args-&gt;prev_pid;</span><br><span class="line">    $next_pid = args-&gt;next_pid;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (@wakeup_time[$next_pid]) &#123;</span><br><span class="line">        $latency_us = (nsecs - @wakeup_time[$next_pid]) / <span class="number">1000</span>;</span><br><span class="line"><span class="meta">        @latency_hist = hist(<span class="params">$latency_us</span>);</span></span><br><span class="line"></span><br><span class="line">        // 只关注motion_controller进程</span><br><span class="line">        <span class="keyword">if</span> (comm == <span class="string">&quot;motion_control&quot;</span>) &#123;</span><br><span class="line"><span class="meta">            @motion_latency = hist(<span class="params">$latency_us</span>);</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        delete(@wakeup_time[$next_pid]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">END &#123;</span><br><span class="line">    printf(<span class="string">&quot;\n=== Overall Scheduler Latency (us) ===\n&quot;</span>);</span><br><span class="line">    <span class="built_in">print</span>(@latency_hist);</span><br><span class="line"></span><br><span class="line">    printf(<span class="string">&quot;\n=== Motion Controller Latency (us) ===\n&quot;</span>);</span><br><span class="line">    <span class="built_in">print</span>(@motion_latency);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>运行eBPF</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> bpftrace sched_latency.bt</span><br><span class="line"><span class="comment"># 运行10秒后Ctrl-C</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出：</span></span><br><span class="line">=== Motion Controller Latency (us) ===</span><br><span class="line">[0, 1)         1234 |@@@@@@@@@@@@@@@@@@                          |</span><br><span class="line">[1, 2)         2456 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@        |</span><br><span class="line">[2, 4)         3210 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|</span><br><span class="line">[4, 8)         1890 |@@@@@@@@@@@@@@@@@@@@@@@@@                   |</span><br><span class="line">[8, 16)        1234 |@@@@@@@@@@@@@@@@                            |</span><br><span class="line">[16, 32)        678 |@@@@@@@@@@                                  |</span><br><span class="line">[32, 64)        345 |@@@@@                                       |</span><br><span class="line">[64, 128)       123 |@@                                          |</span><br><span class="line">[128, 256)       67 |@                                           |</span><br><span class="line">[256, 512)       34 |                                            |</span><br><span class="line">[512, 1024)      12 |                                            |</span><br><span class="line">[1K, 2K)          8 |                                            |  ← 最坏情况</span><br><span class="line">[2K, 4K)          3 |                                            |</span><br><span class="line">[4K, 8K)          2 |                                            |  ← 5-7ms延迟</span><br></pre></td></tr></table></figure>
+
+<p><strong>统计分析</strong>：</p>
+<ul>
+<li>P50（中位数）：~2us ✅ 大部分情况正常</li>
+<li>P99：~500us ⚠️ 1%的情况有延迟</li>
+<li>P99.9：~5000us ❌ 千分之一的情况超标</li>
+<li>最坏情况：7ms ❌ 不可接受</li>
+</ul>
+<hr>
+<h3 id="第三步：CPU亲和性与优先级分析"><a href="#第三步：CPU亲和性与优先级分析" class="headerlink" title="第三步：CPU亲和性与优先级分析"></a>第三步：CPU亲和性与优先级分析</h3><p><strong>查看当前配置</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看motion_controller进程</span></span><br><span class="line">ps -eLo pid,tid,class,rtprio,ni,<span class="built_in">comm</span> | grep motion</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出：</span></span><br><span class="line">PID    TID   CLS  RTPRIO  NI  COMMAND</span><br><span class="line">12345  12345  TS    -      0  motion_control  ← TS = Time Sharing（非实时）</span><br><span class="line">12345  12346  TS    -      0  motion_control</span><br></pre></td></tr></table></figure>
+
+<p><strong>发现问题</strong>：</p>
+<ul>
+<li>❌ 调度策略：TS（Time Sharing，非实时）</li>
+<li>❌ 优先级：普通优先级</li>
+<li>❌ CPU亲和性：未设置（可以在所有CPU上运行）</li>
+</ul>
+<p><strong>CPU负载分析</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看CPU分配</span></span><br><span class="line">top -H</span><br><span class="line"><span class="comment"># CPU0: motion_controller + system services</span></span><br><span class="line"><span class="comment"># CPU1: task_planner + background tasks</span></span><br><span class="line"><span class="comment"># CPU2: gnome-shell + GUI</span></span><br><span class="line"><span class="comment"># CPU3: update-notifier + cron</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 问题：实时任务和非实时任务混跑</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="三、优化方案（三板斧）"><a href="#三、优化方案（三板斧）" class="headerlink" title="三、优化方案（三板斧）"></a>三、优化方案（三板斧）</h2><h3 id="优化1：调度策略改为SCHED-FIFO"><a href="#优化1：调度策略改为SCHED-FIFO" class="headerlink" title="优化1：调度策略改为SCHED_FIFO"></a>优化1：调度策略改为SCHED_FIFO</h3><p><strong>原理</strong>：</p>
+<ul>
+<li><code>SCHED_OTHER</code>（TS）：普通时间片调度，可被抢占</li>
+<li><code>SCHED_FIFO</code>：先进先出实时调度，高优先级不可抢占</li>
+</ul>
+<p><strong>代码实现</strong>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// motion_controller/src/realtime_node.cpp</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sched.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">RealtimeControllerNode</span> : <span class="keyword">public</span> rclcpp::Node &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">RealtimeControllerNode</span>() : <span class="built_in">Node</span>(<span class="string">&quot;motion_controller&quot;</span>) &#123;</span><br><span class="line">        <span class="comment">// 设置实时调度策略</span></span><br><span class="line">        <span class="built_in">set_realtime_priority</span>(<span class="number">90</span>);  <span class="comment">// 优先级0-99，99最高</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建1kHz定时器</span></span><br><span class="line">        timer_ = <span class="built_in">create_wall_timer</span>(</span><br><span class="line">            std::chrono::<span class="built_in">microseconds</span>(<span class="number">1000</span>),</span><br><span class="line">            std::<span class="built_in">bind</span>(&amp;RealtimeControllerNode::control_loop, <span class="keyword">this</span>)</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">set_realtime_priority</span><span class="params">(<span class="type">int</span> priority)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">struct</span> <span class="title class_">sched_param</span> param;</span><br><span class="line">        param.sched_priority = priority;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">sched_setscheduler</span>(<span class="number">0</span>, SCHED_FIFO, &amp;param) == <span class="number">-1</span>) &#123;</span><br><span class="line">            <span class="built_in">RCLCPP_ERROR</span>(<span class="built_in">get_logger</span>(),</span><br><span class="line">                <span class="string">&quot;Failed to set SCHED_FIFO: %s&quot;</span>, <span class="built_in">strerror</span>(errno));</span><br><span class="line">            <span class="built_in">RCLCPP_WARN</span>(<span class="built_in">get_logger</span>(),</span><br><span class="line">                <span class="string">&quot;Run with: sudo setcap cap_sys_nice=eip /path/to/node&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">RCLCPP_INFO</span>(<span class="built_in">get_logger</span>(),</span><br><span class="line">                <span class="string">&quot;Set SCHED_FIFO with priority %d&quot;</span>, priority);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">control_loop</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">auto</span> start = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 执行控制逻辑</span></span><br><span class="line">        <span class="built_in">compute_control_command</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">auto</span> end = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">        <span class="keyword">auto</span> duration = std::chrono::<span class="built_in">duration_cast</span>&lt;std::chrono::microseconds&gt;(</span><br><span class="line">            end - start).<span class="built_in">count</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (duration &gt; <span class="number">1000</span>) &#123;</span><br><span class="line">            <span class="built_in">RCLCPP_WARN</span>(<span class="built_in">get_logger</span>(),</span><br><span class="line">                <span class="string">&quot;Control loop overrun: %ld us&quot;</span>, duration);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    rclcpp::TimerBase::SharedPtr timer_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>授权实时权限</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 方式1：给可执行文件授权（推荐）</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">setcap</span> cap_sys_nice=eip /opt/ros/humble/lib/robot_control/motion_controller</span><br><span class="line"></span><br><span class="line"><span class="comment"># 方式2：修改limits.conf（影响所有用户）</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;@realtime soft rtprio 99&quot;</span> | <span class="built_in">sudo</span> <span class="built_in">tee</span> -a /etc/security/limits.conf</span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;@realtime hard rtprio 99&quot;</span> | <span class="built_in">sudo</span> <span class="built_in">tee</span> -a /etc/security/limits.conf</span><br><span class="line"></span><br><span class="line"><span class="comment"># 添加用户到realtime组</span></span><br><span class="line"><span class="built_in">sudo</span> groupadd realtime</span><br><span class="line"><span class="built_in">sudo</span> usermod -aG realtime <span class="variable">$USER</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>验证</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ps -eLo pid,tid,class,rtprio,ni,<span class="built_in">comm</span> | grep motion</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出：</span></span><br><span class="line">PID    TID   CLS  RTPRIO  NI  COMMAND</span><br><span class="line">12345  12345  FF    90     -   motion_control  ← FF = FIFO（实时）</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="优化2：CPU亲和性绑定"><a href="#优化2：CPU亲和性绑定" class="headerlink" title="优化2：CPU亲和性绑定"></a>优化2：CPU亲和性绑定</h3><p><strong>原理</strong>：</p>
+<ul>
+<li>将实时任务绑定到专用CPU</li>
+<li>避免与非实时任务竞争</li>
+</ul>
+<p><strong>隔离CPU核心</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/default/grub</span></span><br><span class="line">GRUB_CMDLINE_LINUX=<span class="string">&quot;isolcpus=2,3&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 更新grub并重启</span></span><br><span class="line"><span class="built_in">sudo</span> update-grub</span><br><span class="line"><span class="built_in">sudo</span> reboot</span><br><span class="line"></span><br><span class="line"><span class="comment"># 验证：</span></span><br><span class="line"><span class="built_in">cat</span> /sys/devices/system/cpu/isolated</span><br><span class="line"><span class="comment"># 输出：2-3</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>代码实现</strong>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">set_cpu_affinity</span><span class="params">(<span class="type">int</span> cpu_id)</span> </span>&#123;</span><br><span class="line">    <span class="type">cpu_set_t</span> cpuset;</span><br><span class="line">    <span class="built_in">CPU_ZERO</span>(&amp;cpuset);</span><br><span class="line">    <span class="built_in">CPU_SET</span>(cpu_id, &amp;cpuset);</span><br><span class="line"></span><br><span class="line">    <span class="type">pthread_t</span> current_thread = <span class="built_in">pthread_self</span>();</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">pthread_setaffinity_np</span>(current_thread,</span><br><span class="line">                               <span class="built_in">sizeof</span>(<span class="type">cpu_set_t</span>), &amp;cpuset) != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">RCLCPP_ERROR</span>(<span class="built_in">get_logger</span>(),</span><br><span class="line">            <span class="string">&quot;Failed to set CPU affinity to CPU %d&quot;</span>, cpu_id);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">RCLCPP_INFO</span>(<span class="built_in">get_logger</span>(),</span><br><span class="line">            <span class="string">&quot;Pinned to CPU %d&quot;</span>, cpu_id);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在构造函数中调用</span></span><br><span class="line"><span class="built_in">RealtimeControllerNode</span>() : <span class="built_in">Node</span>(<span class="string">&quot;motion_controller&quot;</span>) &#123;</span><br><span class="line">    <span class="built_in">set_realtime_priority</span>(<span class="number">90</span>);</span><br><span class="line">    <span class="built_in">set_cpu_affinity</span>(<span class="number">2</span>);  <span class="comment">// 绑定到隔离的CPU2</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>ROS 2 Launch文件配置</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># control.launch.py</span></span><br><span class="line"><span class="keyword">from</span> launch <span class="keyword">import</span> LaunchDescription</span><br><span class="line"><span class="keyword">from</span> launch_ros.actions <span class="keyword">import</span> Node</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_launch_description</span>():</span><br><span class="line">    <span class="keyword">return</span> LaunchDescription([</span><br><span class="line">        Node(</span><br><span class="line">            package=<span class="string">&#x27;robot_control&#x27;</span>,</span><br><span class="line">            executable=<span class="string">&#x27;motion_controller&#x27;</span>,</span><br><span class="line">            name=<span class="string">&#x27;motion_controller&#x27;</span>,</span><br><span class="line">            output=<span class="string">&#x27;screen&#x27;</span>,</span><br><span class="line">            parameters=[&#123;</span><br><span class="line">                <span class="string">&#x27;use_realtime&#x27;</span>: <span class="literal">True</span>,</span><br><span class="line">                <span class="string">&#x27;realtime_priority&#x27;</span>: <span class="number">90</span>,</span><br><span class="line">                <span class="string">&#x27;cpu_affinity&#x27;</span>: <span class="number">2</span>,</span><br><span class="line">            &#125;],</span><br><span class="line">            <span class="comment"># 环境变量：禁用GC（Python节点）</span></span><br><span class="line">            environment=&#123;</span><br><span class="line">                <span class="string">&#x27;PYTHONOPTIMIZE&#x27;</span>: <span class="string">&#x27;2&#x27;</span>,</span><br><span class="line">                <span class="string">&#x27;ROS_DOMAIN_ID&#x27;</span>: <span class="string">&#x27;0&#x27;</span>,</span><br><span class="line">            &#125;</span><br><span class="line">        ),</span><br><span class="line">    ])</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="优化3：DDS-QoS优化"><a href="#优化3：DDS-QoS优化" class="headerlink" title="优化3：DDS QoS优化"></a>优化3：DDS QoS优化</h3><p><strong>问题</strong>：默认DDS QoS不适合实时场景</p>
+<p><strong>QoS配置</strong>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 订阅joint_command话题</span></span><br><span class="line"><span class="keyword">auto</span> qos = rclcpp::<span class="built_in">QoS</span>(rclcpp::<span class="built_in">KeepLast</span>(<span class="number">1</span>))</span><br><span class="line">    .<span class="built_in">reliability</span>(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT)  <span class="comment">// 不重传</span></span><br><span class="line">    .<span class="built_in">durability</span>(RMW_QOS_POLICY_DURABILITY_VOLATILE)       <span class="comment">// 不持久化</span></span><br><span class="line">    .<span class="built_in">deadline</span>(std::chrono::<span class="built_in">milliseconds</span>(<span class="number">2</span>))                <span class="comment">// 2ms超时</span></span><br><span class="line">    .<span class="built_in">liveliness</span>(RMW_QOS_POLICY_LIVELINESS_AUTOMATIC)      <span class="comment">// 自动检活</span></span><br><span class="line">    .<span class="built_in">liveliness_lease_duration</span>(std::chrono::<span class="built_in">milliseconds</span>(<span class="number">100</span>));</span><br><span class="line"></span><br><span class="line">subscription_ = <span class="built_in">create_subscription</span>&lt;JointCommand&gt;(</span><br><span class="line">    <span class="string">&quot;/joint_command&quot;</span>, qos,</span><br><span class="line">    std::<span class="built_in">bind</span>(&amp;RealtimeControllerNode::command_callback, <span class="keyword">this</span>, _1)</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 注册deadline回调</span></span><br><span class="line">subscription_-&gt;<span class="built_in">set_on_requested_deadline_missed_callback</span>(</span><br><span class="line">    [<span class="keyword">this</span>](<span class="type">const</span> <span class="keyword">auto</span>&amp; status) &#123;</span><br><span class="line">        <span class="built_in">RCLCPP_WARN</span>(<span class="built_in">get_logger</span>(),</span><br><span class="line">            <span class="string">&quot;Deadline missed! count=%d&quot;</span>, status.total_count);</span><br><span class="line">    &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p><strong>原理对比</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>QoS参数</th>
+<th>默认值</th>
+<th>实时优化</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Reliability</td>
+<td>RELIABLE</td>
+<td>BEST_EFFORT</td>
+<td>不等重传，降低延迟</td>
+</tr>
+<tr>
+<td>History</td>
+<td>KEEP_LAST(10)</td>
+<td>KEEP_LAST(1)</td>
+<td>只关心最新值</td>
+</tr>
+<tr>
+<td>Deadline</td>
+<td>无</td>
+<td>2ms</td>
+<td>超时告警</td>
+</tr>
+<tr>
+<td>Durability</td>
+<td>TRANSIENT_LOCAL</td>
+<td>VOLATILE</td>
+<td>不持久化，减少开销</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="四、性能对比"><a href="#四、性能对比" class="headerlink" title="四、性能对比"></a>四、性能对比</h2><h3 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h3><p><strong>硬件</strong>：</p>
+<ul>
+<li>CPU: Intel i7-10700 (8核16线程)</li>
+<li>RAM: 32GB DDR4</li>
+<li>OS: Ubuntu 22.04 + RT Patch</li>
+</ul>
+<p><strong>软件</strong>：</p>
+<ul>
+<li>ROS 2 Humble</li>
+<li>DDS: CycloneDDS (低延迟优化)</li>
+</ul>
+<hr>
+<h3 id="延迟分布对比"><a href="#延迟分布对比" class="headerlink" title="延迟分布对比"></a>延迟分布对比</h3><p><strong>测试脚本</strong>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// benchmark.cpp</span></span><br><span class="line">std::vector&lt;<span class="type">uint64_t</span>&gt; latencies;</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100000</span>; ++i) &#123;</span><br><span class="line">    <span class="keyword">auto</span> start = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line"></span><br><span class="line">    rclcpp::<span class="built_in">spin_some</span>(node);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> end = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">    latencies.<span class="built_in">push_back</span>(</span><br><span class="line">        std::chrono::<span class="built_in">duration_cast</span>&lt;std::chrono::microseconds&gt;(</span><br><span class="line">            end - start).<span class="built_in">count</span>()</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 统计P50, P99, P99.9, Max</span></span><br><span class="line">std::<span class="built_in">sort</span>(latencies.<span class="built_in">begin</span>(), latencies.<span class="built_in">end</span>());</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;P50:   %lu us\n&quot;</span>, latencies[<span class="number">50000</span>]);</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;P99:   %lu us\n&quot;</span>, latencies[<span class="number">99000</span>]);</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;P99.9: %lu us\n&quot;</span>, latencies[<span class="number">99900</span>]);</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;Max:   %lu us\n&quot;</span>, latencies[<span class="number">99999</span>]);</span><br></pre></td></tr></table></figure>
+
+<p><strong>结果对比</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>优化前</th>
+<th>优化后</th>
+<th>改善</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P50延迟</td>
+<td>12us</td>
+<td>8us</td>
+<td>⬇️ 33%</td>
+</tr>
+<tr>
+<td>P99延迟</td>
+<td>500us</td>
+<td>50us</td>
+<td>⬇️ 90%</td>
+</tr>
+<tr>
+<td>P99.9延迟</td>
+<td>5000us</td>
+<td>200us</td>
+<td>⬇️ 96%</td>
+</tr>
+<tr>
+<td>最坏情况</td>
+<td>7000us</td>
+<td>800us</td>
+<td>⬇️ 88%</td>
+</tr>
+<tr>
+<td>控制精度</td>
+<td>60%</td>
+<td>99%</td>
+<td>⬆️ 65%</td>
+</tr>
+</tbody></table>
+<p><strong>可视化对比</strong>：</p>
+<figure class="highlight erlang-repl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">优化前延迟分布：</span><br><span class="line">  <span class="number">0</span>-<span class="number">1</span>ms:   ████████████████████████████████████  <span class="number">70</span><span class="comment">%</span></span><br><span class="line">  <span class="number">1</span>-<span class="number">2</span>ms:   ████████████  <span class="number">15</span><span class="comment">%</span></span><br><span class="line">  <span class="number">2</span>-<span class="number">5</span>ms:   ██████  <span class="number">8</span><span class="comment">%</span></span><br><span class="line">  <span class="number">5</span>-<span class="number">10</span>ms:  ████  <span class="number">5</span><span class="comment">%   ← 不可接受</span></span><br><span class="line">  &gt;<span class="number">10</span>ms:   ██  <span class="number">2</span><span class="comment">%     ← 严重超标</span></span><br><span class="line"></span><br><span class="line">优化后延迟分布：</span><br><span class="line">  <span class="number">0</span>-<span class="number">1</span>ms:   ████████████████████████████████████████  <span class="number">99.9</span><span class="comment">%</span></span><br><span class="line">  <span class="number">1</span>-<span class="number">2</span>ms:   █  <span class="number">0.1</span><span class="comment">%</span></span><br><span class="line">  &gt;<span class="number">2</span>ms:    <span class="number">0</span><span class="comment">%        ← 完全消除</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="CPU占用对比"><a href="#CPU占用对比" class="headerlink" title="CPU占用对比"></a>CPU占用对比</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 优化前</span></span><br><span class="line">top -H</span><br><span class="line">  PID  %CPU  COMMAND</span><br><span class="line">12345  40%   motion_control  ← 在所有CPU上跳来跳去</span><br><span class="line">12346  25%   task_planner</span><br><span class="line"></span><br><span class="line"><span class="comment"># 优化后</span></span><br><span class="line">taskset -c -p 12345</span><br><span class="line"><span class="comment"># PID 12345&#x27;s current affinity list: 2  ← 绑定到CPU2</span></span><br><span class="line"></span><br><span class="line">top -H</span><br><span class="line">  PID  %CPU  COMMAND</span><br><span class="line">12345  15%   motion_control  ← CPU占用降低，且稳定在CPU2</span><br><span class="line">12346  20%   task_planner</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="五、验证与监控"><a href="#五、验证与监控" class="headerlink" title="五、验证与监控"></a>五、验证与监控</h2><h3 id="实时性验证工具"><a href="#实时性验证工具" class="headerlink" title="实时性验证工具"></a>实时性验证工具</h3><p><strong>cyclictest</strong>（Linux实时性测试标准工具）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install rt-tests</span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试优化前</span></span><br><span class="line"><span class="built_in">sudo</span> cyclictest -p 90 -t1 -n -i 1000 -l 100000</span><br><span class="line"><span class="comment"># 结果：</span></span><br><span class="line"><span class="comment"># Min: 4us, Avg: 12us, Max: 7230us  ← 最坏7ms</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试优化后</span></span><br><span class="line"><span class="built_in">sudo</span> cyclictest -p 90 -t1 -n -i 1000 -l 100000 -a 2</span><br><span class="line"><span class="comment"># 结果：</span></span><br><span class="line"><span class="comment"># Min: 3us, Avg: 8us, Max: 156us  ← 最坏0.15ms ✅</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="运行时监控"><a href="#运行时监控" class="headerlink" title="运行时监控"></a>运行时监控</h3><p><strong>Prometheus + Grafana监控</strong>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在节点中添加指标</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;prometheus/counter.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;prometheus/histogram.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">RealtimeControllerNode</span> : <span class="keyword">public</span> rclcpp::Node &#123;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    prometheus::Histogram&amp; latency_histogram_;</span><br><span class="line">    prometheus::Counter&amp; overrun_counter_;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">control_loop</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">auto</span> start = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line"></span><br><span class="line">        <span class="built_in">compute_control_command</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">auto</span> duration = std::chrono::<span class="built_in">duration_cast</span>&lt;std::chrono::microseconds&gt;(</span><br><span class="line">            std::chrono::steady_clock::<span class="built_in">now</span>() - start).<span class="built_in">count</span>();</span><br><span class="line"></span><br><span class="line">        latency_histogram_.<span class="built_in">Observe</span>(duration);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (duration &gt; <span class="number">1000</span>) &#123;</span><br><span class="line">            overrun_counter_.<span class="built_in">Increment</span>();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Grafana Dashboard</strong>：</p>
+<ul>
+<li>实时延迟曲线（P50&#x2F;P99&#x2F;Max）</li>
+<li>超时次数统计</li>
+<li>CPU占用率</li>
+<li>告警：P99延迟&gt;200us</li>
+</ul>
+<hr>
+<h2 id="六、经验总结"><a href="#六、经验总结" class="headerlink" title="六、经验总结"></a>六、经验总结</h2><h3 id="实时优化三板斧"><a href="#实时优化三板斧" class="headerlink" title="实时优化三板斧"></a>实时优化三板斧</h3><ol>
+<li><strong>调度策略</strong>：SCHED_FIFO + 高优先级</li>
+<li><strong>CPU亲和性</strong>：隔离核心 + 绑定</li>
+<li><strong>QoS优化</strong>：BEST_EFFORT + DEADLINE</li>
+</ol>
+<h3 id="常见坑点"><a href="#常见坑点" class="headerlink" title="常见坑点"></a>常见坑点</h3><p><strong>坑1：忘记授权实时权限</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 症状：sched_setscheduler返回-1</span></span><br><span class="line"><span class="comment"># 解决：</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">setcap</span> cap_sys_nice=eip /path/to/executable</span><br></pre></td></tr></table></figure>
+
+<p><strong>坑2：CPU隔离后系统卡顿</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 错误：isolcpus=0-3（隔离了所有CPU）</span></span><br><span class="line"><span class="comment"># 正确：isolcpus=2-3（只隔离部分CPU）</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>坑3：DDS可靠性丢消息</strong></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 错误：BEST_EFFORT + 无DEADLINE</span></span><br><span class="line"><span class="comment">// 结果：丢包不知道</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确：BEST_EFFORT + DEADLINE监控</span></span><br><span class="line">qos.<span class="built_in">deadline</span>(std::chrono::<span class="built_in">milliseconds</span>(<span class="number">2</span>));</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="Trade-off分析"><a href="#Trade-off分析" class="headerlink" title="Trade-off分析"></a>Trade-off分析</h3><table>
+<thead>
+<tr>
+<th>方案</th>
+<th>优点</th>
+<th>缺点</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SCHED_FIFO</td>
+<td>低延迟</td>
+<td>可能饿死其他进程</td>
+<td>硬实时</td>
+</tr>
+<tr>
+<td>CPU隔离</td>
+<td>无竞争</td>
+<td>浪费CPU资源</td>
+<td>关键任务</td>
+</tr>
+<tr>
+<td>BEST_EFFORT</td>
+<td>低延迟</td>
+<td>可能丢包</td>
+<td>状态数据</td>
+</tr>
+<tr>
+<td>RELIABLE</td>
+<td>不丢包</td>
+<td>延迟高</td>
+<td>命令数据</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="七、进阶优化"><a href="#七、进阶优化" class="headerlink" title="七、进阶优化"></a>七、进阶优化</h2><h3 id="1-内存预分配（避免缺页中断）"><a href="#1-内存预分配（避免缺页中断）" class="headerlink" title="1. 内存预分配（避免缺页中断）"></a>1. 内存预分配（避免缺页中断）</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 锁定内存，防止swap</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (<span class="built_in">mlockall</span>(MCL_CURRENT | MCL_FUTURE) != <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="built_in">RCLCPP_ERROR</span>(<span class="built_in">get_logger</span>(), <span class="string">&quot;mlockall failed&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 预分配栈空间</span></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">size_t</span> STACK_SIZE = <span class="number">8</span> * <span class="number">1024</span> * <span class="number">1024</span>;  <span class="comment">// 8MB</span></span><br><span class="line"><span class="type">char</span> dummy[STACK_SIZE];</span><br><span class="line"><span class="built_in">memset</span>(dummy, <span class="number">0</span>, STACK_SIZE);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="2-零拷贝DDS（避免内存拷贝）"><a href="#2-零拷贝DDS（避免内存拷贝）" class="headerlink" title="2. 零拷贝DDS（避免内存拷贝）"></a>2. 零拷贝DDS（避免内存拷贝）</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// CycloneDDS零拷贝</span></span><br><span class="line"><span class="keyword">auto</span> qos = rclcpp::<span class="built_in">QoS</span>(<span class="number">1</span>)</span><br><span class="line">    .<span class="built_in">reliability</span>(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT)</span><br><span class="line">    .<span class="built_in">history</span>(RMW_QOS_POLICY_HISTORY_KEEP_LAST);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用loaned message（零拷贝发布）</span></span><br><span class="line"><span class="keyword">auto</span> loaned_msg = publisher_-&gt;<span class="built_in">borrow_loaned_message</span>();</span><br><span class="line"><span class="comment">// 直接在共享内存中填充数据</span></span><br><span class="line">loaned_msg.<span class="built_in">get</span>().data = <span class="built_in">compute_control_command</span>();</span><br><span class="line">publisher_-&gt;<span class="built_in">publish</span>(std::<span class="built_in">move</span>(loaned_msg));</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-RT-Preempt内核（终极方案）"><a href="#3-RT-Preempt内核（终极方案）" class="headerlink" title="3. RT Preempt内核（终极方案）"></a>3. RT Preempt内核（终极方案）</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 安装RT内核</span></span><br><span class="line"><span class="built_in">sudo</span> apt install linux-image-rt-amd64</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重启后验证</span></span><br><span class="line"><span class="built_in">uname</span> -a</span><br><span class="line"><span class="comment"># 输出包含：PREEMPT_RT</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 效果：最坏延迟从800us降到50us</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="八、总结"><a href="#八、总结" class="headerlink" title="八、总结"></a>八、总结</h2><p>通过三板斧优化：</p>
+<ol>
+<li><strong>调度策略</strong>（SCHED_FIFO + 优先级90）</li>
+<li><strong>CPU亲和性</strong>（隔离CPU2-3，绑定motion_controller到CPU2）</li>
+<li><strong>DDS QoS</strong>（BEST_EFFORT + DEADLINE）</li>
+</ol>
+<p><strong>效果</strong>：</p>
+<ul>
+<li>✅ P99延迟：500us → 50us（⬇️ 90%）</li>
+<li>✅ 最坏延迟：7ms → 0.8ms（⬇️ 88%）</li>
+<li>✅ 控制精度：60% → 99%（⬆️ 65%）</li>
+</ul>
+<p><strong>关键点</strong>：</p>
+<ul>
+<li>实时性 &#x3D; 调度策略 + CPU隔离 + QoS优化</li>
+<li>工具链：Perfetto定位 + eBPF分析 + cyclictest验证</li>
+<li>监控：Prometheus实时监控 + Grafana可视化</li>
+</ul>
+<hr>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/08/13/ros2-realtime-latency-optimization/">https://quchaosheng.github.io/2026/08/13/ros2-realtime-latency-optimization/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/12/stop-ack-command-id-namespace/">
+                            <span>STOP 的 ACK 为什么不能和业务命令的 ACK 混在一起</span>
+                            <time datetime="2026-08-12T01:30:00.000Z">2026-08-12</time>
+                        </a>
+                    
+                        <a href="/2026/08/07/parent-child-timeout-budget-error-code/">
+                            <span>父子超时预算错配：一次 113 覆盖 204 的排障记录</span>
+                            <time datetime="2026-08-07T01:30:00.000Z">2026-08-07</time>
+                        </a>
+                    
+                        <a href="/2026/08/06/ai-robot-tactile-force-ros2-safety/">
+                            <span>触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</span>
+                            <time datetime="2026-08-06T01:30:00.000Z">2026-08-06</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/ROS-2/"># ROS 2</a>
+                    
+                        <a href="/tag/SCHED-FIFO/"># SCHED_FIFO</a>
+                    
+                        <a href="/tag/%E5%AE%9E%E6%97%B6%E7%B3%BB%E7%BB%9F/"># 实时系统</a>
+                    
+                        <a href="/tag/CPU-%E4%BA%B2%E5%92%8C%E6%80%A7/"># CPU 亲和性</a>
+                    
+                        <a href="/tag/Perfetto/"># Perfetto</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/08/13/i2c-high-frequency-sampling-loss/">I2C 驱动高频采样丢包的定位与修复</a>
+            
+            
+            <a class="next" rel="next" href="/2026/08/13/riscv-heterogeneous-smp-boot/">RISC-V 多核启动：7+1 hart 异构 SMP 架构</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

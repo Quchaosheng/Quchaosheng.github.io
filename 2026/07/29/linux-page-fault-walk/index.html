@@ -10,10 +10,10 @@
     <meta name="author" content="Quchaosheng">
 
 
-    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>缺页异常与页表遍历：一次内存访问的补救过程 | Quchaosheng&#39;s Notes</title>
@@ -42,7 +42,7 @@
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"缺页异常与页表遍历：一次内存访问的补救过程","description":"区分 TLB miss、minor/major fault、COW 与非法访问，并给出 Linux 上观察缺页行为的可靠方法。","datePublished":"2026-04-08T02:00:00.000Z","dateModified":"2026-04-08T02:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/linux-page-fault-walk/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / Linux内核","keywords":"页表, 缺页异常, 虚拟内存","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"缺页异常与页表遍历：一次内存访问的补救过程","description":"区分 TLB miss、minor/major fault、COW 与非法访问，并给出 Linux 上观察缺页行为的可靠方法。","datePublished":"2026-04-08T02:00:00.000Z","dateModified":"2026-04-08T02:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/linux-page-fault-walk/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / Linux内核","keywords":"缺页异常, 页表, 虚拟内存","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -269,9 +269,9 @@
                         <span class="post-topics">
                             主题：
                             
-                                <a href="/tag/%E9%A1%B5%E8%A1%A8/">#页表</a>
-                            
                                 <a href="/tag/%E7%BC%BA%E9%A1%B5%E5%BC%82%E5%B8%B8/">#缺页异常</a>
+                            
+                                <a href="/tag/%E9%A1%B5%E8%A1%A8/">#页表</a>
                             
                                 <a href="/tag/%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98/">#虚拟内存</a>
                             
@@ -357,9 +357,9 @@
                 <span class="tag">
                     
                     
-                        <a href="/tag/%E9%A1%B5%E8%A1%A8/"># 页表</a>
-                    
                         <a href="/tag/%E7%BC%BA%E9%A1%B5%E5%BC%82%E5%B8%B8/"># 缺页异常</a>
+                    
+                        <a href="/tag/%E9%A1%B5%E8%A1%A8/"># 页表</a>
                     
                         <a href="/tag/%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98/"># 虚拟内存</a>
                     

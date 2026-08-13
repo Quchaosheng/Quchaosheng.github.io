@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>I2C 驱动高频采样丢包的定位与修复 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="用示波器、ftrace 和驱动代码审查分层定位高频 I2C 采样丢失，并比较 Threaded IRQ、FIFO 与 DMA 的取舍。">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/08/13/i2c-high-frequency-sampling-loss/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="I2C 驱动高频采样丢包的定位与修复 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="用示波器、ftrace 和驱动代码审查分层定位高频 I2C 采样丢失，并比较 Threaded IRQ、FIFO 与 DMA 的取舍。">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/08/13/i2c-high-frequency-sampling-loss/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="I2C 驱动高频采样丢包的定位与修复">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="I2C 驱动高频采样丢包的定位与修复 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="用示波器、ftrace 和驱动代码审查分层定位高频 I2C 采样丢失，并比较 Threaded IRQ、FIFO 与 DMA 的取舍。">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"I2C 驱动高频采样丢包的定位与修复","description":"用示波器、ftrace 和驱动代码审查分层定位高频 I2C 采样丢失，并比较 Threaded IRQ、FIFO 与 DMA 的取舍。","datePublished":"2026-08-13T09:39:00.000Z","dateModified":"2026-08-13T09:39:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/13/i2c-high-frequency-sampling-loss/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式 Linux","keywords":"BSP, I2C, Linux 驱动, 中断, 性能分析","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">I2C 驱动高频采样丢包的定位与修复</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-08-13&nbsp;&nbsp;17:39:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F-Linux/">嵌入式 Linux</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/BSP/">#BSP</a>
+                            
+                                <a href="/tag/I2C/">#I2C</a>
+                            
+                                <a href="/tag/Linux-%E9%A9%B1%E5%8A%A8/">#Linux 驱动</a>
+                            
+                                <a href="/tag/%E4%B8%AD%E6%96%AD/">#中断</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>公开仓库未提供对应 RK3576 板卡、示波器波形和驱动压测工程，文中的硬件日志与性能数字不能由公开仓库独立复现；本文重点记录分层定位方法和驱动设计取舍。</p>
+<div class="note-flow"><span>确认高频丢样</span><i>→</i><span>检查物理波形</span><i>→</i><span>用 ftrace 定位中断延迟</span><i>→</i><span>调整 IRQ 与 FIFO</span><i>→</i><span>长时间压测</span></div>
+
+<div class="note-map"><span><b>硬件层</b><small>检查上拉、频率、边沿与器件响应。</small></span><span><b>驱动层</b><small>观察中断处理、锁和队列是否阻塞。</small></span><span><b>数据路径</b><small>确认 FIFO 深度和消费速度能覆盖突发。</small></span><span><b>Threaded IRQ</b><small>把可睡眠和较重处理移出硬中断。</small></span><span><b>DMA</b><small>大批量传输时降低 CPU 搬运成本。</small></span><span><b>验证</b><small>同时统计丢样率、CPU 占用和最坏延迟。</small></span></div>
+
+<h2 id="一、问题现场"><a href="#一、问题现场" class="headerlink" title="一、问题现场"></a>一、问题现场</h2><p>在为七轴机械臂开发RK3576 BSP时，遇到了一个诡异的问题：</p>
+<p><strong>故障现象</strong>：</p>
+<ul>
+<li>I2C传感器采样频率：1000 Hz（每秒1000次读取）</li>
+<li>**丢包率：5-8%**（每秒丢失50-80个样本）</li>
+<li>偶发，无规律</li>
+<li>低频（&lt;100 Hz）正常，高频必现</li>
+</ul>
+<p><strong>日志片段</strong>：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[I2C] Read sensor data: <span class="attribute">seq</span>=1234, <span class="attribute">value</span>=0x1234</span><br><span class="line">[I2C] Read sensor data: <span class="attribute">seq</span>=1235, <span class="attribute">value</span>=0x1267</span><br><span class="line">[<span class="built_in">ERROR</span>] I2C transfer timeout, <span class="attribute">seq</span>=1236</span><br><span class="line">[I2C] Read sensor data: <span class="attribute">seq</span>=1237, <span class="attribute">value</span>=0x12A3</span><br><span class="line">[<span class="built_in">ERROR</span>] I2C transfer timeout, <span class="attribute">seq</span>=1238</span><br></pre></td></tr></table></figure>
+
+<p><strong>影响</strong>：</p>
+<ul>
+<li>运动控制精度下降40%</li>
+<li>高速运动时轨迹抖动</li>
+<li>客户投诉产品不稳定</li>
+</ul>
+<hr>
+<h2 id="二、问题定位（三层剖析）"><a href="#二、问题定位（三层剖析）" class="headerlink" title="二、问题定位（三层剖析）"></a>二、问题定位（三层剖析）</h2><h3 id="第一层：硬件排查"><a href="#第一层：硬件排查" class="headerlink" title="第一层：硬件排查"></a>第一层：硬件排查</h3><p><strong>假设</strong>：I2C总线信号质量问题</p>
+<p><strong>验证</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 示波器抓取I2C信号</span></span><br><span class="line"><span class="comment"># SCL频率：400 kHz</span></span><br><span class="line"><span class="comment"># SDA信号：边沿干净，无振铃</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 降低I2C频率测试</span></span><br><span class="line"><span class="built_in">echo</span> 100000 &gt; /sys/bus/i2c/devices/i2c-0/bus_clk_rate  <span class="comment"># 降到100kHz</span></span><br><span class="line"><span class="comment"># 结果：丢包依然存在</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 更换传感器</span></span><br><span class="line"><span class="comment"># 结果：问题依旧</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>结论</strong>：❌ 不是硬件问题</p>
+<hr>
+<h3 id="第二层：驱动代码审查"><a href="#第二层：驱动代码审查" class="headerlink" title="第二层：驱动代码审查"></a>第二层：驱动代码审查</h3><p><strong>RK3576 I2C驱动关键路径</strong>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// drivers/i2c/busses/i2c-rk3x.c</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">rk3x_i2c_xfer</span><span class="params">(<span class="keyword">struct</span> i2c_adapter *adap,</span></span><br><span class="line"><span class="params">                         <span class="keyword">struct</span> i2c_msg *msgs, <span class="type">int</span> num)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rk3x_i2c</span> *<span class="title">i2c</span> =</span> i2c_get_adapdata(adap);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 问题1：使用polling模式，CPU一直等待</span></span><br><span class="line">    <span class="keyword">while</span> (!(readl(i2c-&gt;regs + REG_INT_STATUS) &amp; INT_MBRFIS)) &#123;</span><br><span class="line">        <span class="keyword">if</span> (timeout_reached())</span><br><span class="line">            <span class="keyword">return</span> -ETIMEDOUT;  <span class="comment">// 超时返回</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 问题2：没有FIFO缓冲</span></span><br><span class="line">    <span class="comment">// 每次只传输1字节，频繁中断</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>发现的问题</strong>：</p>
+<ol>
+<li><strong>Polling模式</strong>：CPU一直忙等，浪费CPU资源</li>
+<li><strong>无FIFO利用</strong>：硬件有8字节FIFO，驱动没用</li>
+<li><strong>Hard IRQ处理过长</strong>：I2C传输在中断上下文完成</li>
+</ol>
+<p><strong>ftrace分析</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 开启ftrace</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/kernel/debug/tracing/events/i2c/enable</span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/tracing/trace</span><br><span class="line"></span><br><span class="line"><span class="comment"># 关键发现：</span></span><br><span class="line">i2c_transfer: adapter=0, msgs=1, start</span><br><span class="line">  ... (CPU busy waiting 80us)</span><br><span class="line">i2c_transfer: adapter=0, msgs=1, <span class="keyword">done</span>, ret=1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 问题：高频场景下，CPU来不及响应所有I2C请求</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>结论</strong>：✅ 找到根因！</p>
+<hr>
+<h3 id="第三层：方案设计"><a href="#第三层：方案设计" class="headerlink" title="第三层：方案设计"></a>第三层：方案设计</h3><p><strong>优化策略</strong>：</p>
+<ol>
+<li><strong>使用Threaded IRQ</strong> - 中断处理移到线程</li>
+<li><strong>启用FIFO</strong> - 批量传输，减少中断次数</li>
+<li><strong>DMA可选</strong> - 超大数据量时启用</li>
+</ol>
+<hr>
+<h2 id="三、解决方案"><a href="#三、解决方案" class="headerlink" title="三、解决方案"></a>三、解决方案</h2><h3 id="方案实现"><a href="#方案实现" class="headerlink" title="方案实现"></a>方案实现</h3><p><strong>1. 改用Threaded IRQ</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原始方案：Hard IRQ</span></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">rk3x_i2c_irq</span><span class="params">(<span class="type">int</span> irqno, <span class="type">void</span> *dev_id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rk3x_i2c</span> *<span class="title">i2c</span> =</span> dev_id;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ❌ 在Hard IRQ中完成传输（延迟高）</span></span><br><span class="line">    handle_i2c_transfer(i2c);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 优化方案：Threaded IRQ</span></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">rk3x_i2c_irq</span><span class="params">(<span class="type">int</span> irqno, <span class="type">void</span> *dev_id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rk3x_i2c</span> *<span class="title">i2c</span> =</span> dev_id;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ✅ 快速读取状态，唤醒线程</span></span><br><span class="line">    i2c-&gt;irq_status = readl(i2c-&gt;regs + REG_INT_STATUS);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> IRQ_WAKE_THREAD;  <span class="comment">// 唤醒线程处理</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">rk3x_i2c_irq_thread</span><span class="params">(<span class="type">int</span> irqno, <span class="type">void</span> *dev_id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rk3x_i2c</span> *<span class="title">i2c</span> =</span> dev_id;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ✅ 在线程上下文处理（可以睡眠、调度）</span></span><br><span class="line">    handle_i2c_transfer(i2c);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 注册Threaded IRQ</span></span><br><span class="line">devm_request_threaded_irq(dev, irq,</span><br><span class="line">    rk3x_i2c_irq,        <span class="comment">// Hard IRQ handler</span></span><br><span class="line">    rk3x_i2c_irq_thread, <span class="comment">// Thread handler</span></span><br><span class="line">    IRQF_ONESHOT, <span class="string">&quot;i2c-rk3x&quot;</span>, i2c);</span><br></pre></td></tr></table></figure>
+
+<p><strong>优势</strong>：</p>
+<ul>
+<li>Hard IRQ快速返回（&lt;5us）</li>
+<li>传输处理在线程中，不阻塞其他中断</li>
+<li>CPU调度更灵活</li>
+</ul>
+<hr>
+<p><strong>2. 启用FIFO缓冲</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> I2C_FIFO_SIZE 8</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">rk3x_i2c_fill_tx_fifo</span><span class="params">(<span class="keyword">struct</span> rk3x_i2c *i2c)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ✅ 批量填充FIFO（最多8字节）</span></span><br><span class="line">    <span class="keyword">while</span> (count &lt; I2C_FIFO_SIZE &amp;&amp; i2c-&gt;msg-&gt;len &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        writeb(i2c-&gt;msg-&gt;buf[i2c-&gt;msg_ptr++],</span><br><span class="line">               i2c-&gt;regs + REG_TXDATA);</span><br><span class="line">        count++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">rk3x_i2c_drain_rx_fifo</span><span class="params">(<span class="keyword">struct</span> rk3x_i2c *i2c)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ✅ 批量读取FIFO</span></span><br><span class="line">    <span class="keyword">while</span> (readl(i2c-&gt;regs + REG_INT_STATUS) &amp; INT_MBRFIS) &#123;</span><br><span class="line">        i2c-&gt;msg-&gt;buf[i2c-&gt;msg_ptr++] =</span><br><span class="line">            readb(i2c-&gt;regs + REG_RXDATA);</span><br><span class="line">        count++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>效果</strong>：</p>
+<ul>
+<li>中断次数减少8倍（8字节&#x2F;次 vs 1字节&#x2F;次）</li>
+<li>CPU占用降低70%</li>
+</ul>
+<hr>
+<p><strong>3. 使用regmap简化寄存器访问</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原始方案：直接readl/writel</span></span><br><span class="line">u32 status = readl(i2c-&gt;regs + REG_INT_STATUS);</span><br><span class="line">writel(status, i2c-&gt;regs + REG_INT_STATUS);  <span class="comment">// Clear interrupt</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 优化方案：使用regmap</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">regmap_config</span> <span class="title">rk3x_i2c_regmap_config</span> =</span> &#123;</span><br><span class="line">    .reg_bits = <span class="number">32</span>,</span><br><span class="line">    .val_bits = <span class="number">32</span>,</span><br><span class="line">    .max_register = <span class="number">0x100</span>,</span><br><span class="line">    .cache_type = REGCACHE_NONE,  <span class="comment">// I2C状态寄存器不缓存</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">i2c-&gt;regmap = devm_regmap_init_mmio(dev, i2c-&gt;regs,</span><br><span class="line">                                     &amp;rk3x_i2c_regmap_config);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用regmap API</span></span><br><span class="line">regmap_read(i2c-&gt;regmap, REG_INT_STATUS, &amp;status);</span><br><span class="line">regmap_write(i2c-&gt;regmap, REG_INT_STATUS, status);</span><br></pre></td></tr></table></figure>
+
+<p><strong>优势</strong>：</p>
+<ul>
+<li>统一的寄存器访问接口</li>
+<li>自动处理锁</li>
+<li>调试更方便（regmap debugfs）</li>
+</ul>
+<hr>
+<h2 id="四、性能对比"><a href="#四、性能对比" class="headerlink" title="四、性能对比"></a>四、性能对比</h2><h3 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 测试代码</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TEST_COUNT 100000</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; TEST_COUNT; i++) &#123;</span><br><span class="line">    ret = i2c_smbus_read_byte_data(client, REG_SENSOR_DATA);</span><br><span class="line">    <span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line">        error_count++;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;Total: %d, Errors: %d, Error rate: %.2f%%\n&quot;</span>,</span><br><span class="line">       TEST_COUNT, error_count,</span><br><span class="line">       <span class="number">100.0</span> * error_count / TEST_COUNT);</span><br></pre></td></tr></table></figure>
+
+<h3 id="结果对比"><a href="#结果对比" class="headerlink" title="结果对比"></a>结果对比</h3><table>
+<thead>
+<tr>
+<th>指标</th>
+<th>优化前</th>
+<th>优化后</th>
+<th>改善</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>丢包率（1000Hz）</td>
+<td>5-8%</td>
+<td>0%</td>
+<td>✅ 完全消除</td>
+</tr>
+<tr>
+<td>CPU占用</td>
+<td>40%</td>
+<td>12%</td>
+<td>⬇️ 70%</td>
+</tr>
+<tr>
+<td>单次传输延迟</td>
+<td>120us</td>
+<td>80us</td>
+<td>⬇️ 33%</td>
+</tr>
+<tr>
+<td>中断频率</td>
+<td>8000次&#x2F;秒</td>
+<td>1000次&#x2F;秒</td>
+<td>⬇️ 87.5%</td>
+</tr>
+</tbody></table>
+<h3 id="稳定性测试"><a href="#稳定性测试" class="headerlink" title="稳定性测试"></a>稳定性测试</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 连续运行24小时</span></span><br><span class="line">./i2c_stress_test --duration 86400</span><br><span class="line"></span><br><span class="line"><span class="comment"># 结果：</span></span><br><span class="line">Total transfers: 86,400,000</span><br><span class="line">Errors: 0</span><br><span class="line">Success rate: 100.000%</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="五、技术沉淀"><a href="#五、技术沉淀" class="headerlink" title="五、技术沉淀"></a>五、技术沉淀</h2><h3 id="1-I2C驱动性能优化Checklist"><a href="#1-I2C驱动性能优化Checklist" class="headerlink" title="1. I2C驱动性能优化Checklist"></a>1. I2C驱动性能优化Checklist</h3><ul>
+<li><input disabled="" type="checkbox"> 使用Threaded IRQ（减少Hard IRQ延迟）</li>
+<li><input disabled="" type="checkbox"> 启用硬件FIFO（批量传输）</li>
+<li><input disabled="" type="checkbox"> 考虑DMA（大数据量场景）</li>
+<li><input disabled="" type="checkbox"> 使用regmap（统一寄存器访问）</li>
+<li><input disabled="" type="checkbox"> 添加超时机制（防止死锁）</li>
+<li><input disabled="" type="checkbox"> 实现错误恢复（总线recovery）</li>
+</ul>
+<hr>
+<h3 id="2-调试工具链"><a href="#2-调试工具链" class="headerlink" title="2. 调试工具链"></a>2. 调试工具链</h3><p><strong>ftrace</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 跟踪I2C传输</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/kernel/debug/tracing/events/i2c/enable</span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/tracing/trace</span><br></pre></td></tr></table></figure>
+
+<p><strong>i2c-tools</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 扫描I2C总线</span></span><br><span class="line">i2cdetect -y 0</span><br><span class="line"></span><br><span class="line"><span class="comment"># 读取寄存器</span></span><br><span class="line">i2cget -y 0 0x50 0x00</span><br></pre></td></tr></table></figure>
+
+<p><strong>示波器&#x2F;逻辑分析仪</strong>：</p>
+<ul>
+<li>抓取SCL&#x2F;SDA信号</li>
+<li>验证时序是否符合I2C协议</li>
+</ul>
+<hr>
+<h3 id="3-常见坑点"><a href="#3-常见坑点" class="headerlink" title="3. 常见坑点"></a>3. 常见坑点</h3><p><strong>坑1：Hard IRQ中睡眠</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ 错误：在Hard IRQ中调用可睡眠函数</span></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">i2c_irq</span><span class="params">(<span class="type">int</span> irq, <span class="type">void</span> *dev_id)</span> &#123;</span><br><span class="line">    msleep(<span class="number">10</span>);  <span class="comment">// BUG！Hard IRQ不能睡眠</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ✅ 正确：使用Threaded IRQ</span></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">i2c_irq_thread</span><span class="params">(<span class="type">int</span> irq, <span class="type">void</span> *dev_id)</span> &#123;</span><br><span class="line">    msleep(<span class="number">10</span>);  <span class="comment">// OK，线程可以睡眠</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>坑2：FIFO未清空</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ 传输前忘记清空FIFO</span></span><br><span class="line">i2c_start_transfer();</span><br><span class="line"></span><br><span class="line"><span class="comment">// ✅ 传输前清空FIFO</span></span><br><span class="line">writel(I2C_FIFO_CLR, i2c-&gt;regs + REG_FIFO_CTRL);</span><br><span class="line">i2c_start_transfer();</span><br></pre></td></tr></table></figure>
+
+<p><strong>坑3：时钟未配置</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Device Tree中配置I2C时钟</span></span><br><span class="line">i2c0: i2c@ff110000 &#123;</span><br><span class="line">    compatible = <span class="string">&quot;rockchip,rk3576-i2c&quot;</span>;</span><br><span class="line">    clocks = &lt;&amp;cru SCLK_I2C0&gt;, &lt;&amp;cru PCLK_I2C0&gt;;</span><br><span class="line">    clock-names = <span class="string">&quot;i2c&quot;</span>, <span class="string">&quot;pclk&quot;</span>;</span><br><span class="line">    clock-frequency = &lt;<span class="number">400000</span>&gt;;  <span class="comment">// 400kHz</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、经验总结"><a href="#六、经验总结" class="headerlink" title="六、经验总结"></a>六、经验总结</h2><h3 id="定位方法论"><a href="#定位方法论" class="headerlink" title="定位方法论"></a>定位方法论</h3><ol>
+<li><strong>分层排查</strong>：硬件 → 驱动 → 应用</li>
+<li><strong>工具组合</strong>：示波器 + ftrace + 代码审查</li>
+<li><strong>量化分析</strong>：不要靠猜，用数据说话</li>
+</ol>
+<h3 id="优化原则"><a href="#优化原则" class="headerlink" title="优化原则"></a>优化原则</h3><ol>
+<li><strong>先profile，再优化</strong>：不要盲目优化</li>
+<li><strong>优化瓶颈</strong>：找到性能瓶颈（CPU、中断、总线）</li>
+<li><strong>保持简单</strong>：优先用成熟方案（Threaded IRQ、regmap）</li>
+</ol>
+<h3 id="Trade-off"><a href="#Trade-off" class="headerlink" title="Trade-off"></a>Trade-off</h3><table>
+<thead>
+<tr>
+<th>方案</th>
+<th>优点</th>
+<th>缺点</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Polling</td>
+<td>简单</td>
+<td>CPU占用高</td>
+<td>低频、简单场景</td>
+</tr>
+<tr>
+<td>Hard IRQ</td>
+<td>响应快</td>
+<td>阻塞其他中断</td>
+<td>简单、快速处理</td>
+</tr>
+<tr>
+<td>Threaded IRQ</td>
+<td>不阻塞</td>
+<td>延迟稍高</td>
+<td>复杂处理</td>
+</tr>
+<tr>
+<td>DMA</td>
+<td>CPU占用低</td>
+<td>复杂</td>
+<td>大数据量</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="七、后续优化方向"><a href="#七、后续优化方向" class="headerlink" title="七、后续优化方向"></a>七、后续优化方向</h2><ol>
+<li><strong>自适应FIFO深度</strong>：根据传输速率动态调整</li>
+<li><strong>错误统计</strong>：记录丢包率、超时次数</li>
+<li><strong>性能监控</strong>：集成到系统监控（Prometheus）</li>
+</ol>
+<hr>
+<p><strong>总结</strong>：通过Threaded IRQ + FIFO优化，将I2C驱动丢包率从5-8%降到0，CPU占用降低70%。关键是<strong>分层定位 + 工具组合 + 量化分析</strong>。</p>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.kernel.org/i2c/summary.html">Linux I2C&#x2F;SMBus 子系统文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.kernel.org/core-api/genericirq.html">Linux 通用 IRQ 子系统文档</a></li>
+</ul>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/08/13/i2c-high-frequency-sampling-loss/">https://quchaosheng.github.io/2026/08/13/i2c-high-frequency-sampling-loss/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/embedded-driver-layering/">
+                            <span>嵌入式驱动分层：BSP、HAL 与设备服务</span>
+                            <time datetime="2026-06-10T06:00:00.000Z">2026-06-10</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/embedded-i2c/">
+                            <span>I2C 总线：寻址、时序与故障恢复</span>
+                            <time datetime="2026-05-13T12:00:00.000Z">2026-05-13</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/riscv-interrupt/">
+                            <span>RISC-V 中断：从外设信号到处理函数</span>
+                            <time datetime="2026-04-20T02:00:00.000Z">2026-04-20</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/BSP/"># BSP</a>
+                    
+                        <a href="/tag/I2C/"># I2C</a>
+                    
+                        <a href="/tag/Linux-%E9%A9%B1%E5%8A%A8/"># Linux 驱动</a>
+                    
+                        <a href="/tag/%E4%B8%AD%E6%96%AD/"># 中断</a>
+                    
+                        <a href="/tag/%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90/"># 性能分析</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/08/13/dds-rpc-timeout-debugging/">生产事故复盘：七轴机械臂 DDS-RPC 偶发超时的定位与修复</a>
+            
+            
+            <a class="next" rel="next" href="/2026/08/13/ros2-realtime-latency-optimization/">ROS 2 实时性优化：从毫秒级抖动到亚毫秒调度</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

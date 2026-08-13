@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>RISC-V 多核启动：7+1 hart 异构 SMP 架构 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="从 OpenSBI、Linux SMP、PMP 隔离和 IPI 通信出发，梳理 7+1 hart 异构系统的启动与调试路径。">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/08/13/riscv-heterogeneous-smp-boot/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RISC-V 多核启动：7+1 hart 异构 SMP 架构 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="从 OpenSBI、Linux SMP、PMP 隔离和 IPI 通信出发，梳理 7+1 hart 异构系统的启动与调试路径。">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/08/13/riscv-heterogeneous-smp-boot/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="RISC-V 多核启动：7+1 hart 异构 SMP 架构">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RISC-V 多核启动：7+1 hart 异构 SMP 架构 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="从 OpenSBI、Linux SMP、PMP 隔离和 IPI 通信出发，梳理 7+1 hart 异构系统的启动与调试路径。">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"RISC-V 多核启动：7+1 hart 异构 SMP 架构","description":"从 OpenSBI、Linux SMP、PMP 隔离和 IPI 通信出发，梳理 7+1 hart 异构系统的启动与调试路径。","datePublished":"2026-08-13T09:37:00.000Z","dateModified":"2026-08-13T09:37:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/13/riscv-heterogeneous-smp-boot/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / RISC-V","keywords":"FreeRTOS, RISC-V, OpenSBI, PMP, SMP","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">RISC-V 多核启动：7+1 hart 异构 SMP 架构</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-08-13&nbsp;&nbsp;17:37:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/RISC-V/">RISC-V</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/FreeRTOS/">#FreeRTOS</a>
+                            
+                                <a href="/tag/RISC-V/">#RISC-V</a>
+                            
+                                <a href="/tag/OpenSBI/">#OpenSBI</a>
+                            
+                                <a href="/tag/PMP/">#PMP</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>公开项目 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/quard-star-riscv64-net">quard-star-riscv64-net</a> 提供 7+1 hart、OpenSBI domain 和 PMP 故障探针的相关实现；本文包含的 FreeRTOS 集成与部分性能数字不在该公开仓库的完整可复现实验范围内，应按设计说明而非已公开 benchmark 阅读。</p>
+<div class="note-flow"><span>OpenSBI 建立 domain</span><i>→</i><span>Linux 启动 7 个 hart</span><i>→</i><span>独立 hart 进入 RTOS</span><i>→</i><span>PMP 隔离内存</span><i>→</i><span>IPI 与共享内存通信</span></div>
+
+<div class="note-map"><span><b>hart0</b><small>承担引导与 Linux 启动协调。</small></span><span><b>Linux SMP</b><small>7 个 hart 处理通用计算和系统服务。</small></span><span><b>RTOS hart</b><small>保留给硬实时控制路径。</small></span><span><b>OpenSBI</b><small>提供 M-mode 服务与 domain 资源描述。</small></span><span><b>PMP</b><small>限制两个执行域可访问的物理地址。</small></span><span><b>通信</b><small>共享内存承载数据，IPI 负责通知。</small></span></div>
+
+<h2 id="一、项目背景"><a href="#一、项目背景" class="headerlink" title="一、项目背景"></a>一、项目背景</h2><p>在开发RISC-V多核实时控制系统时，遇到了一个有趣的需求：</p>
+<p><strong>需求</strong>：</p>
+<ul>
+<li>7个hart运行Linux SMP（通用计算）</li>
+<li>1个hart运行FreeRTOS（硬实时控制）</li>
+<li>两个系统通过共享内存通信</li>
+</ul>
+<p><strong>挑战</strong>：</p>
+<ul>
+<li>RISC-V SMP启动流程复杂</li>
+<li>异构系统的内存隔离</li>
+<li>hart间通信与同步</li>
+<li>调试困难（8个核心同时运行）</li>
+</ul>
+<hr>
+<h2 id="二、RISC-V多核基础"><a href="#二、RISC-V多核基础" class="headerlink" title="二、RISC-V多核基础"></a>二、RISC-V多核基础</h2><h3 id="2-1-关键概念"><a href="#2-1-关键概念" class="headerlink" title="2.1 关键概念"></a>2.1 关键概念</h3><p><strong>hart（Hardware Thread）</strong>：</p>
+<ul>
+<li>RISC-V的”核心”概念</li>
+<li>每个hart是一个独立的硬件线程</li>
+<li>可以独立执行指令流</li>
+</ul>
+<p><strong>特权级</strong>：</p>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">M-mode (Machine)      - 最高权限，固件/bootloader</span><br><span class="line">  ↓</span><br><span class="line">S-mode (Supervisor)   - 操作系统内核（Linux）</span><br><span class="line">  ↓</span><br><span class="line">U-mode (<span class="keyword">User</span>)         - 用户态应用</span><br></pre></td></tr></table></figure>
+
+<p><strong>SMP启动流程</strong>：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">1.</span> hart0在M-mode启动（Boot Hart）</span><br><span class="line"><span class="bullet">2.</span> 其他hart在WFI（Wait For Interrupt）状态</span><br><span class="line"><span class="bullet">3.</span> hart0初始化完成后，唤醒其他hart</span><br><span class="line"><span class="bullet">4.</span> 所有hart切换到S-mode，进入Linux</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="2-2-我们的架构"><a href="#2-2-我们的架构" class="headerlink" title="2.2 我们的架构"></a>2.2 我们的架构</h3><p><strong>8-hart布局</strong>：</p>
+<figure class="highlight nestedtext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">hart0-6</span><span class="punctuation">:</span> <span class="string">Linux SMP（S-mode）</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">OpenSBI提供M-mode runtime</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">Linux内核在S-mode运行</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">用户态在U-mode运行</span></span><br><span class="line"></span><br><span class="line"><span class="attribute">hart7</span><span class="punctuation">:</span> <span class="string">FreeRTOS（M-mode）</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">独占一个hart</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">直接在M-mode运行（无虚拟内存）</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">硬实时保证（无OS抢占）</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>内存布局</strong>：</p>
+<figure class="highlight dns"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">物理内存：<span class="number">2</span>GB</span><br><span class="line"></span><br><span class="line"><span class="number">0</span>x<span class="number">8000_0000</span> - <span class="number">0</span>x<span class="number">8020_0000</span>   OpenSBI (<span class="number">2</span>MB)</span><br><span class="line"><span class="number">0</span>x<span class="number">8020_0000</span> - <span class="number">0</span>x<span class="number">8040_0000</span>   Linux Kernel (<span class="number">2</span>MB)</span><br><span class="line"><span class="number">0</span>x<span class="number">8040_0000</span> - <span class="number">0</span>xC<span class="number">000_0000</span>   Linux用户空间 (<span class="number">960</span>MB)</span><br><span class="line"><span class="number">0</span>xC<span class="number">000_0000</span> - <span class="number">0</span>xC<span class="number">010_0000</span>   共享内存 (<span class="number">1</span>MB)</span><br><span class="line"><span class="number">0</span>xC<span class="number">010_0000</span> - <span class="number">0</span>xC<span class="number">020_0000</span>   FreeRTOS代码+数据 (<span class="number">1</span>MB)</span><br><span class="line"><span class="number">0</span>xC<span class="number">020_0000</span> - <span class="number">0</span>xFFFF_FFFF   保留 (rest)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="三、启动流程设计"><a href="#三、启动流程设计" class="headerlink" title="三、启动流程设计"></a>三、启动流程设计</h2><h3 id="3-1-第一阶段：OpenSBI初始化"><a href="#3-1-第一阶段：OpenSBI初始化" class="headerlink" title="3.1 第一阶段：OpenSBI初始化"></a>3.1 第一阶段：OpenSBI初始化</h3><p><strong>OpenSBI的职责</strong>：</p>
+<ul>
+<li>初始化M-mode环境</li>
+<li>设置PMP（Physical Memory Protection）</li>
+<li>提供SBI接口（S-mode调用M-mode服务）</li>
+<li>引导Linux内核</li>
+</ul>
+<p><strong>关键代码</strong>（platform&#x2F;generic&#x2F;platform.c）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// OpenSBI平台配置</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">platform_config</span> <span class="title">platform</span> =</span> &#123;</span><br><span class="line">    .name = <span class="string">&quot;Custom RISC-V Platform&quot;</span>,</span><br><span class="line">    .hart_count = <span class="number">8</span>,  <span class="comment">// 8个hart</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 只有hart0-6运行Linux</span></span><br><span class="line">    .hart_index_base = <span class="number">0</span>,</span><br><span class="line">    .hart_stack_size = <span class="number">8192</span>,</span><br><span class="line"></span><br><span class="line">    <span class="comment">// hart7的特殊配置</span></span><br><span class="line">    .disabled_hart_mask = (<span class="number">1</span> &lt;&lt; <span class="number">7</span>),  <span class="comment">// hart7不参与SMP</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// PMP配置：隔离FreeRTOS内存</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">platform_pmp_init</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="comment">// Region 0: Linux可访问0x8000_0000 - 0xC000_0000</span></span><br><span class="line">    pmp_set(<span class="number">0</span>, PMP_R | PMP_W | PMP_X,</span><br><span class="line">            <span class="number">0x80000000</span>, <span class="number">0xC0000000</span> - <span class="number">0x80000000</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Region 1: 共享内存（所有hart可访问）</span></span><br><span class="line">    pmp_set(<span class="number">1</span>, PMP_R | PMP_W,</span><br><span class="line">            <span class="number">0xC0000000</span>, <span class="number">0x100000</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Region 2: FreeRTOS专用（仅hart7可访问）</span></span><br><span class="line">    pmp_set(<span class="number">2</span>, PMP_R | PMP_W | PMP_X,</span><br><span class="line">            <span class="number">0xC0100000</span>, <span class="number">0x100000</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>启动流程</strong>：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">1</span>. ROM bootloader加载OpenSBI到<span class="number">0</span>x8000_0000</span><br><span class="line"><span class="attribute">2</span>. OpenSBI在hart0上启动（fw_dynamic_init）</span><br><span class="line"><span class="attribute">3</span>. 初始化PMP，隔离内存区域</span><br><span class="line"><span class="attribute">4</span>. 设置hart7的启动地址为FreeRTOS入口</span><br><span class="line"><span class="attribute">5</span>. 唤醒hart1-<span class="number">6</span>，跳转到Linux内核</span><br><span class="line"><span class="attribute">6</span>. hart7进入FreeRTOS</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-2-第二阶段：Linux-SMP启动"><a href="#3-2-第二阶段：Linux-SMP启动" class="headerlink" title="3.2 第二阶段：Linux SMP启动"></a>3.2 第二阶段：Linux SMP启动</h3><p><strong>Device Tree配置</strong>（riscv-platform.dts）：</p>
+<figure class="highlight dts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="title class_">/</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="meta">#address-cells = &lt;2&gt;;</span></span><br><span class="line">    <span class="meta">#size-cells = &lt;2&gt;;</span></span><br><span class="line">    <span class="attr">compatible</span> <span class="operator">=</span> <span class="string">&quot;riscv-custom-platform&quot;</span><span class="punctuation">;</span></span><br><span class="line"></span><br><span class="line">    <span class="title class_">cpus</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="meta">#address-cells = &lt;1&gt;;</span></span><br><span class="line">        <span class="meta">#size-cells = &lt;0&gt;;</span></span><br><span class="line">        <span class="attr">timebase-frequency</span> <span class="operator">=</span> <span class="params">&lt;<span class="number">10000000</span>&gt;</span><span class="punctuation">;</span>  <span class="comment">// 10MHz</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// hart0-6: Linux SMP</span></span><br><span class="line"><span class="symbol">        cpu0:</span> <span class="title class_">cpu@0</span> <span class="punctuation">&#123;</span></span><br><span class="line">            device_<span class="attr">type</span> <span class="operator">=</span> <span class="string">&quot;cpu&quot;</span><span class="punctuation">;</span></span><br><span class="line">            <span class="attr">reg</span> <span class="operator">=</span> <span class="params">&lt;<span class="number">0</span>&gt;</span><span class="punctuation">;</span></span><br><span class="line">            <span class="attr">status</span> <span class="operator">=</span> <span class="string">&quot;okay&quot;</span><span class="punctuation">;</span></span><br><span class="line">            <span class="attr">compatible</span> <span class="operator">=</span> <span class="string">&quot;riscv&quot;</span><span class="punctuation">;</span></span><br><span class="line">            <span class="attr">riscv,isa</span> <span class="operator">=</span> <span class="string">&quot;rv64imafdcsu&quot;</span><span class="punctuation">;</span></span><br><span class="line">            <span class="attr">mmu-type</span> <span class="operator">=</span> <span class="string">&quot;riscv,sv39&quot;</span><span class="punctuation">;</span>  <span class="comment">// Sv39分页</span></span><br><span class="line"><span class="symbol"></span></span><br><span class="line"><span class="symbol">            cpu0_intc:</span> <span class="title class_">interrupt-controller</span> <span class="punctuation">&#123;</span></span><br><span class="line">                <span class="meta">#interrupt-cells = &lt;1&gt;;</span></span><br><span class="line">                <span class="attr">interrupt-controller</span><span class="punctuation">;</span></span><br><span class="line">                <span class="attr">compatible</span> <span class="operator">=</span> <span class="string">&quot;riscv,cpu-intc&quot;</span><span class="punctuation">;</span></span><br><span class="line">            <span class="punctuation">&#125;;</span></span><br><span class="line">        <span class="punctuation">&#125;;</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// cpu1-6类似...</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// hart7: FreeRTOS（disabled for Linux）</span></span><br><span class="line"><span class="symbol">        cpu7:</span> <span class="title class_">cpu@7</span> <span class="punctuation">&#123;</span></span><br><span class="line">            device_<span class="attr">type</span> <span class="operator">=</span> <span class="string">&quot;cpu&quot;</span><span class="punctuation">;</span></span><br><span class="line">            <span class="attr">reg</span> <span class="operator">=</span> <span class="params">&lt;<span class="number">7</span>&gt;</span><span class="punctuation">;</span></span><br><span class="line">            <span class="attr">status</span> <span class="operator">=</span> <span class="string">&quot;disabled&quot;</span><span class="punctuation">;</span>  <span class="comment">// Linux不管理hart7</span></span><br><span class="line">            <span class="attr">compatible</span> <span class="operator">=</span> <span class="string">&quot;riscv&quot;</span><span class="punctuation">;</span></span><br><span class="line">            <span class="attr">riscv,isa</span> <span class="operator">=</span> <span class="string">&quot;rv64imafdcsu&quot;</span><span class="punctuation">;</span></span><br><span class="line">        <span class="punctuation">&#125;;</span></span><br><span class="line">    <span class="punctuation">&#125;;</span></span><br><span class="line"></span><br><span class="line">    <span class="title class_">memory@80000000</span> <span class="punctuation">&#123;</span></span><br><span class="line">        device_<span class="attr">type</span> <span class="operator">=</span> <span class="string">&quot;memory&quot;</span><span class="punctuation">;</span></span><br><span class="line">        <span class="attr">reg</span> <span class="operator">=</span> <span class="params">&lt;<span class="number">0x0</span> <span class="number">0x80000000</span> <span class="number">0x0</span> <span class="number">0x40000000</span>&gt;</span><span class="punctuation">;</span>  <span class="comment">// 1GB for Linux</span></span><br><span class="line">    <span class="punctuation">&#125;;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 共享内存区域</span></span><br><span class="line">    <span class="title class_">reserved-memory</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="meta">#address-cells = &lt;2&gt;;</span></span><br><span class="line">        <span class="meta">#size-cells = &lt;2&gt;;</span></span><br><span class="line">        <span class="attr">ranges</span><span class="punctuation">;</span></span><br><span class="line"><span class="symbol"></span></span><br><span class="line"><span class="symbol">        shared_mem:</span> <span class="title class_">shared-memory@c0000000</span> <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">compatible</span> <span class="operator">=</span> <span class="string">&quot;shared-dma-pool&quot;</span><span class="punctuation">;</span></span><br><span class="line">            <span class="attr">reg</span> <span class="operator">=</span> <span class="params">&lt;<span class="number">0x0</span> <span class="number">0xc0000000</span> <span class="number">0x0</span> <span class="number">0x100000</span>&gt;</span><span class="punctuation">;</span>  <span class="comment">// 1MB</span></span><br><span class="line">            <span class="attr">no-map</span><span class="punctuation">;</span>  <span class="comment">// Linux不映射此区域</span></span><br><span class="line">        <span class="punctuation">&#125;;</span></span><br><span class="line">    <span class="punctuation">&#125;;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 共享内存驱动</span></span><br><span class="line">    <span class="title class_">rpmsg@c0000000</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">compatible</span> <span class="operator">=</span> <span class="string">&quot;riscv,rpmsg&quot;</span><span class="punctuation">;</span></span><br><span class="line">        <span class="attr">reg</span> <span class="operator">=</span> <span class="params">&lt;<span class="number">0x0</span> <span class="number">0xc0000000</span> <span class="number">0x0</span> <span class="number">0x100000</span>&gt;</span><span class="punctuation">;</span></span><br><span class="line">        <span class="attr">interrupts</span> <span class="operator">=</span> <span class="params">&lt;<span class="number">10</span>&gt;</span><span class="punctuation">;</span>  <span class="comment">// IPI中断</span></span><br><span class="line">    <span class="punctuation">&#125;;</span></span><br><span class="line"><span class="punctuation">&#125;;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>Linux内核启动流程</strong>：</p>
+<figure class="highlight nestedtext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">1. head.S</span><span class="punctuation">:</span> <span class="string">hart0从_start开始</span></span><br><span class="line"><span class="attribute">2. 设置临时页表（恒等映射）</span></span><br><span class="line"><span class="attribute">3. 跳转到start_kernel（C代码）</span></span><br><span class="line"><span class="attribute">4. setup_arch()</span><span class="punctuation">:</span> <span class="string">解析Device Tree</span></span><br><span class="line"><span class="attribute">5. smp_prepare_cpus()</span><span class="punctuation">:</span> <span class="string">准备SMP启动</span></span><br><span class="line"><span class="attribute">6. __cpu_up()</span><span class="punctuation">:</span> <span class="string">唤醒hart1-6</span></span><br><span class="line"><span class="attribute">7. secondary_start_kernel()</span><span class="punctuation">:</span> <span class="string">从hart进入调度器</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>关键代码</strong>（arch&#x2F;riscv&#x2F;kernel&#x2F;smpboot.c）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 唤醒从hart</span></span><br><span class="line"><span class="type">void</span> __init <span class="title function_">smp_prepare_cpus</span><span class="params">(<span class="type">unsigned</span> <span class="type">int</span> max_cpus)</span> &#123;</span><br><span class="line">    <span class="type">int</span> cpuid;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 只唤醒hart1-6（hart7被排除）</span></span><br><span class="line">    for_each_possible_cpu(cpuid) &#123;</span><br><span class="line">        <span class="keyword">if</span> (cpuid == <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">continue</span>;  <span class="comment">// hart0已经运行</span></span><br><span class="line">        <span class="keyword">if</span> (cpuid &gt;= <span class="number">7</span>)</span><br><span class="line">            <span class="keyword">continue</span>;  <span class="comment">// hart7运行FreeRTOS</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 通过SBI唤醒hart</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">sbi_hart_boot_info</span> <span class="title">info</span> =</span> &#123;</span><br><span class="line">            .hartid = cpuid,</span><br><span class="line">            .start_addr = __pa_symbol(secondary_start_kernel),</span><br><span class="line">            .priv = __pa_symbol(init_task.<span class="built_in">stack</span>),</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        sbi_hsm_hart_start(cpuid, info.start_addr, info.priv);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 从hart启动入口</span></span><br><span class="line">asmlinkage __visible <span class="type">void</span> __init <span class="title function_">secondary_start_kernel</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mm_struct</span> *<span class="title">mm</span> =</span> &amp;init_mm;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> cpu = smp_processor_id();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 设置页表</span></span><br><span class="line">    setup_vm_final(cpu);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通知主核启动完成</span></span><br><span class="line">    set_cpu_online(cpu, <span class="literal">true</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 进入调度器</span></span><br><span class="line">    cpu_startup_entry(CPUHP_AP_ONLINE_IDLE);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-3-第三阶段：FreeRTOS启动"><a href="#3-3-第三阶段：FreeRTOS启动" class="headerlink" title="3.3 第三阶段：FreeRTOS启动"></a>3.3 第三阶段：FreeRTOS启动</h3><p><strong>FreeRTOS独占hart7</strong>：</p>
+<p><strong>链接脚本</strong>（freertos.ld）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">MEMORY &#123;</span><br><span class="line">    ROM (rx)  : ORIGIN = 0xC0100000, LENGTH = 512K</span><br><span class="line">    RAM (rwx) : ORIGIN = 0xC0180000, LENGTH = 512K</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">SECTIONS &#123;</span><br><span class="line">    .text : &#123;</span><br><span class="line">        *(.text.entry)  /* 入口代码 */</span><br><span class="line">        *(.text*)</span><br><span class="line">    &#125; &gt; ROM</span><br><span class="line"></span><br><span class="line">    .data : &#123;</span><br><span class="line">        *(.data*)</span><br><span class="line">        *(.sdata*)</span><br><span class="line">    &#125; &gt; RAM</span><br><span class="line"></span><br><span class="line">    .bss : &#123;</span><br><span class="line">        *(.bss*)</span><br><span class="line">        *(.sbss*)</span><br><span class="line">    &#125; &gt; RAM</span><br><span class="line"></span><br><span class="line">    /* 为每个任务分配栈 */</span><br><span class="line">    .stack : &#123;</span><br><span class="line">        . = ALIGN(16);</span><br><span class="line">        _stack_start = .;</span><br><span class="line">        . = . + 64K;  /* 64KB栈空间 */</span><br><span class="line">        _stack_end = .;</span><br><span class="line">    &#125; &gt; RAM</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>启动代码</strong>（start.S）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">.section .text.entry</span><br><span class="line">.global _start</span><br><span class="line"></span><br><span class="line">_start:</span><br><span class="line">    # 只有hart7执行这段代码</span><br><span class="line">    csrr t0, mhartid</span><br><span class="line">    li   t1, 7</span><br><span class="line">    bne  t0, t1, _hang  # 如果不是hart7，挂起</span><br><span class="line"></span><br><span class="line">    # 设置栈指针</span><br><span class="line">    la sp, _stack_end</span><br><span class="line"></span><br><span class="line">    # 清空BSS段</span><br><span class="line">    la t0, __bss_start</span><br><span class="line">    la t1, __bss_end</span><br><span class="line">1:</span><br><span class="line">    sw zero, 0(t0)</span><br><span class="line">    addi t0, t0, 4</span><br><span class="line">    blt t0, t1, 1b</span><br><span class="line"></span><br><span class="line">    # 设置机器模式trap handler</span><br><span class="line">    la t0, trap_entry</span><br><span class="line">    csrw mtvec, t0</span><br><span class="line"></span><br><span class="line">    # 启用中断</span><br><span class="line">    li t0, 0x888  # MIE.MEIE | MIE.MTIE | MIE.MSIE</span><br><span class="line">    csrs mie, t0</span><br><span class="line"></span><br><span class="line">    # 跳转到C代码</span><br><span class="line">    call freertos_main</span><br><span class="line"></span><br><span class="line">_hang:</span><br><span class="line">    wfi</span><br><span class="line">    j _hang</span><br></pre></td></tr></table></figure>
+
+<p><strong>FreeRTOS主函数</strong>（main.c）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 共享内存通信队列</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SHARED_MEM_BASE 0xC0000000</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="class"><span class="keyword">struct</span> <span class="title">shared_mailbox</span> &#123;</span></span><br><span class="line">    <span class="type">uint32_t</span> cmd;</span><br><span class="line">    <span class="type">uint32_t</span> data[<span class="number">15</span>];</span><br><span class="line">    <span class="type">uint32_t</span> status;</span><br><span class="line">&#125; *mailbox = (<span class="type">void</span>*)SHARED_MEM_BASE;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实时控制任务</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">control_task</span><span class="params">(<span class="type">void</span> *pvParameters)</span> &#123;</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="comment">// 等待Linux发送命令</span></span><br><span class="line">        <span class="keyword">while</span> (mailbox-&gt;status != CMD_READY) &#123;</span><br><span class="line">            vTaskDelay(pdMS_TO_TICKS(<span class="number">1</span>));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 执行实时控制</span></span><br><span class="line">        <span class="type">uint32_t</span> cmd = mailbox-&gt;cmd;</span><br><span class="line">        execute_control_command(cmd, mailbox-&gt;data);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 返回结果</span></span><br><span class="line">        mailbox-&gt;status = CMD_DONE;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 通知Linux（触发IPI中断）</span></span><br><span class="line">        sbi_send_ipi(<span class="number">1</span> &lt;&lt; <span class="number">0</span>);  <span class="comment">// 通知hart0</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">freertos_main</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="comment">// 初始化FreeRTOS</span></span><br><span class="line">    xTaskCreate(control_task, <span class="string">&quot;Control&quot;</span>,</span><br><span class="line">                <span class="number">1024</span>, <span class="literal">NULL</span>, tskIDLE_PRIORITY + <span class="number">2</span>, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 启动调度器（永不返回）</span></span><br><span class="line">    vTaskStartScheduler();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 不应该到这里</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="四、关键技术点"><a href="#四、关键技术点" class="headerlink" title="四、关键技术点"></a>四、关键技术点</h2><h3 id="4-1-PMP隔离"><a href="#4-1-PMP隔离" class="headerlink" title="4.1 PMP隔离"></a>4.1 PMP隔离</h3><p><strong>问题</strong>：如何防止Linux访问FreeRTOS内存？</p>
+<p><strong>方案</strong>：使用PMP（Physical Memory Protection）</p>
+<p><strong>PMP寄存器</strong>：</p>
+<figure class="highlight tp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pmpcfg<span class="number">0</span><span class="number">-3</span>:  配置寄存器（<span class="keyword">R</span>/<span class="keyword">W</span>/<span class="keyword">X</span>权限）</span><br><span class="line">pmpaddr<span class="number">0</span><span class="number">-15</span>: 地址寄存器（物理地址范围）</span><br></pre></td></tr></table></figure>
+
+<p><strong>配置代码</strong>（OpenSBI）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// PMP Entry 0: Linux区域（0x8000_0000 - 0xC000_0000）</span></span><br><span class="line"><span class="comment">// 权限: R+W+X, 模式: TOR (Top of Range)</span></span><br><span class="line">write_csr(pmpaddr0, <span class="number">0x80000000</span> &gt;&gt; <span class="number">2</span>);</span><br><span class="line">write_csr(pmpaddr1, <span class="number">0xC0000000</span> &gt;&gt; <span class="number">2</span>);</span><br><span class="line">write_csr(pmpcfg0,</span><br><span class="line">    (PMP_R | PMP_W | PMP_X | PMP_TOR) &lt;&lt; <span class="number">0</span> |  <span class="comment">// Entry 0</span></span><br><span class="line">    (PMP_R | PMP_W | PMP_X | PMP_TOR) &lt;&lt; <span class="number">8</span>);  <span class="comment">// Entry 1</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// PMP Entry 2: FreeRTOS区域（0xC010_0000 - 0xC020_0000）</span></span><br><span class="line"><span class="comment">// 只有hart7可以访问</span></span><br><span class="line"><span class="keyword">if</span> (current_hartid() == <span class="number">7</span>) &#123;</span><br><span class="line">    write_csr(pmpaddr2, <span class="number">0xC0100000</span> &gt;&gt; <span class="number">2</span>);</span><br><span class="line">    write_csr(pmpaddr3, <span class="number">0xC0200000</span> &gt;&gt; <span class="number">2</span>);</span><br><span class="line">    write_csr(pmpcfg0,</span><br><span class="line">        (PMP_R | PMP_W | PMP_X | PMP_TOR) &lt;&lt; <span class="number">16</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证</strong>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在Linux中尝试访问FreeRTOS内存</span></span><br><span class="line"><span class="type">void</span> *ptr = ioremap(<span class="number">0xC0100000</span>, <span class="number">4096</span>);</span><br><span class="line">*((<span class="type">int</span>*)ptr) = <span class="number">0x1234</span>;  <span class="comment">// ❌ 触发PMP异常！</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 内核日志：</span></span><br><span class="line"><span class="comment">// [  10.123] PMP violation: hart0 tried to access 0xc0100000</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="4-2-hart间通信（IPI）"><a href="#4-2-hart间通信（IPI）" class="headerlink" title="4.2 hart间通信（IPI）"></a>4.2 hart间通信（IPI）</h3><p><strong>问题</strong>：Linux如何通知FreeRTOS？</p>
+<p><strong>方案</strong>：使用IPI（Inter-Processor Interrupt）</p>
+<p><strong>通信协议</strong>：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">1.</span> Linux写入命令到共享内存</span><br><span class="line"><span class="bullet">2.</span> Linux发送IPI到hart7</span><br><span class="line"><span class="bullet">3.</span> FreeRTOS在中断中读取命令</span><br><span class="line"><span class="bullet">4.</span> FreeRTOS执行命令，写入结果</span><br><span class="line"><span class="bullet">5.</span> FreeRTOS发送IPI到hart0</span><br><span class="line"><span class="bullet">6.</span> Linux在中断中读取结果</span><br></pre></td></tr></table></figure>
+
+<p><strong>Linux端驱动</strong>（rpmsg_riscv.c）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 发送命令到FreeRTOS</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">send_command_to_freertos</span><span class="params">(<span class="type">uint32_t</span> cmd, <span class="type">void</span> *data, <span class="type">size_t</span> len)</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">shared_mailbox</span> *<span class="title">mbox</span> =</span> ioremap(<span class="number">0xC0000000</span>, <span class="number">4096</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 等待上一个命令完成</span></span><br><span class="line">    <span class="keyword">while</span> (mbox-&gt;status == CMD_BUSY) &#123;</span><br><span class="line">        cpu_relax();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 写入命令</span></span><br><span class="line">    mbox-&gt;cmd = cmd;</span><br><span class="line">    <span class="built_in">memcpy</span>((<span class="type">void</span>*)mbox-&gt;data, data, len);</span><br><span class="line">    mbox-&gt;status = CMD_READY;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 触发IPI到hart7</span></span><br><span class="line">    sbi_send_ipi(<span class="number">1</span> &lt;&lt; <span class="number">7</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 等待完成</span></span><br><span class="line">    <span class="keyword">while</span> (mbox-&gt;status != CMD_DONE) &#123;</span><br><span class="line">        cpu_relax();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// IPI中断处理</span></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">rpmsg_ipi_handler</span><span class="params">(<span class="type">int</span> irq, <span class="type">void</span> *dev)</span> &#123;</span><br><span class="line">    <span class="comment">// FreeRTOS完成了命令</span></span><br><span class="line">    complete(&amp;rpmsg_completion);</span><br><span class="line">    <span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>FreeRTOS端</strong>（ipi.c）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// IPI中断处理</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">ipi_handler</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="comment">// 读取中断原因</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> pending = csr_read(CSR_MIP);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (pending &amp; MIP_MSIP) &#123;</span><br><span class="line">        <span class="comment">// 清除IPI中断</span></span><br><span class="line">        csr_clear(CSR_MIP, MIP_MSIP);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 读取命令</span></span><br><span class="line">        <span class="type">uint32_t</span> cmd = mailbox-&gt;cmd;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 通知任务处理</span></span><br><span class="line">        xTaskNotifyFromISR(control_task_handle,</span><br><span class="line">                          cmd, eSetValueWithOverwrite, <span class="literal">NULL</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="4-3-调试技巧"><a href="#4-3-调试技巧" class="headerlink" title="4.3 调试技巧"></a>4.3 调试技巧</h3><p><strong>问题1：如何调试8个hart？</strong></p>
+<p><strong>方案</strong>：JTAG + GDB多线程调试</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># OpenOCD配置</span></span><br><span class="line">interface ftdi</span><br><span class="line">ftdi_vid_pid 0x0403 0x6010</span><br><span class="line"></span><br><span class="line"><span class="comment"># 8个hart</span></span><br><span class="line"><span class="built_in">set</span> _CHIPNAME riscv</span><br><span class="line"><span class="built_in">set</span> _TARGETNAME <span class="variable">$_CHIPNAME</span>.cpu</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建8个target</span></span><br><span class="line">target create <span class="variable">$_TARGETNAME</span>.0 riscv -chain-position <span class="variable">$_TARGETNAME</span></span><br><span class="line">target create <span class="variable">$_TARGETNAME</span>.1 riscv -chain-position <span class="variable">$_TARGETNAME</span></span><br><span class="line"><span class="comment"># ... target 2-7</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># GDB连接</span></span><br><span class="line">target extended-remote localhost:3333</span><br><span class="line"></span><br><span class="line"><span class="comment"># 切换到hart7</span></span><br><span class="line">thread 8</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置断点</span></span><br><span class="line"><span class="built_in">break</span> freertos_main</span><br><span class="line"><span class="built_in">continue</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><strong>问题2：如何查看每个hart在做什么？</strong></p>
+<p><strong>方案</strong>：ftrace + perf</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 开启调度追踪</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/kernel/debug/tracing/events/sched/enable</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看每个CPU的调度</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/tracing/per_cpu/cpu0/trace</span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/tracing/per_cpu/cpu6/trace</span><br><span class="line"></span><br><span class="line"><span class="comment"># hart7在FreeRTOS中，Linux看不到</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="五、性能测试"><a href="#五、性能测试" class="headerlink" title="五、性能测试"></a>五、性能测试</h2><h3 id="5-1-通信延迟测试"><a href="#5-1-通信延迟测试" class="headerlink" title="5.1 通信延迟测试"></a>5.1 通信延迟测试</h3><p><strong>测试代码</strong>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Linux端</span></span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10000</span>; i++) &#123;</span><br><span class="line">    <span class="type">uint64_t</span> start = rdcycle();</span><br><span class="line">    send_command_to_freertos(CMD_PING, <span class="literal">NULL</span>, <span class="number">0</span>);</span><br><span class="line">    <span class="type">uint64_t</span> end = rdcycle();</span><br><span class="line"></span><br><span class="line">    latencies[i] = (end - start) * <span class="number">1000000</span> / CPU_FREQ_HZ;  <span class="comment">// us</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 统计延迟分布</span></span><br><span class="line">sort(latencies, <span class="number">10000</span>);</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;P50:   %lu us\n&quot;</span>, latencies[<span class="number">5000</span>]);</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;P99:   %lu us\n&quot;</span>, latencies[<span class="number">9900</span>]);</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;P99.9: %lu us\n&quot;</span>, latencies[<span class="number">9990</span>]);</span><br></pre></td></tr></table></figure>
+
+<p><strong>结果</strong>：</p>
+<figure class="highlight nestedtext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">P50</span><span class="punctuation">:</span> <span class="string">  12us</span></span><br><span class="line"><span class="attribute">P99</span><span class="punctuation">:</span> <span class="string">  28us</span></span><br><span class="line"><span class="attribute">P99.9</span><span class="punctuation">:</span> <span class="string">45us</span></span><br><span class="line"><span class="attribute">Max</span><span class="punctuation">:</span> <span class="string">  67us</span></span><br><span class="line"></span><br><span class="line"><span class="attribute">对比shared memory + spinlock</span><span class="punctuation">:</span></span><br><span class="line"><span class="attribute">P50</span><span class="punctuation">:</span> <span class="string">  2us   ← 但会阻塞其他hart</span></span><br><span class="line"><span class="attribute">P99</span><span class="punctuation">:</span> <span class="string">  8us</span></span><br><span class="line"><span class="attribute">Max</span><span class="punctuation">:</span> <span class="string">  无上限（死锁风险）</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="5-2-实时性验证"><a href="#5-2-实时性验证" class="headerlink" title="5.2 实时性验证"></a>5.2 实时性验证</h3><p><strong>FreeRTOS任务延迟</strong>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 测量任务切换延迟</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">benchmark_task</span><span class="params">(<span class="type">void</span> *param)</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10000</span>; i++) &#123;</span><br><span class="line">        <span class="type">uint64_t</span> start = read_mcycle();</span><br><span class="line">        vTaskDelay(<span class="number">1</span>);  <span class="comment">// 1 tick = 1ms</span></span><br><span class="line">        <span class="type">uint64_t</span> end = read_mcycle();</span><br><span class="line"></span><br><span class="line">        <span class="type">uint32_t</span> latency_us = (end - start) * <span class="number">1000000</span> / CPU_FREQ_HZ;</span><br><span class="line">        <span class="keyword">if</span> (latency_us &gt; <span class="number">1100</span>) &#123;  <span class="comment">// 允许100us误差</span></span><br><span class="line">            error_count++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 结果：</span></span><br><span class="line"><span class="comment">// Error count: 0 / 10000  ← 完美</span></span><br><span class="line"><span class="comment">// P50 latency: 1002us</span></span><br><span class="line"><span class="comment">// P99 latency: 1015us</span></span><br><span class="line"><span class="comment">// Max latency: 1023us</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、经验总结"><a href="#六、经验总结" class="headerlink" title="六、经验总结"></a>六、经验总结</h2><h3 id="6-1-异构多核架构的优势"><a href="#6-1-异构多核架构的优势" class="headerlink" title="6.1 异构多核架构的优势"></a>6.1 异构多核架构的优势</h3><p>✅ <strong>隔离性</strong>：Linux崩溃不影响FreeRTOS<br>✅ <strong>实时性</strong>：hart7无OS调度，确定性延迟<br>✅ <strong>灵活性</strong>：可以动态调整hart分配</p>
+<hr>
+<h3 id="6-2-常见坑点"><a href="#6-2-常见坑点" class="headerlink" title="6.2 常见坑点"></a>6.2 常见坑点</h3><p><strong>坑1：忘记禁用hart7的缓存一致性</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ 错误：hart7参与缓存一致性</span></span><br><span class="line"><span class="comment">// 结果：Linux修改共享内存，hart7看不到</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// ✅ 正确：共享内存配置为non-cacheable</span></span><br><span class="line"><span class="comment">// Device Tree:</span></span><br><span class="line">shared_mem: shared-memory@c0000000 &#123;</span><br><span class="line">    compatible = <span class="string">&quot;shared-dma-pool&quot;</span>;</span><br><span class="line">    reg = &lt;<span class="number">0x0</span> <span class="number">0xc0000000</span> <span class="number">0x0</span> <span class="number">0x100000</span>&gt;;</span><br><span class="line">    no-<span class="built_in">map</span>;</span><br><span class="line">    dma-coherent;  <span class="comment">// 强制一致性</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>坑2：PMP配置顺序错误</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ 错误：先配置小区域，再配置大区域</span></span><br><span class="line">pmp_set(<span class="number">0</span>, <span class="number">0xC0000000</span>, <span class="number">1</span>MB);  <span class="comment">// 共享内存</span></span><br><span class="line">pmp_set(<span class="number">1</span>, <span class="number">0x80000000</span>, <span class="number">1</span>GB);  <span class="comment">// Linux区域</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// ✅ 正确：先配置大区域，再配置小区域</span></span><br><span class="line">pmp_set(<span class="number">0</span>, <span class="number">0x80000000</span>, <span class="number">1</span>GB);</span><br><span class="line">pmp_set(<span class="number">1</span>, <span class="number">0xC0000000</span>, <span class="number">1</span>MB);</span><br></pre></td></tr></table></figure>
+
+<p><strong>坑3：IPI中断优先级设置错误</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ FreeRTOS中断优先级低于调度器</span></span><br><span class="line"><span class="comment">// 结果：IPI丢失</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// ✅ 正确：IPI优先级最高</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> IPI_INTERRUPT_PRIORITY  0  <span class="comment">// 最高优先级</span></span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="6-3-后续优化方向"><a href="#6-3-后续优化方向" class="headerlink" title="6.3 后续优化方向"></a>6.3 后续优化方向</h3><ol>
+<li><strong>零拷贝通信</strong>：使用DMA代替CPU拷贝</li>
+<li><strong>动态hart分配</strong>：根据负载动态调整SMP数量</li>
+<li><strong>虚拟化</strong>：使用H-extension支持更多OS</li>
+</ol>
+<hr>
+<h2 id="七、总结"><a href="#七、总结" class="headerlink" title="七、总结"></a>七、总结</h2><p>通过OpenSBI + PMP + IPI，实现了7+1异构多核架构：</p>
+<ul>
+<li>✅ 7个hart运行Linux SMP</li>
+<li>✅ 1个hart运行FreeRTOS（硬实时）</li>
+<li>✅ 通信延迟P99 &lt; 30us</li>
+<li>✅ FreeRTOS实时性：抖动 &lt; 25us</li>
+</ul>
+<p><strong>关键技术</strong>：</p>
+<ul>
+<li>PMP物理内存隔离</li>
+<li>IPI hart间通信</li>
+<li>共享内存 + spinlock同步</li>
+</ul>
+<p><strong>适用场景</strong>：</p>
+<ul>
+<li>工业机器人（Linux负责规划，RTOS负责控制）</li>
+<li>汽车电子（RTOS负责安全关键任务）</li>
+<li>航空航天（硬实时 + 通用计算）</li>
+</ul>
+<hr>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/08/13/riscv-heterogeneous-smp-boot/">https://quchaosheng.github.io/2026/08/13/riscv-heterogeneous-smp-boot/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/08/pmp-valid-pte-probe/">
+                            <span>为什么我给 PMP 探针配了一个合法的页表映射</span>
+                            <time datetime="2026-08-08T01:30:00.000Z">2026-08-08</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/riscv-nommu-linux/">
+                            <span>RISC-V Non-MMU Linux：没有虚拟内存怎样运行应用</span>
+                            <time datetime="2026-03-23T06:00:00.000Z">2026-03-23</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/riscv-smp-boot/">
+                            <span>RISC-V SMP 启动：多个 hart 如何加入 Linux</span>
+                            <time datetime="2026-03-16T06:00:00.000Z">2026-03-16</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/FreeRTOS/"># FreeRTOS</a>
+                    
+                        <a href="/tag/RISC-V/"># RISC-V</a>
+                    
+                        <a href="/tag/OpenSBI/"># OpenSBI</a>
+                    
+                        <a href="/tag/PMP/"># PMP</a>
+                    
+                        <a href="/tag/SMP/"># SMP</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/08/13/ros2-realtime-latency-optimization/">ROS 2 实时性优化：从毫秒级抖动到亚毫秒调度</a>
+            
+            
+            <a class="next" rel="next" href="/2026/08/13/can-bus-intermittent-fault-debugging/">CAN 总线故障排查：从偶发卡顿到分层定位</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

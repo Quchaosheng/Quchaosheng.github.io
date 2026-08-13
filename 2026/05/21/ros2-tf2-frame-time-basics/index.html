@@ -10,10 +10,10 @@
     <meta name="author" content="Quchaosheng">
 
 
-    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合 | Quchaosheng&#39;s Notes</title>
@@ -42,7 +42,7 @@
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合","description":"相机识别出的目标位置看起来没问题，转换到 base_link 后却跳动，或者 TF2 直接报 extrapolation error。多数时候矩阵本身没错，查询时刻才是问题。TF2 保存的是随时间变化的坐标树，帧名和时间戳缺一个都不完整。 定义父子坐标系 → 发布静态或动态变换 → 保留传感器采样时间 → 按该时间查询 TF → 处理过期与外推失败 T...","datePublished":"2026-05-21T01:30:00.000Z","dateModified":"2026-05-21T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/05/21/ros2-tf2-frame-time-basics/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"ROS 2, 标定, TF2, 坐标系, 时间戳","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合","description":"相机识别出的目标位置看起来没问题，转换到 base_link 后却跳动，或者 TF2 直接报 extrapolation error。多数时候矩阵本身没错，查询时刻才是问题。TF2 保存的是随时间变化的坐标树，帧名和时间戳缺一个都不完整。 定义父子坐标系 → 发布静态或动态变换 → 保留传感器采样时间 → 按该时间查询 TF → 处理过期与外推失败 T...","datePublished":"2026-05-21T01:30:00.000Z","dateModified":"2026-05-21T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/05/21/ros2-tf2-frame-time-basics/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"标定, ROS 2, TF2, 坐标系, 时间戳","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -269,9 +269,9 @@
                         <span class="post-topics">
                             主题：
                             
-                                <a href="/tag/ROS-2/">#ROS 2</a>
-                            
                                 <a href="/tag/%E6%A0%87%E5%AE%9A/">#标定</a>
+                            
+                                <a href="/tag/ROS-2/">#ROS 2</a>
                             
                                 <a href="/tag/TF2/">#TF2</a>
                             
@@ -407,9 +407,9 @@
                 <span class="tag">
                     
                     
-                        <a href="/tag/ROS-2/"># ROS 2</a>
-                    
                         <a href="/tag/%E6%A0%87%E5%AE%9A/"># 标定</a>
+                    
+                        <a href="/tag/ROS-2/"># ROS 2</a>
                     
                         <a href="/tag/TF2/"># TF2</a>
                     

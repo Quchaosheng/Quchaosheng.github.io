@@ -4,8 +4,56 @@
   <id>https://quchaosheng.github.io/atom.xml</id>
   <link href="https://quchaosheng.github.io/"/>
   <link href="https://quchaosheng.github.io/atom.xml" rel="self"/>
-  <updated>2026-08-13T01:30:00.000Z</updated>
+  <updated>2026-08-13T09:40:00.000Z</updated>
   <author><name>Quchaosheng</name></author>
+  <entry>
+    <title>生产事故复盘：七轴机械臂 DDS-RPC 偶发超时的定位与修复</title>
+    <id>https://quchaosheng.github.io/2026/08/13/dds-rpc-timeout-debugging/</id>
+    <link href="https://quchaosheng.github.io/2026/08/13/dds-rpc-timeout-debugging/"/>
+    <published>2026-08-13T09:40:00.000Z</published>
+    <updated>2026-08-13T09:40:00.000Z</updated>
+    <summary type="html">证据边界 本文是一篇工程复盘稿。公开仓库未包含私有生产环境的原始抓包、设备日志和真实机械臂复现条件，因此文中的生产指标用于说明排查链路，不构成可由公开仓库独立复现的 benchmark。 复现高负载超时 → 排除网络与进程 → 对齐抓包和 DDS 日志 → 审查 QoS 深度 → 压力测试验证 现象 低负载正常，高负载偶发超时。 网络 先用 ping、iperf 与抓包排除链路问题。 Discovery 确认 writer 与 reader 已稳定匹配。 QoS 重点核对可靠性、历史策略与队列深度。 修复 统一两端配置，并加入 deadline 观...</summary>
+  </entry>
+  <entry>
+    <title>I2C 驱动高频采样丢包的定位与修复</title>
+    <id>https://quchaosheng.github.io/2026/08/13/i2c-high-frequency-sampling-loss/</id>
+    <link href="https://quchaosheng.github.io/2026/08/13/i2c-high-frequency-sampling-loss/"/>
+    <published>2026-08-13T09:39:00.000Z</published>
+    <updated>2026-08-13T09:39:00.000Z</updated>
+    <summary type="html">证据边界 公开仓库未提供对应 RK3576 板卡、示波器波形和驱动压测工程，文中的硬件日志与性能数字不能由公开仓库独立复现；本文重点记录分层定位方法和驱动设计取舍。 确认高频丢样 → 检查物理波形 → 用 ftrace 定位中断延迟 → 调整 IRQ 与 FIFO → 长时间压测 硬件层 检查上拉、频率、边沿与器件响应。 驱动层 观察中断处理、锁和队列是否阻塞。 数据路径 确认 FIFO 深度和消费速度能覆盖突发。 Threaded IRQ 把可睡眠和较重处理移出硬中断。 DMA 大批量传输时降低 CPU 搬运成本。 验证 同时统计丢样率、CPU ...</summary>
+  </entry>
+  <entry>
+    <title>ROS 2 实时性优化：从毫秒级抖动到亚毫秒调度</title>
+    <id>https://quchaosheng.github.io/2026/08/13/ros2-realtime-latency-optimization/</id>
+    <link href="https://quchaosheng.github.io/2026/08/13/ros2-realtime-latency-optimization/"/>
+    <published>2026-08-13T09:38:00.000Z</published>
+    <updated>2026-08-13T09:38:00.000Z</updated>
+    <summary type="html">证据边界 本文中的延迟、CPU 占用和控制精度数字来自工程案例稿，公开仓库没有提供相同硬件、RT 内核、Perfetto trace 和完整基准脚本。读者应在自己的内核、DDS 实现与控制周期下重新测量，不能直接套用这些结果。 记录控制周期 → 追踪调度延迟 → 隔离实时 CPU → 设置实时策略 → 复测最坏延迟 Trace 用 Perfetto 与 eBPF 找到抢占和唤醒延迟。 调度 SCHED_FIFO 需要权限、优先级与预算设计。 绑核 实时线程与 IRQ、日志和桌面任务分离。 内存 锁页和预分配减少缺页与运行时分配。 DDS 按控制语义...</summary>
+  </entry>
+  <entry>
+    <title>RISC-V 多核启动：7+1 hart 异构 SMP 架构</title>
+    <id>https://quchaosheng.github.io/2026/08/13/riscv-heterogeneous-smp-boot/</id>
+    <link href="https://quchaosheng.github.io/2026/08/13/riscv-heterogeneous-smp-boot/"/>
+    <published>2026-08-13T09:37:00.000Z</published>
+    <updated>2026-08-13T09:37:00.000Z</updated>
+    <summary type="html">证据边界 公开项目 quard-star-riscv64-net 提供 7+1 hart、OpenSBI domain 和 PMP 故障探针的相关实现；本文包含的 FreeRTOS 集成与部分性能数字不在该公开仓库的完整可复现实验范围内，应按设计说明而非已公开 benchmark 阅读。 OpenSBI 建立 domain → Linux 启动 7 个 hart → 独立 hart 进入 RTOS → PMP 隔离内存 → IPI 与共享内存通信 hart0 承担引导与 Linux 启动协调。 Linux SMP 7 个 hart 处理通用计算和系...</summary>
+  </entry>
+  <entry>
+    <title>CAN 总线故障排查：从偶发卡顿到分层定位</title>
+    <id>https://quchaosheng.github.io/2026/08/13/can-bus-intermittent-fault-debugging/</id>
+    <link href="https://quchaosheng.github.io/2026/08/13/can-bus-intermittent-fault-debugging/"/>
+    <published>2026-08-13T09:36:00.000Z</published>
+    <updated>2026-08-13T09:36:00.000Z</updated>
+    <summary type="html">证据边界 公开项目当前主要提供 vcan 与故障注入层面的验证，不等同于真实七轴机械臂、物理 CAN 总线或量产环境。本文中的示波器记录、故障频率和修复后数字没有随公开仓库提供原始数据，应作为排查案例而非公开可复现结论。 复现偶发卡顿 → 检查物理层 → 分析 CAN 帧 → 检查 SocketCAN 队列 → 核对 MCU ACK 时序 物理层 终端电阻、线长、波形和总线速率。 协议层 仲裁、错误帧、bus-off 与重发计数。 内核层 SocketCAN 队列、溢出和驱动统计。 应用层 发送节奏、序号、超时和 watchdog。 MCU ACK...</summary>
+  </entry>
+  <entry>
+    <title>事件溯源在机器人系统中的可审计性设计</title>
+    <id>https://quchaosheng.github.io/2026/08/13/robot-event-sourcing-auditability/</id>
+    <link href="https://quchaosheng.github.io/2026/08/13/robot-event-sourcing-auditability/"/>
+    <published>2026-08-13T09:35:00.000Z</published>
+    <updated>2026-08-13T09:35:00.000Z</updated>
+    <summary type="html">证据边界 公开项目 workbench-world-model 展示了事件存储、投影和故障注入方向；本文中的数据库规模、ISO 适用表述和性能数字仍需结合具体部署、测试记录与合规评估验证。 命令进入系统 → 追加不可变事件 → 更新投影 → 周期生成快照 → 按事件回放故障 Event Store 按顺序追加事实，不原地覆盖历史。 Projection 把事件流转换为面向查询的当前状态。 Snapshot 缩短重放时间，但不能替代原始事件。 Version 乐观并发控制防止并行写入互相覆盖。 Replay 从相同事件恢复状态并定位因果链。 审计 记...</summary>
+  </entry>
   <entry>
     <title>VLA 规划接入机器人：动作候选、人工接管和可取消状态机</title>
     <id>https://quchaosheng.github.io/2026/08/13/ai-robot-vla-human-intervention-state-machine/</id>
@@ -117,53 +165,5 @@
     <published>2026-07-27T06:00:00.000Z</published>
     <updated>2026-07-27T06:00:00.000Z</updated>
     <summary type="html">前视相机的 FPS 看着很漂亮，底盘却总在拐弯后才开始刹车。检查日志才发现，侧视相机偶尔晚到一帧， nvstreammux 为了凑 batch 把前视画面留在队列里。DeepStream 能把解码、预处理、TensorRT 推理、跟踪和元数据串起来，但这些队列也会把机器人看到的世界变旧。 多路相机采集 → 硬件解码与预处理 → 组批进入 TensorRT → 目标跟踪与元数据 → ROS 2 节点消费结果 时延图 每个队列都可能让帧变旧，最终应以规划器消费时的感知年龄衡量。 采集时间戳 记录相机曝光时刻，不能在 ROS 2 发布时用 now() 替...</summary>
-  </entry>
-  <entry>
-    <title>Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间</title>
-    <id>https://quchaosheng.github.io/2026/07/30/isaac-ros-vslam-nvblox/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/isaac-ros-vslam-nvblox/"/>
-    <published>2026-07-24T06:00:00.000Z</published>
-    <updated>2026-07-24T06:00:00.000Z</updated>
-    <summary type="html">机器人在走廊里定位正常，一到玻璃门或急转弯处就开始漂。此时别急着换特征点算法，先看相机、IMU、深度帧和 TF 是否属于同一段时间。Visual SLAM 提供连续位姿，nvblox 按位姿融合深度并生成 TSDF、占据栅格或 ESDF；其中任何一个时间或坐标关系错了，规划器拿到的地图就会跟着错。 同步相机与 IMU → Visual SLAM 估计位姿 → 深度数据按位姿融合 → 生成三维地图/距离场 → 导航规划并反馈新观测 坐标图 定位、建图和导航共享一条时间与 TF 链，任一环错位都会污染后续结果。 camera_link 相机外参与采集时...</summary>
-  </entry>
-  <entry>
-    <title>Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界</title>
-    <id>https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/"/>
-    <published>2026-07-23T06:00:00.000Z</published>
-    <updated>2026-07-23T06:00:00.000Z</updated>
-    <summary type="html">仿真里的机械臂能连续抓到杯子，真机却在逆光和轻微打滑时频繁抓空。问题通常不在“画面够不够像”，而在仿真有没有覆盖相机曝光、标定误差、执行器延迟和摩擦变化。Isaac Sim 用 USD、物理仿真、ROS 2 Bridge 和 Replicator 把这些变量放进同一套可回放的场景里，价值也在这里。 Domain Randomization 的经典工作已经说明，模拟图像不必追求照片级真实，关键是随机化范围能覆盖真实任务里的变化。这个结论可以指导 Isaac Sim 的参数选择，但不能替代真机测量。论文和工程实现的对应关系，放在 《VLA 论文怎么读》...</summary>
-  </entry>
-  <entry>
-    <title>TensorRT 机器人推理：从训练模型到稳定延迟</title>
-    <id>https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/tensorrt-robot-inference/"/>
-    <published>2026-07-21T06:00:00.000Z</published>
-    <updated>2026-07-21T06:00:00.000Z</updated>
-    <summary type="html">电脑上单张图片推理很快，放到机器人连续跑半小时后，检测结果却越来越晚。TensorRT 会解析 ONNX、融合算子、选择 kernel 和内存布局，再为目标 GPU 构建 engine；FP16&amp;#x2F;INT8 只解决其中一部分计算成本，队列、温度和其他节点仍可能让结果过期。 导出 ONNX 模型 → 校验算子与精度 → 构建目标设备 engine → 预分配并预热推理 → 测量端到端延迟与精度 时延图 模型、engine、缓冲区和队列要一起看，单独缩短 GPU 时间不等于感知结果更及时。 ONNX 输入契约 opset、形状、颜色、归一化和后...</summary>
-  </entry>
-  <entry>
-    <title>Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU</title>
-    <id>https://quchaosheng.github.io/2026/07/30/isaac-ros-nitros-zero-copy/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/isaac-ros-nitros-zero-copy/"/>
-    <published>2026-07-20T06:00:00.000Z</published>
-    <updated>2026-07-20T06:00:00.000Z</updated>
-    <summary type="html">开启 NITROS 后，某个节点的日志可能显示“推理只用了几毫秒”，但控制器收到结果仍然很晚。真正消耗时间的地方通常在驱动到 ROS 消息、颜色转换、CPU&amp;#x2F;GPU 拷贝和队列等待之间。NITROS 通过 ROS 2 类型适配和 GXF 让兼容节点协商缓冲区，能减少一部分复制，却不会自动消除所有边界。 相机产生图像 → NITROS 协商兼容格式 → 缓冲区留在加速内存 → GPU 节点连续处理 → 只在边界转换数据 数据图 判断少拷贝是否成立，要沿着每个缓冲区检查位置、格式、所有权和同步点。 相机输出 先确认原始帧位于哪里、是什么格式、...</summary>
-  </entry>
-  <entry>
-    <title>Jetson 机器人部署：功耗、算力与实时控制怎样分工</title>
-    <id>https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/jetson-robot-deployment/"/>
-    <published>2026-07-17T06:00:00.000Z</published>
-    <updated>2026-07-17T06:00:00.000Z</updated>
-    <summary type="html">同一块 Jetson 上，相机、TensorRT、录包和 ROS 2 都在正常工作，电机控制却偶尔晚一个周期。通常不是 GPU “算不过来”，而是 CPU 回调、内存带宽、温度降频和队列一起把实时路径拖慢。JetPack 把 Linux for Tegra、CUDA、TensorRT 和多媒体组件放在一起，部署时仍要把感知与控制的职责分开。 选择 JetPack 与功耗模式 → 部署模型和 ROS 2 节点 → 测量 CPU/GPU/内存负载 → 分离推理与实时控制 → 在温度稳定后复测长尾 资源图 Jetson 是感知和任务平台，实时控制与安全链...</summary>
-  </entry>
-  <entry>
-    <title>NVIDIA Physical AI 技术栈：机器人从模型到执行器要经过什么</title>
-    <id>https://quchaosheng.github.io/2026/07/30/nvidia-physical-ai-stack/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/nvidia-physical-ai-stack/"/>
-    <published>2026-07-16T06:00:00.000Z</published>
-    <updated>2026-07-16T06:00:00.000Z</updated>
-    <summary type="html">以“相机看到 AprilTag，底盘停到指定距离”为例，真正要接通的是时间戳、模型、规划、控制和急停，而不是一个孤立的大模型。NVIDIA 的 Cosmos、Isaac Sim、Isaac ROS、TensorRT 和 Jetson 分别覆盖数据、仿真、机器人计算图、推理和边缘算力；ROS 2、控制器与安全 I&amp;#x2F;O 决定这些组件在异常时怎样停下来。 采集或生成机器人数据 → 训练感知/决策模型 → Isaac Sim 仿真验证 → Jetson 边缘推理 → ROS 2 与控制器安全执行 数据与模型 传感器数据要带时间戳、置信度与失效状态...</summary>
   </entry>
 </feed>

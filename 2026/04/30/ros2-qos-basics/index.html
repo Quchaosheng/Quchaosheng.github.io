@@ -10,10 +10,10 @@
     <meta name="author" content="Quchaosheng">
 
 
-    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
 
 
-    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
 
 
 <title>ROS 2 QoS 入门：可靠、尽力而为和队列深度到底控制什么 | Quchaosheng&#39;s Notes</title>
@@ -42,7 +42,7 @@
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 QoS 入门：可靠、尽力而为和队列深度到底控制什么","description":"相机话题明明存在，订阅节点却一条消息也收不到；把 reliable 改成 best_effort 后突然正常。ROS 2 的 QoS 不是“网络优化参数”，它是发布者与订阅者之间的数据契约。策略不兼容时，双方甚至不会建立有效通信。 识别数据能否丢失 → 设置可靠性和历史深度 → 检查发布订阅兼容性 → 加入 deadline 与 liveliness...","datePublished":"2026-04-30T01:30:00.000Z","dateModified":"2026-04-30T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/04/30/ros2-qos-basics/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"ROS 2, QoS, DDS, Reliability, Durability","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 QoS 入门：可靠、尽力而为和队列深度到底控制什么","description":"相机话题明明存在，订阅节点却一条消息也收不到；把 reliable 改成 best_effort 后突然正常。ROS 2 的 QoS 不是“网络优化参数”，它是发布者与订阅者之间的数据契约。策略不兼容时，双方甚至不会建立有效通信。 识别数据能否丢失 → 设置可靠性和历史深度 → 检查发布订阅兼容性 → 加入 deadline 与 liveliness...","datePublished":"2026-04-30T01:30:00.000Z","dateModified":"2026-04-30T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/04/30/ros2-qos-basics/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"ROS 2, DDS, QoS, Reliability, Durability","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -271,9 +271,9 @@
                             
                                 <a href="/tag/ROS-2/">#ROS 2</a>
                             
-                                <a href="/tag/QoS/">#QoS</a>
-                            
                                 <a href="/tag/DDS/">#DDS</a>
+                            
+                                <a href="/tag/QoS/">#QoS</a>
                             
                                 <a href="/tag/Reliability/">#Reliability</a>
                             
@@ -434,6 +434,11 @@
                 <h2 id="related-posts-title">同主题继续阅读</h2>
                 <div class="related-post-list">
                     
+                        <a href="/2026/08/13/dds-rpc-timeout-debugging/">
+                            <span>生产事故复盘：七轴机械臂 DDS-RPC 偶发超时的定位与修复</span>
+                            <time datetime="2026-08-13T09:40:00.000Z">2026-08-13</time>
+                        </a>
+                    
                         <a href="/2026/08/06/ai-robot-tactile-force-ros2-safety/">
                             <span>触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</span>
                             <time datetime="2026-08-06T01:30:00.000Z">2026-08-06</time>
@@ -442,11 +447,6 @@
                         <a href="/2026/08/04/ai-robot-visual-servo-latency-budget/">
                             <span>视觉伺服的端到端延迟预算：目标为什么总是慢半拍</span>
                             <time datetime="2026-08-04T01:30:00.000Z">2026-08-04</time>
-                        </a>
-                    
-                        <a href="/2026/07/30/nvidia-physical-ai-stack/">
-                            <span>NVIDIA Physical AI 技术栈：机器人从模型到执行器要经过什么</span>
-                            <time datetime="2026-07-16T06:00:00.000Z">2026-07-16</time>
                         </a>
                     
                 </div>
@@ -460,9 +460,9 @@
                     
                         <a href="/tag/ROS-2/"># ROS 2</a>
                     
-                        <a href="/tag/QoS/"># QoS</a>
-                    
                         <a href="/tag/DDS/"># DDS</a>
+                    
+                        <a href="/tag/QoS/"># QoS</a>
                     
                         <a href="/tag/Reliability/"># Reliability</a>
                     
