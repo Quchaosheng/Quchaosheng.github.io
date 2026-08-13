@@ -6,7 +6,6 @@
             <a href="<%- url_for(theme.nav['文章'] || '/archives') %>"><img src="<%- url_for(theme.avatar) %>" alt="<%- theme.nickname %>"></a>
         </div>
         <div class="nickname"><%- theme.nickname %></div>
-        <div class="description"><%- markdown(theme.description) %></div>
         <div class="links">
             <% if (theme.links !== undefined) { %>
                 <% for (var key in theme.links){ %>
@@ -22,12 +21,6 @@
             <% } %>
         </div>
         <a class="profile-archive-link" href="<%- url_for(theme.nav['文章'] || '/archives') %>">浏览全部笔记 <span aria-hidden="true">→</span></a>
-        <section class="now-card" aria-labelledby="now-title">
-            <div class="section-kicker">NOW</div>
-            <h2 id="now-title">正在推进</h2>
-            <p><strong>RoboTraceOpt</strong> 的项目档案，以及原生 Linux / X5 的真实环境验证准备。</p>
-            <div class="now-links"><a href="<%- url_for('/projects/robotraceopt/') %>">项目档案 →</a><a href="<%- url_for('/category/') %>">文章分类 →</a></div>
-        </section>
     </div>
 
     <section class="topic-hub" aria-labelledby="topic-hub-title">

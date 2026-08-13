@@ -226,11 +226,6 @@
     font-size 2.35em
     letter-spacing .01em
     line-height 1.25
-  .description
-    max-width 25em
-    margin-top .8rem
-    color $light-font-secondary-color
-    line-height 1.8
   .links
     margin-top 1.35rem
     .iconfont
@@ -244,22 +239,6 @@
   border-bottom 1px solid currentColor
   font-size .95em
 
-.now-card
-  margin-top 2rem
-  padding-top 1.15rem
-  border-top 1px solid $light-border-color
-  h2
-    margin .28rem 0 .45rem
-    font-size 1.08em
-    font-weight normal
-  p
-    margin 0
-    color $light-font-secondary-color
-    line-height 1.7
-  strong
-    color #087f5b
-
-.now-links,
 .project-links
   display flex
   flex-wrap wrap
@@ -343,12 +322,8 @@
       color $dark-font-secondary-color
   .recent-notes
     background rgba(255,255,255,.035)
-  .intro .description, .now-card p, .recent-note time
+  .recent-note time
     color $dark-font-secondary-color
-  .now-card
-    border-color $dark-border-color
-  .now-card strong
-    color #91c3a5
   .section-kicker
     color #91c3a5
 
@@ -399,10 +374,6 @@
       max-width 100%
       font-size 2em
       overflow-wrap anywhere
-    .description
-      margin-left auto
-      margin-right auto
-      max-width 22em
   .recent-notes
     padding 1.4rem 1.25rem 1rem
   .recent-note a
@@ -410,8 +381,6 @@
     time
       display block
       margin-top .25rem
-  .now-card
-    text-align left
   .post-wrap .post-content
     font-size 16px
     line-height 1.85
@@ -1252,7 +1221,6 @@
 
 .dark-theme
   .page-lead,
-  .now-card,
   .evidence-table th,
   .evidence-table td,
   .learning-path,
