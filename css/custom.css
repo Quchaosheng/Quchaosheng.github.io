@@ -241,12 +241,6 @@
   letter-spacing: 0.01em;
   line-height: 1.25;
 }
-.intro .description {
-  max-width: 25em;
-  margin-top: 0.8rem;
-  color: $light-font-secondary-color;
-  line-height: 1.8;
-}
 .intro .links {
   margin-top: 1.35rem;
 }
@@ -261,32 +255,12 @@
   border-bottom: 1px solid currentColor;
   font-size: 0.95em;
 }
-.now-card {
-  margin-top: 2rem;
-  padding-top: 1.15rem;
-  border-top: 1px solid $light-border-color;
-}
-.now-card h2 {
-  margin: 0.28rem 0 0.45rem;
-  font-size: 1.08em;
-  font-weight: normal;
-}
-.now-card p {
-  margin: 0;
-  color: $light-font-secondary-color;
-  line-height: 1.7;
-}
-.now-card strong {
-  color: #087f5b;
-}
-.now-links,
 .project-links {
   display: flex;
   flex-wrap: wrap;
   gap: 0.9rem;
   margin-top: 0.85rem;
 }
-.now-links a,
 .project-links a {
   padding-bottom: 0.12rem;
   border-bottom: 1px solid currentColor;
@@ -383,16 +357,8 @@
 .dark-theme .recent-notes {
   background: rgba(255,255,255,0.035);
 }
-.dark-theme .intro .description,
-.dark-theme .now-card p,
 .dark-theme .recent-note time {
   color: $dark-font-secondary-color;
-}
-.dark-theme .now-card {
-  border-color: $dark-border-color;
-}
-.dark-theme .now-card strong {
-  color: #91c3a5;
 }
 .dark-theme .section-kicker {
   color: #91c3a5;
@@ -461,11 +427,6 @@
     font-size: 2em;
     overflow-wrap: anywhere;
   }
-  .intro .description {
-    margin-left: auto;
-    margin-right: auto;
-    max-width: 22em;
-  }
   .recent-notes {
     padding: 1.4rem 1.25rem 1rem;
   }
@@ -475,9 +436,6 @@
   .recent-note a time {
     display: block;
     margin-top: 0.25rem;
-  }
-  .now-card {
-    text-align: left;
   }
   .post-wrap .post-content {
     font-size: 16px;
@@ -1433,7 +1391,6 @@
   line-height: 1.7;
 }
 .dark-theme .page-lead,
-.dark-theme .now-card,
 .dark-theme .evidence-table th,
 .dark-theme .evidence-table td,
 .dark-theme .learning-path,
