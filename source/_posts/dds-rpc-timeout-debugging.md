@@ -20,15 +20,15 @@ description: 从抓包、DDS 日志和 QoS 配置入手，复盘高负载 RPC �
 
 <div class="note-flow"><span>复现高负载超时</span><i>→</i><span>排除网络与进程</span><i>→</i><span>对齐抓包和 DDS 日志</span><i>→</i><span>审查 QoS 深度</span><i>→</i><span>压力测试验证</span></div>
 
-<div class="note-map"><span><b>现象</b><small>低负载正常，高负载偶发超时。</small></span><span><b>网络</b><small>先用 ping、iperf 与抓包排除链路问题。</small></span><span><b>Discovery</b><small>确认 writer 与 reader 已稳定匹配。</small></span><span><b>QoS</b><small>重点核对可靠性、历史策略与队列深度。</small></span><span><b>修复</b><small>统一两端配置，并加入 deadline 观测。</small></span><span><b>验证</b><small>用持续压力测试确认超时不再出现。</small></span></div>
+<div class="note-map"><span><b>现象</b><small>低负载正常，高负载偶发超时。</small></span><span><b>网络</b><small>在发送端和接收端同时抓包，并检查接口丢包计数。</small></span><span><b>Discovery</b><small>确认端点匹配，但不把“已匹配”当成交付证明。</small></span><span><b>QoS</b><small>分别核对兼容性、历史缓存、资源上限和应用取样速度。</small></span><span><b>超时</b><small>RPC 用请求 ID 和单调时钟定案，Deadline 只做周期健康观测。</small></span><span><b>验证</b><small>用突发、持续压力和故障注入覆盖最坏积压。</small></span></div>
 
 ## 一、问题现场
 
-我们的七轴协作机械臂在装配任务中使用Cora DDS-RPC进行运动控制通信。生产环境中出现了一个棘手的问题：
+这个案例中的运动控制通信使用一层业务 DDS-RPC 封装。为了避免把私有组件名称误写成通用产品，下面只讨论可迁移的 DDS、RTPS 和应用层行为。
 
 **故障现象**：
 - 高负载场景（装配任务，>200个RPC调用/秒）
-- **15%的RPC调用超时**（>100ms未收到响应）
+- 案例记录中约 **15% 的 RPC 调用超过 100 ms 未收到响应**
 - 导致机械臂运动卡顿，任务失败
 
 **日志片段**：
@@ -43,7 +43,7 @@ description: 从抓包、DDS 日志和 QoS 配置入手，复盘高负载 RPC �
 - ✅ 低负载（<50 req/s）正常
 - ❌ 高负载（>200 req/s）出现超时
 - ❌ **偶发**（不是100%失败）
-- ❌ 超时的RPC永远不会收到响应（不是慢，是丢了）
+- ❌ 部分请求最终没有被业务层观察到响应；仅凭调用方超时，还不能先验判断是网络丢包、DDS 缓存淘汰、应用未及时 `take()`，还是响应关联逻辑出错
 
 ---
 
@@ -61,12 +61,13 @@ ping -c 1000 <运动控制器IP>
 iperf3 -c <运动控制器IP> -t 60
 # 结果：带宽980 Mbps，无问题
 
-# 3. 抓包看网络层
-tcpdump -i eth0 -w dds.pcap
-# 结果：TCP层没有重传，UDP层没有丢包
+# 3. 发送端与接收端同时抓 RTPS，并记录网卡/内核计数
+tcpdump -i eth0 -w sender.pcap udp portrange 7400-7500
+ip -s link show eth0
+ethtool -S eth0
 ```
 
-**结论**：❌ 不是网络问题
+**边界**：`ping` 和 `iperf` 只能说明对应测试流量正常，不能证明 DDS 使用的 UDP 流量没有丢失。只有把发送端抓包、接收端抓包、网卡/内核丢包计数和 RTPS 序号对齐，才能把故障范围缩小到网络之前或网络之后。
 
 ---
 
@@ -104,7 +105,7 @@ export FASTRTPS_LOG_LEVEL=debug
 # [DISCOVERY] Matched reader: 0x789abc...
 ```
 
-**结论**：❌ Discovery正常，Reader和Writer已匹配
+**结论**：端点已经匹配，因此可以继续检查数据路径；但 Discovery 正常并不代表后续每个样本都被可靠交付或被应用取走。
 
 ---
 
@@ -114,9 +115,9 @@ export FASTRTPS_LOG_LEVEL=debug
 
 **抓包命令**：
 ```bash
-# 只抓DDS RTPS协议（UDP端口7400）
+# 端口与 domain ID、participant index 和 DDS 实现有关；以下范围仅作示例
 tcpdump -i eth0 -w dds_high_load.pcap \
-    "udp port 7400 or udp port 7401"
+    "udp portrange 7400-7500"
 ```
 
 **Wireshark过滤器**：
@@ -141,15 +142,12 @@ rtps && rtps.sm.guidPrefix == 0x0123456789abcdef
 ----------------------------------------------------------------------
                                            ↓ 但Reader只收到最新1条！
 ----------------------------------------------------------------------
-10:00:00.200  Motion Ctrl   Task Planner  ACKNACK         seq=1242  ← 只ACK了1242
+10:00:00.200  Motion Ctrl   Task Planner  ACKNACK         ...
 ```
 
-**惊人的发现**：
-- ✅ Writer **确实发送了**9条消息（seq 1234-1242）
-- ❌ Reader **只收到了最后1条**（seq 1242）
-- ❌ 前8条消息**在Reader端丢失了**
+这里能确认发送端发出了序号连续的 RTPS DATA。还需要在接收端抓包，或用 DDS/RTPS 日志确认这些 DATA 是否进入 reader history。RTPS `ACKNACK` 携带的是接收状态集合，不能简化成“只 ACK 某一个业务序号”。
 
-**这不是网络丢包（tcpdump看到了所有包），是DDS层丢的！**
+当接收端抓包也看到全部 DATA，而应用层只 `take()` 到最后一个样本时，排查重点才应转向 reader history、resource limits、应用取样线程和请求关联逻辑。
 
 ---
 
@@ -165,7 +163,7 @@ eprosima::fastdds::dds::Log::SetVerbosity(
 );
 ```
 
-**关键日志片段**：
+**示意日志**（字段名随 DDS 实现和日志级别变化，不能当作 Fast DDS 固定输出格式）：
 ```
 [RTPS_MSG_IN] Received DATA message, seq=1234
 [RTPS_READER] Adding sample to history queue, seq=1234
@@ -178,10 +176,13 @@ eprosima::fastdds::dds::Log::SetVerbosity(
 [RTPS_READER] Notifying user callback with seq=1242
 ```
 
-**根因浮现**：
-- Reader的history queue大小是1
-- 新消息到来时，旧消息被覆盖（样本覆盖）
-- 应用层只能收到最新的那一条
+**由日志可验证的事实**：
+- 多个请求写入同一个未键控 topic instance；
+- Reader 使用 `KEEP_LAST(depth=1)`；
+- 应用取样速度低于突发到达速度；
+- 新样本进入 history 时，未取走的旧样本被淘汰。
+
+`RELIABLE` 约束的是 DDS writer 与 reader 之间的可靠交付行为，不等于应用一定处理每个历史样本。如果 history/resource limits 允许旧样本被替换，或者应用没有及时 `take()`，业务层仍可能看不到所有请求。
 
 ---
 
@@ -192,9 +193,9 @@ eprosima::fastdds::dds::Log::SetVerbosity(
 // TaskPlanner.cpp
 DataWriterQos writer_qos;
 
-// ✅ Writer配置了history.depth = 8
+// Writer 保留最近 8 个样本，供可靠传输与未确认样本管理使用
 writer_qos.history().kind = KEEP_LAST_HISTORY_QOS;
-writer_qos.history().depth = 8;  // 保留最近8条消息，支持重传
+writer_qos.history().depth = 8;
 
 writer_qos.reliability().kind = RELIABLE_RELIABILITY_QOS;
 
@@ -206,9 +207,10 @@ writer_ = publisher_->create_datawriter(topic_, writer_qos);
 // MotionController.cpp
 DataReaderQos reader_qos;
 
-// ❌ Reader配置了history.depth = 1 !!
+// Reader 只保留最近 1 个未取走样本；这对“最新状态”合理，
+// 但对每个请求都必须处理的 RPC request stream 风险很高
 reader_qos.history().kind = KEEP_LAST_HISTORY_QOS;
-reader_qos.history().depth = 1;  // 只保留最新1条消息
+reader_qos.history().depth = 1;
 
 reader_qos.reliability().kind = RELIABLE_RELIABILITY_QOS;
 
@@ -216,9 +218,9 @@ reader_ = subscriber_->create_datareader(topic_, reader_qos);
 ```
 
 **根因确认**：
-- Writer和Reader的QoS配置**不对称**
-- Writer: history.depth = 8（可以重传8条）
-- Reader: history.depth = 1（只能存1条）
+- Writer 与 Reader 的 history depth **不要求协议层必须相等**；depth 也不是 DDS 端点匹配的 Request/Offered 兼容条件；
+- 真正的问题是 Reader 的 `KEEP_LAST(depth=1)` 与业务语义不匹配：多个未键控 RPC 请求共享一个 instance，而应用可能来不及取样；
+- Writer depth、Reader depth、resource limits 和应用消费速度必须分别覆盖各自的最坏积压，不能靠“配置成相同数字”代替容量分析。
 
 **为什么会丢消息？**
 
@@ -228,7 +230,8 @@ T0: Writer发送seq=1234，Reader收到并存入history queue（size=1）
     Reader正忙（处理上一个请求），还没调用用户回调
 
 T1: Writer发送seq=1235，Reader收到
-    history queue满了（size=1），丢弃1234，存入1235
+    在本案例的KEEP_LAST/resource-limit配置下，1234尚未被应用取走，
+    新样本使旧样本从reader history中被淘汰
 
 T2: Writer发送seq=1236，Reader收到
     history queue满了，丢弃1235，存入1236
@@ -237,15 +240,15 @@ T2: Writer发送seq=1236，Reader收到
 
 T8: Writer发送seq=1242，Reader收到，存入1242
 
-T9: Reader终于空闲了，调用用户回调
-    但只能取到seq=1242，前面8条都被覆盖了！
+T9: 应用线程终于执行take()
+    只能取得仍留在history中的最新样本；前面的请求已经无法被业务层处理
 ```
 
 ---
 
 ## 四、解决方案
 
-### 方案1：统一QoS配置（最简单）
+### 方案1：按最坏积压扩大 Reader 容量
 
 **修改Reader端代码**：
 ```cpp
@@ -253,17 +256,19 @@ T9: Reader终于空闲了，调用用户回调
 DataReaderQos reader_qos;
 
 reader_qos.history().kind = KEEP_LAST_HISTORY_QOS;
-reader_qos.history().depth = 8;  // 改成8，与Writer一致
+reader_qos.history().depth = 8;  // 示例值：必须由突发量和消费延迟验证
 
 reader_qos.reliability().kind = RELIABLE_RELIABILITY_QOS;
 
 reader_ = subscriber_->create_datareader(topic_, reader_qos);
 ```
 
-**效果**：
-- ✅ Reader可以缓存8条消息
-- ✅ 高负载下不会样本覆盖
-- ✅ 实机测试100+小时，零丢包
+还应显式设置并检查 `resource_limits`，确保 `max_samples`、`max_samples_per_instance` 等上限不小于 history 需要的容量。不同 Fast DDS 版本的 API 与默认值可能不同，配置时应以所用版本文档为准。
+
+**案例观察**：
+- Reader 可以同时保留更多未取走请求；
+- 在案例压力模型下，业务层不再观察到原先的样本淘汰；
+- 原稿记录了 100 小时稳定运行，但原始日志没有公开，因此这里只把它作为案例观察，不写成可复现的“零丢包”证明。
 
 **代价**：
 - ❌ Reader内存增加：8 * sizeof(RPC_Request) ≈ 64KB
@@ -276,11 +281,11 @@ reader_ = subscriber_->create_datareader(topic_, reader_qos);
 
 ---
 
-### 方案2：增加DEADLINE QoS（长期优化）
+### 方案2：用 Deadline 监控周期健康，用请求截止时间定案 RPC
 
-**问题**：即使修复了样本覆盖，如何**提前发现**通信异常？
+**问题**：即使修复了 history 淘汰，如何发现周期性数据流中断，并给每个 RPC 设置明确的完成边界？
 
-**方案**：使用DDS的DEADLINE QoS
+`Deadline` 表达的是“同一 instance 的样本更新间隔期望”。它适合监控周期性控制流或心跳是否按约定刷新，但它不是单个 RPC request/response 的超时器。RPC 仍应携带 request ID，并在客户端用单调时钟维护每个请求的 deadline、取消与迟到响应策略。
 
 ```cpp
 // Writer端
@@ -297,10 +302,10 @@ reader_listener_.on_requested_deadline_missed =
     };
 ```
 
-**效果**：
-- ✅ 如果100ms内没收到消息，触发回调
-- ✅ 可以主动降级（切换到安全模式）
-- ✅ 比gRPC timeout更精确（DDS层检测）
+**效果与边界**：
+- 周期性 instance 超过约定更新间隔时，可通过 requested/offered deadline missed 状态观测；
+- 是否切换安全模式必须由上层安全策略决定，不能在通用 listener 中直接等同于急停；
+- 对单个 RPC，仍以请求 ID 对应的应用层 deadline 和实际 response/result 为准。
 
 ---
 
@@ -308,7 +313,7 @@ reader_listener_.on_requested_deadline_missed =
 
 ### 复现步骤
 
-**构造高频RPC场景**：
+**构造高频 RPC 场景**（以下是业务封装接口示意，不是可直接编译的 Fast DDS API）：
 ```cpp
 // test_high_load.cpp
 void stress_test() {
@@ -399,10 +404,12 @@ Timeout rate: 0.000%
 
 ### 1. DDS QoS配置最佳实践
 
-**History Depth选择公式**：
+**History Depth容量估算起点**：
 ```
-depth >= (发送频率 Hz) × (最大处理延迟 s)
+reader_depth >= ceil(峰值到达率 × 最坏未取样时间) + 突发余量
 ```
+
+这只是容量估算起点，不是 DDS 规范公式。还要考虑 topic 是否 keyed、每个 instance 的独立历史、应用一次 `take()` 的批量、writer 未确认样本上限，以及 `resource_limits`。
 
 **示例**：
 - 发送频率：200 Hz
@@ -411,16 +418,16 @@ depth >= (发送频率 Hz) × (最大处理延迟 s)
 
 ---
 
-**Writer-Reader对称性原则**：
+**Writer 与 Reader 分开预算**：
 
 ```cpp
-// ❌ 不对称（会导致样本覆盖）
+// 数字不同本身不构成错误；错误在于任一侧容量小于自己的最坏积压
 writer_qos.history().depth = 8;
 reader_qos.history().depth = 1;
 
-// ✅ 对称（推荐）
-writer_qos.history().depth = 8;
-reader_qos.history().depth = 8;
+// 示例：两端按各自职责独立预算
+writer_qos.history().depth = writer_backlog_budget;
+reader_qos.history().depth = reader_backlog_budget;
 ```
 
 ---
@@ -429,9 +436,9 @@ reader_qos.history().depth = 8;
 
 | History QoS | 适用场景 | 优点 | 缺点 |
 |-------------|---------|------|------|
-| KEEP_LAST(depth=1) | 状态型数据（传感器读数） | 省内存 | 高频下样本覆盖 |
-| KEEP_LAST(depth=N) | RPC、命令消息 | 平衡 | 需要评估N |
-| KEEP_ALL | 日志、事件 | 不丢数据 | 内存无上限 |
+| KEEP_LAST(depth=1) | 只关心最新值的状态流 | 省内存、旧状态自然淘汰 | 不适合每个样本都必须处理的请求流 |
+| KEEP_LAST(depth=N) | 有界积压的请求、命令或遥测 | 内存有界 | N 必须覆盖突发与最坏消费延迟 |
+| KEEP_ALL | 需要保留全部样本且能施加背压的场景 | 不因 history depth 淘汰旧样本 | 仍受 resource limits 限制 |
 
 ---
 
@@ -439,10 +446,11 @@ reader_qos.history().depth = 8;
 
 在Code Review时检查：
 
-- [ ] Writer和Reader的history depth是否一致？
-- [ ] history depth是否足够（>= 发送频率 × 最大延迟）？
-- [ ] 是否配置了DEADLINE QoS（关键路径）？
-- [ ] 是否配置了resource limits（避免内存泄漏）？
+- [ ] Reliability、Durability、Deadline 等 Request/Offered QoS 是否兼容？
+- [ ] Writer 未确认窗口和 Reader 未取样窗口是否分别完成容量预算？
+- [ ] History 与 resource limits 是否一致，满载时是阻塞、失败还是淘汰？
+- [ ] 应用是否批量 `take()`，回调中是否执行阻塞业务？
+- [ ] 周期流是否需要 Deadline；RPC 是否有独立 request ID、单调时钟 deadline 与迟到响应策略？
 - [ ] 是否考虑了高负载场景（压力测试）？
 
 ---
@@ -453,23 +461,20 @@ reader_qos.history().depth = 8;
 
 | 方案 | 优点 | 缺点 | 适用场景 |
 |------|------|------|---------|
-| depth=1 | 省内存 | 高频下丢消息 | 低频状态数据 |
-| depth=8 | 平衡 | 内存+64KB | 中频RPC（<100Hz）|
-| depth=32 | 高可靠 | 内存+256KB | 高频RPC（>500Hz）|
-| KEEP_ALL | 不丢数据 | 内存无上限 | 日志、事件 |
+| depth=1 | 省内存 | 只保留最新未取样值 | 最新状态流 |
+| depth=N | 有界积压 | 需要测量突发与消费延迟 | 请求、命令和遥测 |
+| KEEP_ALL + 有界 resource limits | 避免按 depth 淘汰 | 满载时必须定义背压/失败行为 | 审计事件、受控日志流 |
 
 ---
 
 ### 我们的选择
 
-**depth=8，理由**：
-1. 机械臂RPC频率<100Hz，8足够
-2. 内存增加64KB可以接受
-3. 可靠性优先级 > 内存占用
+案例最终选择 `depth=8`，因为在当时测得的突发和消费延迟下它覆盖了 reader backlog，且资源开销可接受。这个值不是通用推荐；换 payload、频率、回调模型或 DDS 实现后必须重新测量。
 
 **如果未来需要支持>500Hz呢？**
-- 考虑depth=32（内存+256KB）
-- 或者用shared memory代替DDS（零拷贝）
+- 先测 reader backlog、writer unacknowledged samples 和 resource-limit 命中；
+- 再决定扩大有界队列、拆分 instance/topic、批量取样或增加消费者；
+- shared-memory transport 只能减少序列化和拷贝成本，不能自动解决消费速度不足或请求超时语义。
 
 ---
 
@@ -479,10 +484,10 @@ reader_qos.history().depth = 8;
 
 | 维度 | gRPC | DDS |
 |------|------|-----|
-| 延迟 | 1-5ms | 0.1-1ms |
-| 发现 | 需要服务注册中心 | 自动发现 |
-| QoS | 无 | 丰富（Reliability, Deadline, ...）|
-| 生态 | 语言支持好 | 机器人专用 |
+| 通信模型 | HTTP/2 RPC、streaming | 数据中心发布订阅，可构建 request/reply |
+| 发现 | 通常依赖地址、DNS、负载均衡或服务发现 | DDS participant/topic 自动发现 |
+| 时限 | 原生 deadline/cancellation API | Deadline QoS 监控 instance 更新；RPC 时限仍需应用协议 |
+| 策略 | keepalive、流控、重试、负载均衡等 | Reliability、Durability、History、Deadline 等 DDS QoS |
 
 **我们的选择**：
 - 低延迟路径：用DDS（运动控制）
@@ -492,7 +497,7 @@ reader_qos.history().depth = 8;
 
 ### Q2: DDS vs ROS 2的关系？
 
-**ROS 2底层就是DDS**：
+ROS 2 通过 `rmw` 抽象接入中间件。主流 RMW 使用 DDS，也存在非 DDS 实现，因此不能把两者写成完全等号：
 ```
 ROS 2 应用层
     ↓
@@ -500,7 +505,7 @@ rclcpp/rclpy (ROS 2 client library)
     ↓
 rmw (ROS Middleware Interface)
     ↓
-DDS实现 (Fast DDS / Cyclone DDS / RTI Connext)
+DDS或其他RMW实现 (Fast DDS / Cyclone DDS / RTI Connext / Zenoh ...)
 ```
 
 **我们遇到的问题也适用于ROS 2！**
@@ -515,13 +520,13 @@ DDS实现 (Fast DDS / Cyclone DDS / RTI Connext)
 | Cyclone DDS | Eclipse | EPL 2.0 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
 | RTI Connext | RTI | 商业 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
 
-**我们用的**：Fast DDS（开源、性能够用、ROS 2默认）
+**案例使用**：Fast DDS。ROS 2 的默认 RMW 会随发行版和安装方式变化，应以目标系统的 `RMW_IMPLEMENTATION` 与发行版文档为准。
 
 ---
 
 ## 九、经验教训
 
-### 1. 配置不对称是隐蔽的bug
+### 1. 业务语义与缓存策略不匹配是隐蔽的 bug
 
 **特点**：
 - ✅ 低负载正常（消息处理及时，不会覆盖）
@@ -529,7 +534,7 @@ DDS实现 (Fast DDS / Cyclone DDS / RTI Connext)
 - ❌ 偶发（不是100%失败，难以复现）
 
 **教训**：
-- 配置要成对检查（Writer和Reader）
+- Writer 和 Reader 要分别按职责完成兼容性与容量检查
 - 压力测试必不可少
 
 ---
@@ -569,17 +574,18 @@ DDS实现 (Fast DDS / Cyclone DDS / RTI Connext)
 ### 问题回顾
 
 1. **现象**：高负载下15%的RPC超时
-2. **根因**：Writer和Reader的QoS history depth不对称（8/1）
-3. **后果**：Reader端样本覆盖，消息丢失
-4. **解决**：统一配置（都改成8）
-5. **验证**：100+小时零丢包
+2. **根因**：Reader 的 `KEEP_LAST(depth=1)` 与“每个请求都必须处理”的业务语义不匹配，应用消费速度又不足以覆盖突发
+3. **后果**：未取走请求从 reader history 中被淘汰，业务层无法处理对应请求
+4. **解决**：按最坏积压扩大并验证 Reader history/resource limits，同时补齐单请求 deadline 与观测
+5. **验证**：压力测试未再复现原故障；100 小时记录未公开，作为案例观察保留
 
 ---
 
 ### 关键技术点
 
-- ✅ DDS QoS配置要对称
-- ✅ history depth >= 发送频率 × 最大延迟
+- ✅ QoS 先检查兼容性，再分别预算 writer 与 reader 容量
+- ✅ `RELIABLE` 不等于应用必然处理每个历史样本
+- ✅ RPC deadline 与 DDS Deadline QoS 解决的是不同问题
 - ✅ 压力测试是必须的
 - ✅ 监控告警要到位
 
@@ -596,6 +602,7 @@ DDS实现 (Fast DDS / Cyclone DDS / RTI Connext)
 
 ## 参考资料
 
-1. eProsima Fast DDS文档: https://fast-dds.docs.eprosima.com/
-2. OMG DDS规范: https://www.omg.org/spec/DDS/
-3. ROS 2 QoS设计: https://design.ros2.org/articles/qos.html
+1. [Fast DDS 标准 QoS 策略](https://fast-dds.docs.eprosima.com/en/latest/fastdds/dds_layer/core/policy/standardQosPolicies.html)
+2. [ROS 2 QoS 兼容性与策略说明](https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Quality-of-Service-Settings.html)
+3. [OMG Data Distribution Service 规范入口](https://www.omg.org/spec/DDS/)
+4. [gRPC Deadlines 指南](https://grpc.io/docs/guides/deadlines/)
