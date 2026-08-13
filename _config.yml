@@ -2,12 +2,15 @@
 
 # Site
 title: Quchaosheng's Notes
-subtitle: Linux Kernel · ROS 2 · Embedded Systems
-description: Quchaosheng 的技术笔记与项目记录
+subtitle: Robot Systems · Linux Runtime · Embedded & RISC-V
+description: Quchaosheng 的机器人系统、Linux 实时性、嵌入式与 RISC-V 工程笔记和项目记录
 keywords:
   - Linux Kernel
   - ROS 2
   - Embedded Systems
+  - Robot Systems
+  - Linux Real-Time
+  - RISC-V
 author: Quchaosheng
 language: zh-CN
 timezone: Asia/Shanghai
