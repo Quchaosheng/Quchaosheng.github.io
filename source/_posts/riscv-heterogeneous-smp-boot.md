@@ -11,16 +11,16 @@ tags:
   - OpenSBI
   - PMP
   - FreeRTOS
-description: 从 OpenSBI、Linux SMP、PMP 隔离和 IPI 通信出发，梳理 7+1 hart 异构系统的启动与调试路径。
+description: 从平台固件、OpenSBI、Linux SMP、PMP 隔离和 doorbell 通信出发，梳理 7+1 hart 异构系统的启动与调试路径。
 ---
 
 ## 证据边界
 
-公开项目 [quard-star-riscv64-net](https://github.com/Quchaosheng/quard-star-riscv64-net) 提供 7+1 hart、OpenSBI domain 和 PMP 故障探针的相关实现；本文包含的 FreeRTOS 集成与部分性能数字不在该公开仓库的完整可复现实验范围内，应按设计说明而非已公开 benchmark 阅读。
+公开项目 [quard-star-riscv64-net](https://github.com/Quchaosheng/quard-star-riscv64-net) 提供 7+1 hart、OpenSBI domain 和 PMP 故障探针的相关实现；本文选择“平台 M-mode 固件直接接管 hart7”的设计路线。FreeRTOS 集成与部分性能数字不在该公开仓库的完整可复现实验范围内，应按架构说明而非已公开 benchmark 阅读。
 
-<div class="note-flow"><span>OpenSBI 建立 domain</span><i>→</i><span>Linux 启动 7 个 hart</span><i>→</i><span>独立 hart 进入 RTOS</span><i>→</i><span>PMP 隔离内存</span><i>→</i><span>IPI 与共享内存通信</span></div>
+<div class="note-flow"><span>平台固件分流 hart</span><i>→</i><span>OpenSBI 服务 Linux domain</span><i>→</i><span>hart7 进入 M-mode RTOS</span><i>→</i><span>按 hart 配置 PMP</span><i>→</i><span>doorbell 与共享内存通信</span></div>
 
-<div class="note-map"><span><b>hart0</b><small>承担引导与 Linux 启动协调。</small></span><span><b>Linux SMP</b><small>7 个 hart 处理通用计算和系统服务。</small></span><span><b>RTOS hart</b><small>保留给硬实时控制路径。</small></span><span><b>OpenSBI</b><small>提供 M-mode 服务与 domain 资源描述。</small></span><span><b>PMP</b><small>限制两个执行域可访问的物理地址。</small></span><span><b>通信</b><small>共享内存承载数据，IPI 负责通知。</small></span></div>
+<div class="note-map"><span><b>hart0</b><small>承担 Linux domain 的引导协调。</small></span><span><b>Linux SMP</b><small>7 个 hart 处理通用计算和系统服务。</small></span><span><b>RTOS hart</b><small>由平台固件保留给控制路径。</small></span><span><b>OpenSBI</b><small>只在 Linux harts 提供 M-mode 服务。</small></span><span><b>PMP</b><small>按 hart 限制低特权级物理地址访问。</small></span><span><b>通信</b><small>共享内存承载数据，平台 doorbell 负责通知。</small></span></div>
 
 ## 一、项目背景
 
@@ -79,8 +79,10 @@ hart0-6: Linux SMP（S-mode）
 hart7: FreeRTOS（M-mode）
   - 独占一个hart
   - 直接在M-mode运行（无虚拟内存）
-  - 硬实时保证（无OS抢占）
+  - 不经过Linux调度，但FreeRTOS与中断仍会产生抢占
 ```
+
+OpenSBI domain 的 next stage 运行在 S-mode 或 U-mode，不能把 M-mode FreeRTOS 当作 domain payload。另一条可行路线是让 FreeRTOS 运行于 S-mode 并继续通过 SBI 使用 M-mode 服务；本文不混用两种方案。
 
 **内存布局**：
 ```
@@ -100,53 +102,22 @@ hart7: FreeRTOS（M-mode）
 
 ### 3.1 第一阶段：OpenSBI初始化
 
-**OpenSBI的职责**：
-- 初始化M-mode环境
-- 设置PMP（Physical Memory Protection）
-- 提供SBI接口（S-mode调用M-mode服务）
-- 引导Linux内核
+**职责边界**：
+- 平台 reset/boot 固件根据 `mhartid` 分流：hart0-6 进入 OpenSBI，hart7 进入专用 M-mode RTOS 入口
+- OpenSBI 只管理 Linux domain 的 harts、内存区域、设备和 SBI 服务
+- Linux Device Tree 只声明 hart0-6，或把 hart7 标为 `disabled`，防止 Linux 纳入 SMP
+- hart7 的 trap、timer、PMP 和 doorbell 由专用平台固件/RTOS port 初始化
 
-**关键代码**（platform/generic/platform.c）：
-```c
-// OpenSBI平台配置
-static const struct platform_config platform = {
-    .name = "Custom RISC-V Platform",
-    .hart_count = 8,  // 8个hart
-
-    // 只有hart0-6运行Linux
-    .hart_index_base = 0,
-    .hart_stack_size = 8192,
-
-    // hart7的特殊配置
-    .disabled_hart_mask = (1 << 7),  // hart7不参与SMP
-};
-
-// PMP配置：隔离FreeRTOS内存
-static int platform_pmp_init(void) {
-    // Region 0: Linux可访问0x8000_0000 - 0xC000_0000
-    pmp_set(0, PMP_R | PMP_W | PMP_X,
-            0x80000000, 0xC0000000 - 0x80000000);
-
-    // Region 1: 共享内存（所有hart可访问）
-    pmp_set(1, PMP_R | PMP_W,
-            0xC0000000, 0x100000);
-
-    // Region 2: FreeRTOS专用（仅hart7可访问）
-    pmp_set(2, PMP_R | PMP_W | PMP_X,
-            0xC0100000, 0x100000);
-
-    return 0;
-}
-```
+OpenSBI 的 domain 描述应使用当前版本支持的 Device Tree binding 或平台 API。这里不展示 `disabled_hart_mask`、`platform_config` 等看似精确但不能对应当前主线的伪 API；实现时应固定 OpenSBI commit 并以该版本文档为准。
 
 **启动流程**：
 ```
-1. ROM bootloader加载OpenSBI到0x8000_0000
-2. OpenSBI在hart0上启动（fw_dynamic_init）
-3. 初始化PMP，隔离内存区域
-4. 设置hart7的启动地址为FreeRTOS入口
-5. 唤醒hart1-6，跳转到Linux内核
-6. hart7进入FreeRTOS
+1. ROM/平台固件在每个 hart 读取 mhartid
+2. hart0-6 进入 OpenSBI，建立 Linux domain 并配置对应 PMP
+3. OpenSBI 把 Linux next stage 交给 S-mode
+4. Linux 通过 CPU ops/SBI HSM 启动 domain 内的 hart1-6
+5. hart7 由平台固件直接跳转到 FreeRTOS M-mode 入口
+6. 两个执行域通过共享内存和平台 doorbell 通信
 ```
 
 ---
@@ -207,7 +178,7 @@ static int platform_pmp_init(void) {
         shared_mem: shared-memory@c0000000 {
             compatible = "shared-dma-pool";
             reg = <0x0 0xc0000000 0x0 0x100000>;  // 1MB
-            no-map;  // Linux不映射此区域
+            no-map;  // 不创建常规线性映射；驱动需显式映射
         };
     };
 
@@ -215,7 +186,7 @@ static int platform_pmp_init(void) {
     rpmsg@c0000000 {
         compatible = "riscv,rpmsg";
         reg = <0x0 0xc0000000 0x0 0x100000>;
-        interrupts = <10>;  // IPI中断
+        interrupts = <10>;  // 平台doorbell中断号，占位示意
     };
 };
 ```
@@ -231,45 +202,7 @@ static int platform_pmp_init(void) {
 7. secondary_start_kernel(): 从hart进入调度器
 ```
 
-**关键代码**（arch/riscv/kernel/smpboot.c）：
-```c
-// 唤醒从hart
-void __init smp_prepare_cpus(unsigned int max_cpus) {
-    int cpuid;
-
-    // 只唤醒hart1-6（hart7被排除）
-    for_each_possible_cpu(cpuid) {
-        if (cpuid == 0)
-            continue;  // hart0已经运行
-        if (cpuid >= 7)
-            continue;  // hart7运行FreeRTOS
-
-        // 通过SBI唤醒hart
-        struct sbi_hart_boot_info info = {
-            .hartid = cpuid,
-            .start_addr = __pa_symbol(secondary_start_kernel),
-            .priv = __pa_symbol(init_task.stack),
-        };
-
-        sbi_hsm_hart_start(cpuid, info.start_addr, info.priv);
-    }
-}
-
-// 从hart启动入口
-asmlinkage __visible void __init secondary_start_kernel(void) {
-    struct mm_struct *mm = &init_mm;
-    unsigned int cpu = smp_processor_id();
-
-    // 设置页表
-    setup_vm_final(cpu);
-
-    // 通知主核启动完成
-    set_cpu_online(cpu, true);
-
-    // 进入调度器
-    cpu_startup_entry(CPUHP_AP_ONLINE_IDLE);
-}
-```
+Linux 只会遍历 Device Tree 中可用的 CPU 节点，并通过当前内核选择的 RISC-V CPU ops/HSM 路径启动 secondary harts。`secondary_start_kernel()` 是后续入口之一，但具体调用链随内核版本变化；实现和调试时应固定 Linux commit，用 `dmesg`、SBI HSM 返回码和每个 hart 的启动 trace 验证，而不是复制一段自造的 `smp_prepare_cpus()`。
 
 ---
 
@@ -350,10 +283,11 @@ _hang:
 
 **FreeRTOS主函数**（main.c）：
 ```c
-// 共享内存通信队列
+// 共享内存仅描述布局；同步由平台适配层实现
 #define SHARED_MEM_BASE 0xC0000000
-volatile struct shared_mailbox {
+struct shared_mailbox {
     uint32_t cmd;
+    uint32_t len;
     uint32_t data[15];
     uint32_t status;
 } *mailbox = (void*)SHARED_MEM_BASE;
@@ -361,10 +295,12 @@ volatile struct shared_mailbox {
 // 实时控制任务
 void control_task(void *pvParameters) {
     while (1) {
-        // 等待Linux发送命令
-        while (mailbox->status != CMD_READY) {
-            vTaskDelay(pdMS_TO_TICKS(1));
-        }
+        // doorbell ISR 通过 task notification 唤醒任务
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+        platform_shared_acquire();
+        if (mailbox->status != CMD_READY || mailbox->len > sizeof(mailbox->data))
+            continue;
 
         // 执行实时控制
         uint32_t cmd = mailbox->cmd;
@@ -372,9 +308,10 @@ void control_task(void *pvParameters) {
 
         // 返回结果
         mailbox->status = CMD_DONE;
+        platform_shared_release();
 
-        // 通知Linux（触发IPI中断）
-        sbi_send_ipi(1 << 0);  // 通知hart0
+        // M-mode FreeRTOS不调用SBI；使用平台mailbox/doorbell通知Linux
+        platform_doorbell_raise(LINUX_ENDPOINT);
     }
 }
 
@@ -407,25 +344,9 @@ pmpcfg0-3:  配置寄存器（R/W/X权限）
 pmpaddr0-15: 地址寄存器（物理地址范围）
 ```
 
-**配置代码**（OpenSBI）：
-```c
-// PMP Entry 0: Linux区域（0x8000_0000 - 0xC000_0000）
-// 权限: R+W+X, 模式: TOR (Top of Range)
-write_csr(pmpaddr0, 0x80000000 >> 2);
-write_csr(pmpaddr1, 0xC0000000 >> 2);
-write_csr(pmpcfg0,
-    (PMP_R | PMP_W | PMP_X | PMP_TOR) << 0 |  // Entry 0
-    (PMP_R | PMP_W | PMP_X | PMP_TOR) << 8);  // Entry 1
+PMP 是 per-hart 配置。Linux harts 的 S/U-mode 需要显式允许 Linux RAM 和共享区、拒绝 RTOS 私有区；hart7 则由专用启动路径配置自己的低特权访问策略。PMP 默认不约束 M-mode 访问，除非使用 lock bit 或平台支持的 ePMP，因此“RTOS 运行在 M-mode”与“PMP 自动限制 RTOS”不能同时假设。
 
-// PMP Entry 2: FreeRTOS区域（0xC010_0000 - 0xC020_0000）
-// 只有hart7可以访问
-if (current_hartid() == 7) {
-    write_csr(pmpaddr2, 0xC0100000 >> 2);
-    write_csr(pmpaddr3, 0xC0200000 >> 2);
-    write_csr(pmpcfg0,
-        (PMP_R | PMP_W | PMP_X | PMP_TOR) << 16);
-}
-```
+TOR entry `i` 的下界来自 `pmpaddr[i-1]`、上界来自 `pmpaddr[i]`，最低编号的匹配 entry 生效。应使用 OpenSBI domain region 或经审查的平台 helper，一次组合完整配置并逐 hart 读回验证；不要多次覆盖 `pmpcfg0`，也不要照搬容易意外开放 `0..address` 的手写 CSR 片段。
 
 **验证**：
 ```c
@@ -439,19 +360,19 @@ void *ptr = ioremap(0xC0100000, 4096);
 
 ---
 
-### 4.2 hart间通信（IPI）
+### 4.2 hart间通信（共享内存 + doorbell）
 
 **问题**：Linux如何通知FreeRTOS？
 
-**方案**：使用IPI（Inter-Processor Interrupt）
+**方案**：使用平台 mailbox/doorbell 中断。若两个端点都位于同一 OpenSBI domain 且运行于 S-mode，也可以使用 SBI IPI；本文的 M-mode FreeRTOS 不调用 SBI。
 
 **通信协议**：
 ```
 1. Linux写入命令到共享内存
-2. Linux发送IPI到hart7
+2. Linux通过平台doorbell通知hart7
 3. FreeRTOS在中断中读取命令
 4. FreeRTOS执行命令，写入结果
-5. FreeRTOS发送IPI到hart0
+5. FreeRTOS通过平台doorbell通知Linux端点
 6. Linux在中断中读取结果
 ```
 
@@ -461,6 +382,9 @@ void *ptr = ioremap(0xC0100000, 4096);
 int send_command_to_freertos(uint32_t cmd, void *data, size_t len) {
     struct shared_mailbox *mbox = ioremap(0xC0000000, 4096);
 
+    if (len > sizeof(mbox->data))
+        return -EMSGSIZE;
+
     // 等待上一个命令完成
     while (mbox->status == CMD_BUSY) {
         cpu_relax();
@@ -468,11 +392,12 @@ int send_command_to_freertos(uint32_t cmd, void *data, size_t len) {
 
     // 写入命令
     mbox->cmd = cmd;
+    mbox->len = len;
     memcpy((void*)mbox->data, data, len);
+    dma_wmb();  // 非一致平台还需要对应的cache clean
     mbox->status = CMD_READY;
 
-    // 触发IPI到hart7
-    sbi_send_ipi(1 << 7);
+    platform_doorbell_raise(RTOS_ENDPOINT);
 
     // 等待完成
     while (mbox->status != CMD_DONE) {
@@ -482,34 +407,29 @@ int send_command_to_freertos(uint32_t cmd, void *data, size_t len) {
     return 0;
 }
 
-// IPI中断处理
-static irqreturn_t rpmsg_ipi_handler(int irq, void *dev) {
+// doorbell中断处理
+static irqreturn_t rtos_doorbell_handler(int irq, void *dev) {
+    platform_doorbell_clear(LINUX_ENDPOINT);
+    dma_rmb();
     // FreeRTOS完成了命令
     complete(&rpmsg_completion);
     return IRQ_HANDLED;
 }
 ```
 
-**FreeRTOS端**（ipi.c）：
+**FreeRTOS端**（平台适配层）：
 ```c
-// IPI中断处理
-void ipi_handler(void) {
-    // 读取中断原因
-    unsigned long pending = csr_read(CSR_MIP);
+void platform_doorbell_handler(void) {
+    BaseType_t wake = pdFALSE;
 
-    if (pending & MIP_MSIP) {
-        // 清除IPI中断
-        csr_clear(CSR_MIP, MIP_MSIP);
-
-        // 读取命令
-        uint32_t cmd = mailbox->cmd;
-
-        // 通知任务处理
-        xTaskNotifyFromISR(control_task_handle,
-                          cmd, eSetValueWithOverwrite, NULL);
-    }
+    platform_doorbell_clear(RTOS_ENDPOINT);
+    platform_shared_acquire();
+    vTaskNotifyGiveFromISR(control_task_handle, &wake);
+    portYIELD_FROM_ISR(wake);
 }
 ```
+
+`volatile` 不能提供跨 hart 内存顺序。发布命令前需要 release fence，消费前需要 acquire fence；非一致缓存系统还要在两端执行匹配的 cache clean/invalidate。ACLINT/CLINT 软件中断通常通过对应 hart 的 MMIO `msip` 清除，不能笼统地写 `mip` CSR，因此清除动作必须封装在平台回调中。
 
 ---
 
@@ -585,18 +505,7 @@ printf("P99:   %lu us\n", latencies[9900]);
 printf("P99.9: %lu us\n", latencies[9990]);
 ```
 
-**结果**：
-```
-P50:   12us
-P99:   28us
-P99.9: 45us
-Max:   67us
-
-对比shared memory + spinlock:
-P50:   2us   ← 但会阻塞其他hart
-P99:   8us
-Max:   无上限（死锁风险）
-```
+这些延迟数字来自案例稿，公开仓库没有对应固件、时钟频率、缓存属性、doorbell 实现和原始样本，因此不能作为复现结果。正式报告需要给出 round-trip 定义、计时器、样本数、负载、cache maintenance、P50/P99/P99.9/Max 与超时次数。
 
 ---
 
@@ -604,26 +513,17 @@ Max:   无上限（死锁风险）
 
 **FreeRTOS任务延迟**：
 ```c
-// 测量任务切换延迟
+// 测量doorbell ISR到控制任务开始执行的唤醒延迟
 void benchmark_task(void *param) {
     for (int i = 0; i < 10000; i++) {
-        uint64_t start = read_mcycle();
-        vTaskDelay(1);  // 1 tick = 1ms
-        uint64_t end = read_mcycle();
-
-        uint32_t latency_us = (end - start) * 1000000 / CPU_FREQ_HZ;
-        if (latency_us > 1100) {  // 允许100us误差
-            error_count++;
-        }
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        uint64_t task_start = read_mcycle();
+        record_latency(task_start - isr_timestamp[i]);
     }
 }
-
-// 结果：
-// Error count: 0 / 10000  ← 完美
-// P50 latency: 1002us
-// P99 latency: 1015us
-// Max latency: 1023us
 ```
+
+`vTaskDelay(1)` 测的是 tick 阻塞与唤醒总时间，不是任务切换延迟。是否满足 deadline 必须在目标硬件最坏负载、中断和缓存条件下测量 WCET 与尾延迟。
 
 ---
 
@@ -631,71 +531,44 @@ void benchmark_task(void *param) {
 
 ### 6.1 异构多核架构的优势
 
-✅ **隔离性**：Linux崩溃不影响FreeRTOS
-✅ **实时性**：hart7无OS调度，确定性延迟
-✅ **灵活性**：可以动态调整hart分配
+- **故障隔离**：独立 hart 和内存域可限制部分故障传播，但共享 DRAM、时钟、中断控制器和平台固件仍是共同依赖
+- **调度隔离**：hart7 不受 Linux 调度器直接干扰；FreeRTOS、中断、缓存和总线竞争仍会影响 deadline
+- **资源边界清晰**：hart 分配在启动时固定，动态重分配需要完整的停机、状态迁移与安全协议
 
 ---
 
 ### 6.2 常见坑点
 
-**坑1：忘记禁用hart7的缓存一致性**
-```c
-// ❌ 错误：hart7参与缓存一致性
-// 结果：Linux修改共享内存，hart7看不到
+**坑1：把 Device Tree 属性当作缓存一致性开关**
 
-// ✅ 正确：共享内存配置为non-cacheable
-// Device Tree:
-shared_mem: shared-memory@c0000000 {
-    compatible = "shared-dma-pool";
-    reg = <0x0 0xc0000000 0x0 0x100000>;
-    no-map;
-    dma-coherent;  // 强制一致性
-};
-```
+参与硬件一致性通常意味着共享写入更容易互相可见，而不是“Linux 修改后 hart7 看不到”。`no-map` 只限制 Linux 的常规映射，`dma-coherent` 是对平台一致性能力的声明，不会凭空强制一致。两端必须使用兼容的内存属性；非一致系统需要显式 cache clean/invalidate 与 acquire/release barrier。
 
-**坑2：PMP配置顺序错误**
-```c
-// ❌ 错误：先配置小区域，再配置大区域
-pmp_set(0, 0xC0000000, 1MB);  // 共享内存
-pmp_set(1, 0x80000000, 1GB);  // Linux区域
+**坑2：忽略 PMP entry 的匹配优先级**
 
-// ✅ 正确：先配置大区域，再配置小区域
-pmp_set(0, 0x80000000, 1GB);
-pmp_set(1, 0xC0000000, 1MB);
-```
+PMP 不是笼统的“先大后小”，而是最低编号的匹配 entry 生效。要在大区域内设置例外，通常需要让更具体的区域获得更高匹配优先级，并严格核对 TOR/NAPOT 编码、lock/ePMP 语义和每个 hart 的配置。
 
-**坑3：IPI中断优先级设置错误**
-```c
-// ❌ FreeRTOS中断优先级低于调度器
-// 结果：IPI丢失
+**坑3：把通知延迟写成“中断丢失”**
 
-// ✅ 正确：IPI优先级最高
-#define IPI_INTERRUPT_PRIORITY  0  // 最高优先级
-```
+低优先级通知通常表现为延迟或饥饿，不会自动丢失。中断编号、claim/complete、优先级编码和 FreeRTOS 可调用 API 的阈值均取决于平台；应记录 pending/claim 状态和服务延迟，不能套用一个通用的“优先级 0 最高”宏。
 
 ---
 
 ### 6.3 后续优化方向
 
-1. **零拷贝通信**：使用DMA代替CPU拷贝
-2. **动态hart分配**：根据负载动态调整SMP数量
+1. **共享内存协议**：加入序号、长度、超时、恢复和 cache maintenance
+2. **静态资源预算**：测量 DRAM/缓存/中断控制器的跨域干扰
 3. **虚拟化**：使用H-extension支持更多OS
 
 ---
 
 ## 七、总结
 
-通过OpenSBI + PMP + IPI，实现了7+1异构多核架构：
-- ✅ 7个hart运行Linux SMP
-- ✅ 1个hart运行FreeRTOS（硬实时）
-- ✅ 通信延迟P99 < 30us
-- ✅ FreeRTOS实时性：抖动 < 25us
+本文给出一条不混用特权级职责的 7+1 设计路线：平台固件把 hart0-6 交给 OpenSBI/Linux，把 hart7 交给 M-mode FreeRTOS；PMP 按 hart 配置，跨域通信使用共享内存与平台 doorbell。是否达到硬实时 deadline，仍需在目标硬件、最坏负载和完整中断条件下验证。
 
 **关键技术**：
 - PMP物理内存隔离
-- IPI hart间通信
-- 共享内存 + spinlock同步
+- 平台 mailbox/doorbell 通知
+- 共享内存 + 内存屏障/cache maintenance
 
 **适用场景**：
 - 工业机器人（Linux负责规划，RTOS负责控制）
@@ -703,3 +576,11 @@ pmp_set(1, 0xC0000000, 1MB);
 - 航空航天（硬实时 + 通用计算）
 
 ---
+
+## 参考资料
+
+- [OpenSBI Domain 支持](https://github.com/riscv-software-src/opensbi/blob/master/docs/domain_support.md)
+- [RISC-V SBI HSM 扩展](https://github.com/riscv-non-isa/riscv-sbi-doc/blob/master/src/ext-hsm.adoc)
+- [RISC-V SBI IPI 扩展](https://github.com/riscv-non-isa/riscv-sbi-doc/blob/master/src/ext-ipi.adoc)
+- [RISC-V 特权架构 PMP](https://docs.riscv.org/reference/isa/priv/machine.html)
+- [Linux 内存屏障](https://docs.kernel.org/core-api/wrappers/memory-barriers.html)

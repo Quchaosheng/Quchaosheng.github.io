@@ -59,9 +59,9 @@ T1.8s: TaskFailed { error: "collision_detected" }
 ```
 
 **优势**：
-- ✅ 完整的因果链
-- ✅ 可以回放整个过程
-- ✅ 可以分析根因
+- 保留按流排序的事实记录
+- 可以重建投影并分析事件链
+- 为根因假设提供证据，但不能只凭先后顺序证明因果
 
 ---
 
@@ -79,7 +79,7 @@ T1.8s: TaskFailed { error: "collision_detected" }
 }
 ```
 
-**事件（Event）**：状态变化的原因
+**事件（Event）**：已经发生的业务事实；它可能是状态变化的输入或结果，不必然是唯一原因
 ```json
 {
   "event_type": "MotionCommandReceived",
@@ -109,7 +109,7 @@ State[2] = apply(apply(InitialState, Event1), Event2)
 
 ### 2.2 事件的不可变性
 
-**关键原则**：事件一旦发生，永不删除、永不修改
+**关键原则**：业务逻辑不原地改写已提交事件，而是追加更正或补偿事件。物理存储仍需遵循保留、隐私和监管政策；归档、脱敏或 crypto-shredding 也要留下可审计的处置记录。
 
 **错误做法**：
 ```cpp
@@ -149,7 +149,7 @@ event_store.append(MotionCancelled {
          │
          ▼
 ┌─────────────────┐
-│  Event Store    │  事件存储（追加写，永不删除）
+│  Event Store    │  事件存储（逻辑追加写，受保留策略治理）
 └────────┬────────┘
          │
          ├──────────────┐
@@ -175,7 +175,7 @@ event_store.append(MotionCancelled {
 // 04-platform/infrastructure/event_store/include/event_store.hpp
 class EventStore {
 public:
-    // 追加事件（幂等，支持重试）
+    // event_id由客户端生成，用于超时后的幂等重试
     virtual EventId append(
         const StreamId& stream_id,
         const Event& event,
@@ -210,7 +210,7 @@ public:
 **存储格式**（PostgreSQL）：
 ```sql
 CREATE TABLE events (
-    event_id        BIGSERIAL PRIMARY KEY,
+    event_id        UUID PRIMARY KEY,
     stream_id       VARCHAR(255) NOT NULL,
     version         BIGINT NOT NULL,
     event_type      VARCHAR(255) NOT NULL,
@@ -232,12 +232,17 @@ CREATE INDEX idx_events_timestamp ON events (timestamp);
 CREATE INDEX idx_events_type ON events (event_type);
 ```
 
+`UNIQUE (stream_id, version)` 只提供乐观并发控制，不能阻止客户端在超时重试时生成重复业务事件。`event_id` 应由客户端在首次尝试前生成并在重试时复用，也可以使用 `UNIQUE (producer_id, idempotency_key)`。读取 expected version、分配下一版本和插入事件必须在同一数据库事务中完成；唯一约束冲突要区分“相同 event_id 的幂等成功”和“不同写者抢占了 stream version”。
+
 ---
 
 **示例数据**：
 ```sql
-INSERT INTO events VALUES (
-    1,
+INSERT INTO events (
+    event_id, stream_id, version, event_type,
+    event_data, metadata, timestamp
+) VALUES (
+    '00000000-0000-4000-8000-000000000001',
     'robot-1',
     0,
     'RobotInitialized',
@@ -246,8 +251,11 @@ INSERT INTO events VALUES (
     '2024-08-13 10:00:00'
 );
 
-INSERT INTO events VALUES (
-    2,
+INSERT INTO events (
+    event_id, stream_id, version, event_type,
+    event_data, metadata, timestamp
+) VALUES (
+    '00000000-0000-4000-8000-000000000002',
     'robot-1',
     1,
     'MotionCommandReceived',
@@ -265,6 +273,7 @@ INSERT INTO events VALUES (
 ```cpp
 // 04-platform/infrastructure/event_store/include/event.hpp
 struct Event {
+    std::string event_id;
     std::string event_type;
     nlohmann::json data;
     nlohmann::json metadata;
@@ -273,6 +282,7 @@ struct Event {
     // 序列化
     std::string to_json() const {
         nlohmann::json j;
+        j["event_id"] = event_id;
         j["event_type"] = event_type;
         j["data"] = data;
         j["metadata"] = metadata;
@@ -426,6 +436,8 @@ public:
 };
 ```
 
+生产投影通常按 at-least-once 交付设计：以 `event_id` 幂等处理，并在同一事务中保存查询模型变更与消费位置 checkpoint。跨到 InfluxDB 等外部存储时，需要幂等键、outbox/inbox 或可重建策略；否则重试会重复计数。查询模型一般是最终一致的，接口应暴露其消费位置或数据新鲜度。
+
 ---
 
 ## 四、实战案例：故障回放
@@ -473,7 +485,7 @@ for (const auto& event : events) {
 2024-08-13 10:00:00.000 TaskStarted {"task_id":"asm_001","type":"pick_and_place"}
 2024-08-13 10:00:00.100 MotionPlanned {"path":[...],"duration":2.5}
 2024-08-13 10:00:00.200 MotionStarted {"target":[0.5,0.3,0.8]}
-2024-08-13 10:00:01.000 ObjectDetected {"id":"obstacle_1","position":[0.45,0.32,0.75]}
+2024-08-13 10:00:01.000 ObjectDetected {"object_id":"obstacle_1","object_type":"fixture","position":[0.45,0.32,0.75]}
 2024-08-13 10:00:01.500 CollisionPredicted {"distance":0.02,"ttc":0.3}
 2024-08-13 10:00:01.800 EmergencyStopTriggered {"reason":"collision_risk"}
 2024-08-13 10:00:01.800 TaskFailed {"error":"collision_detected"}
@@ -481,28 +493,23 @@ for (const auto& event : events) {
 
 ---
 
-**步骤2：回放事件**
+**步骤2：重建投影并检查事件链**
 ```cpp
-// 重建当时的世界模型
 WorldState world_state;
+ActiveMotion active_motion;
 
 for (const auto& event : events) {
-    // 逐个应用事件
-    if (event.event_type == "ObjectDetected") {
+    if (event.event_type == "MotionStarted") {
+        active_motion = parse_motion(event);
+    } else if (event.event_type == "ObjectDetected") {
         world_state.add_object(
-            event.data["id"],
+            event.data["object_id"],
             parse_vector(event.data["position"]),
             event.data["object_type"]
         );
 
-    } else if (event.event_type == "MotionStarted") {
-        auto target = parse_vector(event.data["target"]);
-
-        // 检查碰撞
-        auto collision = world_state.check_collision_along_path(
-            world_state.robot_position(),
-            target
-        );
+        auto collision = replay_engine.check(
+            active_motion, world_state, event.timestamp);
 
         if (collision.has_value()) {
             std::cout << "Found collision: "
@@ -513,6 +520,8 @@ for (const auto& event : events) {
     }
 }
 ```
+
+原来的示例在 `MotionStarted` 到达时世界模型仍为空，因此无法复现文中碰撞；同时 `id`/`object_id` schema 不一致。修订后的伪代码在后续感知事件到达时推进活动轨迹，但它仍只是分析框架。确定性回放还需要保存 correlation/causation ID、事件 schema 与软件版本、配置、传感器时间和摄取时间、时钟质量以及外部输入。
 
 ---
 
@@ -525,8 +534,9 @@ for (const auto& event : events) {
         -> 规划器不知道有障碍物
         -> 路径会碰撞
 
-根因：运动规划没有等待最新的环境感知
-解决：引入感知就绪检查
+根因假设：运动规划可能没有等待满足新鲜度要求的环境感知
+验证动作：重放相同输入并检查规划版本、感知时间戳和安全控制日志
+候选修复：引入有明确时间预算与失效策略的感知就绪检查
 ```
 
 ---
@@ -583,56 +593,22 @@ auto events = event_store.read_stream(
 - 有快照（每100个）：~50ms（100x提升）
 ```
 
+这组数字是未附硬件、PostgreSQL 版本、事件大小、冷/暖缓存和原始样本的案例稿示意值。快照收益取决于聚合计算成本和剩余事件数，正式 benchmark 应报告数据规模、配置和分位数；快照本身也要带 stream version、schema version 与校验信息。
+
 ---
 
 ### 5.2 事件批量写入
 
 **问题**：高频事件（1000Hz）写入慢
 
-**方案**：批量提交
+**方案**：批量提交可以摊薄事务开销，但不能在持久提交前向命令端返回成功。若 `append()` 只把事件放进进程内 vector 就确认，进程崩溃会丢失“已确认”的事实，破坏事件存储的审计语义。
 
-```cpp
-class BatchedEventStore {
-private:
-    std::vector<Event> buffer_;
-    std::mutex mutex_;
-    std::thread flush_thread_;
+可选边界有两种：
 
-public:
-    void append(const Event& event) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        buffer_.push_back(event);
+1. 同步确认：调用方等待整个批次数据库事务 commit，再收到成功和 event position。
+2. 异步确认：事件先写入 durable WAL，再确认接受；后台批量入库，并定义 WAL 恢复、重复处理、背压和磁盘耗尽策略。
 
-        // 批量大小达到100，立即刷新
-        if (buffer_.size() >= 100) {
-            flush();
-        }
-    }
-
-    void flush() {
-        if (buffer_.empty()) return;
-
-        // 批量写入数据库
-        db_.begin_transaction();
-        for (const auto& event : buffer_) {
-            db_.insert(event);
-        }
-        db_.commit();
-
-        buffer_.clear();
-    }
-
-    // 后台定期刷新（100ms）
-    void background_flush() {
-        while (running_) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-            std::lock_guard<std::mutex> lock(mutex_);
-            flush();
-        }
-    }
-};
-```
+不论哪种方式，都要在批次内部维持每个 stream 的 expected version 顺序，并明确一次事务失败时整批还是逐流回滚。
 
 **性能对比**：
 ```
@@ -640,6 +616,8 @@ public:
 - 逐个写入：~1000ms（1ms/事件）
 - 批量写入：~50ms（0.05ms/事件，20x提升）
 ```
+
+这些同样是案例稿示意值，不应脱离事务 durability、`synchronous_commit`、事件大小和硬件条件解释。
 
 ---
 
@@ -680,16 +658,18 @@ private:
 };
 ```
 
+这里的 ROS 2 publisher 只是低延迟通知通道，不是事实源，也不是持久订阅。消息应携带 `event_id` 和全局/流内 position；消费者持久保存 checkpoint，重启或发现 position 缺口时从 Event Store 补读，并按 `event_id` 幂等处理。depth 10 只能限制内存队列，不能保证积压或重启期间不丢通知。
+
 ---
 
 ## 七、总结
 
 ### 事件溯源的优势
 
-✅ **可审计性**：完整的历史记录可为 ISO 13849 相关评估提供证据，但不能单独证明系统合规
-✅ **调试友好**：可以精确回放故障场景
-✅ **时间旅行**：可以回到任意历史状态
-✅ **分析能力**：支持复杂的数据分析
+- **可审计性**：事件记录可作为验证活动输入之一，但不能建立 Category、PLr/PL、MTTFd、DCavg、CCF 或独立完成 ISO 13849 验证
+- **调试能力**：可以重建系统已记录的状态并检查事件链，精度取决于输入、版本和时钟信息是否完整
+- **历史投影**：在 schema/upcaster 与外部依赖可复现的前提下恢复历史状态
+- **分析能力**：支持从同一事实流构建多个幂等投影
 
 ---
 
@@ -702,16 +682,16 @@ private:
 
 **不适合**：
 - 简单CRUD应用
-- 实时性要求极高（<1ms）
+- 亚毫秒控制闭环不能同步等待通用数据库提交；事件记录应放在闭环之外或使用专用持久化路径
 - 存储成本敏感
 
 ---
 
 ### 关键设计点
 
-1. **事件不可变**：追加写，永不删除
-2. **版本管理**：乐观锁，防止冲突
-3. **快照优化**：避免重放所有事件
-4. **批量写入**：提升高频场景性能
+1. **事件身份**：客户端 event_id 支持幂等重试
+2. **事务版本**：expected version 检查与事件插入原子提交
+3. **投影恢复**：checkpoint、幂等消费与可重建查询模型
+4. **持久确认**：只有 durable commit/WAL 后才能确认命令成功
 
 ---
