@@ -58,48 +58,22 @@ description: 用示波器、ftrace 和驱动代码审查分层定位高频 I2C �
 ```bash
 # 1. 示波器抓取I2C信号
 # SCL频率：400 kHz
-# SDA信号：边沿干净，无振铃
+# 记录上升/下降时间、setup/hold、clock stretching、NACK和bus busy
 
-# 2. 降低I2C频率测试
-echo 100000 > /sys/bus/i2c/devices/i2c-0/bus_clk_rate  # 降到100kHz
-# 结果：丢包依然存在
+# 2. 通过板级设备树或厂商内核提供的接口降低频率
+# 上游 i2c-rk3x 通常读取 DT 的 clock-frequency，不存在通用 bus_clk_rate sysfs ABI
 
 # 3. 更换传感器
 # 结果：问题依旧
 ```
 
-**结论**：❌ 不是硬件问题
+降低频率且波形目测正常，只能暂时降低物理层嫌疑，不能排除上拉电阻、总线电容、器件最短采样间隔、clock stretching、NACK 和总线恢复问题。
 
 ---
 
 ### 第二层：驱动代码审查
 
-**RK3576 I2C驱动关键路径**：
-
-```c
-// drivers/i2c/busses/i2c-rk3x.c
-static int rk3x_i2c_xfer(struct i2c_adapter *adap,
-                         struct i2c_msg *msgs, int num)
-{
-    struct rk3x_i2c *i2c = i2c_get_adapdata(adap);
-
-    // 问题1：使用polling模式，CPU一直等待
-    while (!(readl(i2c->regs + REG_INT_STATUS) & INT_MBRFIS)) {
-        if (timeout_reached())
-            return -ETIMEDOUT;  // 超时返回
-    }
-
-    // 问题2：没有FIFO缓冲
-    // 每次只传输1字节，频繁中断
-
-    return 0;
-}
-```
-
-**发现的问题**：
-1. **Polling模式**：CPU一直忙等，浪费CPU资源
-2. **无FIFO利用**：硬件有8字节FIFO，驱动没用
-3. **Hard IRQ处理过长**：I2C传输在中断上下文完成
+先确认实际运行的内核版本、厂商 commit、设备树和驱动绑定。上游 `drivers/i2c/busses/i2c-rk3x.c` 的普通 `.xfer` 由硬中断推进状态机，并通过 wait queue 等待完成；polling 路径主要服务 `.xfer_atomic`。控制器每批最多处理 32 字节（8 个 32 位数据寄存器），不是“未使用 8 字节 FIFO、每次 1 字节”。若案例使用厂商私有分支，应保存相对上游的 diff，不能用假想代码替代根因证据。
 
 **ftrace分析**：
 ```bash
@@ -107,24 +81,21 @@ static int rk3x_i2c_xfer(struct i2c_adapter *adap,
 echo 1 > /sys/kernel/debug/tracing/events/i2c/enable
 cat /sys/kernel/debug/tracing/trace
 
-# 关键发现：
-i2c_transfer: adapter=0, msgs=1, start
-  ... (CPU busy waiting 80us)
-i2c_transfer: adapter=0, msgs=1, done, ret=1
-
-# 问题：高频场景下，CPU来不及响应所有I2C请求
+# 常见上游事件包括 i2c_write/read/result/reply，具体取决于内核配置
+# 同时采集 sched、irq 和 function_graph 才能区分事务耗时与CPU忙等
 ```
 
-**结论**：✅ 找到根因！
+这里应按返回码分组：`-ETIMEDOUT`、`-ENXIO`、`-EAGAIN` 和 deadline miss 代表不同问题。仅凭一段 80us 间隔不能认定 CPU busy-wait；候选根因需要用 trace、寄存器状态和驱动版本共同闭环。
 
 ---
 
 ### 第三层：方案设计
 
 **优化策略**：
-1. **使用Threaded IRQ** - 中断处理移到线程
-2. **启用FIFO** - 批量传输，减少中断次数
-3. **DMA可选** - 超大数据量时启用
+1. **先修真实错误路径**：依据 errno、IRQ 状态、NACK/bus busy 和 deadline miss 分类
+2. **利用控制器批处理能力**：严格按真实寄存器布局与消息边界推进状态机
+3. **调整采样架构**：连续传感器优先评估 DRDY、器件 FIFO 与 IIO triggered buffer
+4. **条件优化**：只有实测证明 handler 过重或大消息搬运成为瓶颈时，再评估 Threaded IRQ 或 DMA
 
 ---
 
@@ -132,96 +103,21 @@ i2c_transfer: adapter=0, msgs=1, done, ret=1
 
 ### 方案实现
 
-**1. 改用Threaded IRQ**
+**1. 先判断是否需要 Threaded IRQ**
 
-```c
-// 原始方案：Hard IRQ
-static irqreturn_t rk3x_i2c_irq(int irqno, void *dev_id)
-{
-    struct rk3x_i2c *i2c = dev_id;
+Threaded IRQ 适合把必须睡眠或耗时较长的工作移出 hard IRQ，但会增加一次线程调度，不天然降低 I2C 传输延迟。上游 `i2c-rk3x` 的 handler 主要在锁内读取状态、搬运一批寄存器数据并推进状态机；只有 function graph 和 IRQ-off 数据证明 handler 过长，或厂商分支确实放入了不适合 hard IRQ 的工作时，才应评估 threaded IRQ。
 
-    // ❌ 在Hard IRQ中完成传输（延迟高）
-    handle_i2c_transfer(i2c);
-
-    return IRQ_HANDLED;
-}
-
-// 优化方案：Threaded IRQ
-static irqreturn_t rk3x_i2c_irq(int irqno, void *dev_id)
-{
-    struct rk3x_i2c *i2c = dev_id;
-
-    // ✅ 快速读取状态，唤醒线程
-    i2c->irq_status = readl(i2c->regs + REG_INT_STATUS);
-
-    return IRQ_WAKE_THREAD;  // 唤醒线程处理
-}
-
-static irqreturn_t rk3x_i2c_irq_thread(int irqno, void *dev_id)
-{
-    struct rk3x_i2c *i2c = dev_id;
-
-    // ✅ 在线程上下文处理（可以睡眠、调度）
-    handle_i2c_transfer(i2c);
-
-    return IRQ_HANDLED;
-}
-
-// 注册Threaded IRQ
-devm_request_threaded_irq(dev, irq,
-    rk3x_i2c_irq,        // Hard IRQ handler
-    rk3x_i2c_irq_thread, // Thread handler
-    IRQF_ONESHOT, "i2c-rk3x", i2c);
-```
-
-**优势**：
-- Hard IRQ快速返回（<5us）
-- 传输处理在线程中，不阻塞其他中断
-- CPU调度更灵活
+若采用 top half + thread，top half 必须正确 mask/ack 中断并安全累积状态，thread 完成后再恢复；简单覆盖一个 `irq_status` 字段可能丢 pending 位或造成中断风暴。
 
 ---
 
-**2. 启用FIFO缓冲**
+**2. 按真实硬件边界批处理**
 
-```c
-#define I2C_FIFO_SIZE 8
-
-static int rk3x_i2c_fill_tx_fifo(struct rk3x_i2c *i2c)
-{
-    int count = 0;
-
-    // ✅ 批量填充FIFO（最多8字节）
-    while (count < I2C_FIFO_SIZE && i2c->msg->len > 0) {
-        writeb(i2c->msg->buf[i2c->msg_ptr++],
-               i2c->regs + REG_TXDATA);
-        count++;
-    }
-
-    return count;
-}
-
-static int rk3x_i2c_drain_rx_fifo(struct rk3x_i2c *i2c)
-{
-    int count = 0;
-
-    // ✅ 批量读取FIFO
-    while (readl(i2c->regs + REG_INT_STATUS) & INT_MBRFIS) {
-        i2c->msg->buf[i2c->msg_ptr++] =
-            readb(i2c->regs + REG_RXDATA);
-        count++;
-    }
-
-    return count;
-}
-```
-
-**效果**：
-- 中断次数减少8倍（8字节/次 vs 1字节/次）
-- CPU占用降低70%
+缓冲优化必须依照控制器真实寄存器布局实现。以当前上游 `i2c-rk3x` 为例，每批最多处理 32 字节，循环边界必须同时受本批容量与 `processed < msg->len` 约束，并正确读取、清除对应 pending 位。中断次数由消息长度、读写组合、硬件阈值和协议开销共同决定，不能从“每批 N 字节”直接推导减少 N 倍；文中短 SMBus 读取尤其不一定受益。
 
 ---
 
-**3. 使用regmap简化寄存器访问**
+**3. 是否使用 regmap 属于维护性决策**
 
 ```c
 // 原始方案：直接readl/writel
@@ -244,10 +140,7 @@ regmap_read(i2c->regmap, REG_INT_STATUS, &status);
 regmap_write(i2c->regmap, REG_INT_STATUS, status);
 ```
 
-**优势**：
-- 统一的寄存器访问接口
-- 自动处理锁
-- 调试更方便（regmap debugfs）
+regmap 可以统一寄存器访问并提供调试能力，但不是丢样或 CPU 占用的通用修复，也不能替代驱动状态机自身的同步。它的抽象和锁还可能增加开销，应由寄存器语义、现有 MMIO helper 和维护需求决定。
 
 ---
 
@@ -255,29 +148,19 @@ regmap_write(i2c->regmap, REG_INT_STATUS, status);
 
 ### 测试环境
 
-```c
-// 测试代码
-#define TEST_COUNT 100000
+测试应由单调时钟的绝对 deadline 驱动 1kHz 读取，不能使用无节拍的 tight loop。每次采样至少记录计划时间、实际开始/结束时间、传感器 sequence、返回 errno 和总线恢复动作，再分别统计 deadline miss、序号缺口、总线错误和传输延迟。
 
-for (int i = 0; i < TEST_COUNT; i++) {
-    ret = i2c_smbus_read_byte_data(client, REG_SENSOR_DATA);
-    if (ret < 0)
-        error_count++;
-}
+### 结果报告
 
-printf("Total: %d, Errors: %d, Error rate: %.2f%%\n",
-       TEST_COUNT, error_count,
-       100.0 * error_count / TEST_COUNT);
-```
+案例稿中的“5-8% 到 0%”“CPU 40% 到 12%”和中断频率数据缺少原始 trace、驱动 commit 与测试程序，不能当作公开复现结果。正式报告应至少包含：
 
-### 结果对比
-
-| 指标 | 优化前 | 优化后 | 改善 |
-|------|--------|--------|------|
-| 丢包率（1000Hz） | 5-8% | 0% | ✅ 完全消除 |
-| CPU占用 | 40% | 12% | ⬇️ 70% |
-| 单次传输延迟 | 120us | 80us | ⬇️ 33% |
-| 中断频率 | 8000次/秒 | 1000次/秒 | ⬇️ 87.5% |
+| 指标 | 解释 |
+|------|------|
+| 计划/实际采样次数 | 区分调度未发起与总线事务失败 |
+| Deadline miss | 报告次数、连续次数、P99/P99.9和最大值 |
+| 传感器序号缺口 | 与 I2C errno 分开统计 |
+| errno 分布 | 区分 NACK、仲裁丢失、超时和其他错误 |
+| IRQ/CPU 数据 | 给出消息长度、控制器批次和压力负载 |
 
 ### 稳定性测试
 
@@ -285,11 +168,10 @@ printf("Total: %d, Errors: %d, Error rate: %.2f%%\n",
 # 连续运行24小时
 ./i2c_stress_test --duration 86400
 
-# 结果：
-Total transfers: 86,400,000
-Errors: 0
-Success rate: 100.000%
+# 报告完整配置、计划/实际次数、每类错误与最大连续异常
 ```
+
+即便在特定条件下 86400000 次事务未观察到错误，也只能给出该条件下的观察结果或统计上限，不能证明真实错误率为 0 或问题被“完全消除”。
 
 ---
 
@@ -297,10 +179,11 @@ Success rate: 100.000%
 
 ### 1. I2C驱动性能优化Checklist
 
-- [ ] 使用Threaded IRQ（减少Hard IRQ延迟）
-- [ ] 启用硬件FIFO（批量传输）
-- [ ] 考虑DMA（大数据量场景）
-- [ ] 使用regmap（统一寄存器访问）
+- [ ] 固定内核、驱动 commit、设备树和器件版本
+- [ ] 按 errno、序号缺口和 deadline miss 分类
+- [ ] 核对控制器真实批处理容量与消息边界
+- [ ] 评估 DRDY、器件 FIFO 与 IIO triggered buffer
+- [ ] 仅在大消息且控制器支持时评估 DMA
 - [ ] 添加超时机制（防止死锁）
 - [ ] 实现错误恢复（总线recovery）
 
@@ -317,11 +200,11 @@ cat /sys/kernel/debug/tracing/trace
 
 **i2c-tools**：
 ```bash
-# 扫描I2C总线
-i2cdetect -y 0
+# 安全枚举适配器，不发送探测事务
+i2cdetect -l
 
-# 读取寄存器
-i2cget -y 0 0x50 0x00
+# i2cdetect -y 和 i2cget 会访问总线；仅在停机维护窗口、
+# 确认器件允许且没有绑定驱动竞争时使用
 ```
 
 **示波器/逻辑分析仪**：
@@ -345,23 +228,15 @@ static irqreturn_t i2c_irq_thread(int irq, void *dev_id) {
 }
 ```
 
-**坑2：FIFO未清空**
-```c
-// ❌ 传输前忘记清空FIFO
-i2c_start_transfer();
+**坑2：照搬其他控制器的 FIFO 寄存器**
 
-// ✅ 传输前清空FIFO
-writel(I2C_FIFO_CLR, i2c->regs + REG_FIFO_CTRL);
-i2c_start_transfer();
-```
+不同 I2C 控制器的数据寄存器、pending 位和清除语义不同。只能依据当前 SoC TRM 与实际驱动实现处理残留状态，不能把 `FIFO_CLR` 之类的占位寄存器当作 RK3576 可直接使用的代码。
 
 **坑3：时钟未配置**
-```c
-// Device Tree中配置I2C时钟
-i2c0: i2c@ff110000 {
-    compatible = "rockchip,rk3576-i2c";
-    clocks = <&cru SCLK_I2C0>, <&cru PCLK_I2C0>;
-    clock-names = "i2c", "pclk";
+```dts
+// 仅示意板级覆写；地址、IRQ和clock ID来自SoC DTSI/TRM
+&i2c0 {
+    status = "okay";
     clock-frequency = <400000>;  // 400kHz
 };
 ```
@@ -380,7 +255,7 @@ i2c0: i2c@ff110000 {
 
 1. **先profile，再优化**：不要盲目优化
 2. **优化瓶颈**：找到性能瓶颈（CPU、中断、总线）
-3. **保持简单**：优先用成熟方案（Threaded IRQ、regmap）
+3. **保持证据链**：每个改动都对应一种已测量的瓶颈，并能单独回归
 
 ### Trade-off
 
@@ -388,20 +263,20 @@ i2c0: i2c@ff110000 {
 |------|------|------|---------|
 | Polling | 简单 | CPU占用高 | 低频、简单场景 |
 | Hard IRQ | 响应快 | 阻塞其他中断 | 简单、快速处理 |
-| Threaded IRQ | 不阻塞 | 延迟稍高 | 复杂处理 |
-| DMA | CPU占用低 | 复杂 | 大数据量 |
+| Threaded IRQ | 允许睡眠和复杂处理 | 增加调度点 | 实测 hard IRQ 过重 |
+| DMA | 大消息下可降搬运成本 | 配置复杂，小消息可能更慢 | 控制器支持的大数据量 |
 
 ---
 
 ## 七、后续优化方向
 
-1. **自适应FIFO深度**：根据传输速率动态调整
-2. **错误统计**：记录丢包率、超时次数
-3. **性能监控**：集成到系统监控（Prometheus）
+1. **采样触发**：评估传感器 DRDY 与 IIO triggered buffer
+2. **错误统计**：区分序号缺口、deadline miss 和每类 errno
+3. **性能监控**：由非实时路径导出长期指标
 
 ---
 
-**总结**：通过Threaded IRQ + FIFO优化，将I2C驱动丢包率从5-8%降到0，CPU占用降低70%。关键是**分层定位 + 工具组合 + 量化分析**。
+**总结**：这个案例最可靠的沉淀不是固定的“Threaded IRQ + FIFO”组合，而是分层定位和可复核测量。对 1kHz 连续传感器，先确认总线预算与器件采样语义，再评估 DRDY、器件 FIFO 和 IIO 缓冲；只有证据指向驱动 handler 或大消息搬运时，才引入对应的 IRQ 或 DMA 优化。
 
 ---
 
@@ -409,3 +284,6 @@ i2c0: i2c@ff110000 {
 
 - [Linux I2C/SMBus 子系统文档](https://docs.kernel.org/i2c/summary.html)
 - [Linux 通用 IRQ 子系统文档](https://docs.kernel.org/core-api/genericirq.html)
+- [Linux I2C DMA 注意事项](https://docs.kernel.org/i2c/dma-considerations.html)
+- [Linux IIO 缓冲区](https://docs.kernel.org/iio/iio_devbuf.html)
+- [上游 i2c-rk3x 驱动](https://github.com/torvalds/linux/blob/master/drivers/i2c/busses/i2c-rk3x.c)
