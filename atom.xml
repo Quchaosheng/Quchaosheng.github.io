@@ -36,7 +36,7 @@
     <link href="https://quchaosheng.github.io/2026/08/13/riscv-heterogeneous-smp-boot/"/>
     <published>2026-08-13T09:37:00.000Z</published>
     <updated>2026-08-13T09:37:00.000Z</updated>
-    <summary type="html">证据边界 公开项目 quard-star-riscv64-net 提供 7+1 hart、OpenSBI domain 和 PMP 故障探针的相关实现；本文包含的 FreeRTOS 集成与部分性能数字不在该公开仓库的完整可复现实验范围内，应按设计说明而非已公开 benchmark 阅读。 OpenSBI 建立 domain → Linux 启动 7 个 hart → 独立 hart 进入 RTOS → PMP 隔离内存 → IPI 与共享内存通信 hart0 承担引导与 Linux 启动协调。 Linux SMP 7 个 hart 处理通用计算和系...</summary>
+    <summary type="html">证据边界 公开项目 quard-star-riscv64-net 提供 7+1 hart、OpenSBI domain 和 PMP 故障探针的相关实现；本文选择“平台 M-mode 固件直接接管 hart7”的设计路线。FreeRTOS 集成与部分性能数字不在该公开仓库的完整可复现实验范围内，应按架构说明而非已公开 benchmark 阅读。 平台固件分流 hart → OpenSBI 服务 Linux domain → hart7 进入 M-mode RTOS → 按 hart 配置 PMP → doorbell 与共享内存通信 hart0 承担...</summary>
   </entry>
   <entry>
     <title>CAN 总线故障排查：从偶发卡顿到分层定位</title>
