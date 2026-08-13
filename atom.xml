@@ -12,7 +12,7 @@
     <link href="https://quchaosheng.github.io/2026/08/13/dds-rpc-timeout-debugging/"/>
     <published>2026-08-13T09:40:00.000Z</published>
     <updated>2026-08-13T09:40:00.000Z</updated>
-    <summary type="html">证据边界 本文是一篇工程复盘稿。公开仓库未包含私有生产环境的原始抓包、设备日志和真实机械臂复现条件，因此文中的生产指标用于说明排查链路，不构成可由公开仓库独立复现的 benchmark。 复现高负载超时 → 排除网络与进程 → 对齐抓包和 DDS 日志 → 审查 QoS 深度 → 压力测试验证 现象 低负载正常，高负载偶发超时。 网络 先用 ping、iperf 与抓包排除链路问题。 Discovery 确认 writer 与 reader 已稳定匹配。 QoS 重点核对可靠性、历史策略与队列深度。 修复 统一两端配置，并加入 deadline 观...</summary>
+    <summary type="html">证据边界 本文是一篇工程复盘稿。公开仓库未包含私有生产环境的原始抓包、设备日志和真实机械臂复现条件，因此文中的生产指标用于说明排查链路，不构成可由公开仓库独立复现的 benchmark。 复现高负载超时 → 排除网络与进程 → 对齐抓包和 DDS 日志 → 审查 QoS 深度 → 压力测试验证 现象 低负载正常，高负载偶发超时。 网络 在发送端和接收端同时抓包，并检查接口丢包计数。 Discovery 确认端点匹配，但不把“已匹配”当成交付证明。 QoS 分别核对兼容性、历史缓存、资源上限和应用取样速度。 超时 RPC 用请求 ID 和单调时钟定案...</summary>
   </entry>
   <entry>
     <title>I2C 驱动高频采样丢包的定位与修复</title>
@@ -44,7 +44,7 @@
     <link href="https://quchaosheng.github.io/2026/08/13/can-bus-intermittent-fault-debugging/"/>
     <published>2026-08-13T09:36:00.000Z</published>
     <updated>2026-08-13T09:36:00.000Z</updated>
-    <summary type="html">证据边界 公开项目当前主要提供 vcan 与故障注入层面的验证，不等同于真实七轴机械臂、物理 CAN 总线或量产环境。本文中的示波器记录、故障频率和修复后数字没有随公开仓库提供原始数据，应作为排查案例而非公开可复现结论。 复现偶发卡顿 → 检查物理层 → 分析 CAN 帧 → 检查 SocketCAN 队列 → 核对 MCU ACK 时序 物理层 终端电阻、线长、波形和总线速率。 协议层 仲裁、错误帧、bus-off 与重发计数。 内核层 SocketCAN 队列、溢出和驱动统计。 应用层 发送节奏、序号、超时和 watchdog。 MCU ACK...</summary>
+    <summary type="html">证据边界 公开项目当前主要提供 vcan 与故障注入层面的验证，不等同于真实七轴机械臂、物理 CAN 总线或量产环境。本文中的示波器记录、故障频率和修复后数字没有随公开仓库提供原始数据，应作为排查案例而非公开可复现结论。 复现偶发卡顿 → 检查物理层 → 分析错误帧与计数器 → 检查 SocketCAN 接收路径 → 核对业务响应时序 物理层 终端电阻、线长、波形和总线速率。 协议层 ACK bit、仲裁、错误帧、error-passive 与 bus-off。 内核层 控制器 FIFO、NAPI/offload 队列、socket 缓冲和驱动统计...</summary>
   </entry>
   <entry>
     <title>事件溯源在机器人系统中的可审计性设计</title>

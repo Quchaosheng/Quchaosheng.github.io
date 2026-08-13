@@ -18,14 +18,14 @@
 
 <title>CAN 总线故障排查：从偶发卡顿到分层定位 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="从物理波形、CAN 帧、SocketCAN 队列、应用时序和 MCU ACK 五层排查机械臂通信故障。">
+    <meta name="description" content="从物理波形、CAN 错误状态、SocketCAN 统计、应用时序和 MCU 业务响应五层排查机械臂通信故障。">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/08/13/can-bus-intermittent-fault-debugging/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="CAN 总线故障排查：从偶发卡顿到分层定位 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="从物理波形、CAN 帧、SocketCAN 队列、应用时序和 MCU ACK 五层排查机械臂通信故障。">
+    <meta property="og:description" content="从物理波形、CAN 错误状态、SocketCAN 统计、应用时序和 MCU 业务响应五层排查机械臂通信故障。">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/08/13/can-bus-intermittent-fault-debugging/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,13 +36,13 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="CAN 总线故障排查：从偶发卡顿到分层定位 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="从物理波形、CAN 帧、SocketCAN 队列、应用时序和 MCU ACK 五层排查机械臂通信故障。">
+    <meta name="twitter:description" content="从物理波形、CAN 错误状态、SocketCAN 统计、应用时序和 MCU 业务响应五层排查机械臂通信故障。">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"CAN 总线故障排查：从偶发卡顿到分层定位","description":"从物理波形、CAN 帧、SocketCAN 队列、应用时序和 MCU ACK 五层排查机械臂通信故障。","datePublished":"2026-08-13T09:36:00.000Z","dateModified":"2026-08-13T09:36:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/13/can-bus-intermittent-fault-debugging/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式","keywords":"CAN, SocketCAN, 故障定位, MCU, 机器人","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"CAN 总线故障排查：从偶发卡顿到分层定位","description":"从物理波形、CAN 错误状态、SocketCAN 统计、应用时序和 MCU 业务响应五层排查机械臂通信故障。","datePublished":"2026-08-13T09:36:00.000Z","dateModified":"2026-08-13T09:36:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/13/can-bus-intermittent-fault-debugging/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式","keywords":"CAN, SocketCAN, 故障定位, MCU, 机器人","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -287,9 +287,9 @@
 
         <div class="post-content">
             <h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>公开项目当前主要提供 <code>vcan</code> 与故障注入层面的验证，不等同于真实七轴机械臂、物理 CAN 总线或量产环境。本文中的示波器记录、故障频率和修复后数字没有随公开仓库提供原始数据，应作为排查案例而非公开可复现结论。</p>
-<div class="note-flow"><span>复现偶发卡顿</span><i>→</i><span>检查物理层</span><i>→</i><span>分析 CAN 帧</span><i>→</i><span>检查 SocketCAN 队列</span><i>→</i><span>核对 MCU ACK 时序</span></div>
+<div class="note-flow"><span>复现偶发卡顿</span><i>→</i><span>检查物理层</span><i>→</i><span>分析错误帧与计数器</span><i>→</i><span>检查 SocketCAN 接收路径</span><i>→</i><span>核对业务响应时序</span></div>
 
-<div class="note-map"><span><b>物理层</b><small>终端电阻、线长、波形和总线速率。</small></span><span><b>协议层</b><small>仲裁、错误帧、bus-off 与重发计数。</small></span><span><b>内核层</b><small>SocketCAN 队列、溢出和驱动统计。</small></span><span><b>应用层</b><small>发送节奏、序号、超时和 watchdog。</small></span><span><b>MCU</b><small>ACK 突发与接收 FIFO 可能形成拥塞。</small></span><span><b>验证</b><small>故障注入与真实总线测量必须分开标注。</small></span></div>
+<div class="note-map"><span><b>物理层</b><small>终端电阻、线长、波形和总线速率。</small></span><span><b>协议层</b><small>ACK bit、仲裁、错误帧、error-passive 与 bus-off。</small></span><span><b>内核层</b><small>控制器 FIFO、NAPI/offload 队列、socket 缓冲和驱动统计。</small></span><span><b>应用层</b><small>发送节奏、command ID、response 超时和 watchdog。</small></span><span><b>MCU</b><small>业务 response 突发可能形成接收压力，但由 CAN 仲裁串行发送。</small></span><span><b>验证</b><small>故障注入与真实总线测量必须分开标注。</small></span></div>
 
 <h2 id="一、问题现场"><a href="#一、问题现场" class="headerlink" title="一、问题现场"></a>一、问题现场</h2><p>七轴机械臂使用CAN总线进行关节控制通信，生产环境出现了偶发性故障：</p>
 <p><strong>系统架构</strong>：</p>
@@ -303,7 +303,7 @@
 <li>示波器看不出问题</li>
 </ul>
 <p><strong>日志片段</strong>：</p>
-<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[<span class="built_in">INFO</span>] Joint1: <span class="attribute">cmd</span>=100, <span class="attribute">ack</span>=OK</span><br><span class="line">[<span class="built_in">INFO</span>] Joint2: <span class="attribute">cmd</span>=150, <span class="attribute">ack</span>=OK</span><br><span class="line">[<span class="built_in">ERROR</span>] Joint3: <span class="attribute">cmd</span>=200, timeout (<span class="literal">no</span> ACK)  ← 超时</span><br><span class="line">[<span class="built_in">INFO</span>] Joint4: <span class="attribute">cmd</span>=120, <span class="attribute">ack</span>=OK</span><br><span class="line">[WARN]<span class="built_in"> Watchdog </span>triggered, emergency stop</span><br></pre></td></tr></table></figure>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[<span class="built_in">INFO</span>] Joint1: <span class="attribute">cmd</span>=100, <span class="attribute">response</span>=OK</span><br><span class="line">[<span class="built_in">INFO</span>] Joint2: <span class="attribute">cmd</span>=150, <span class="attribute">response</span>=OK</span><br><span class="line">[<span class="built_in">ERROR</span>] Joint3: <span class="attribute">cmd</span>=200, timeout (<span class="literal">no</span> business response)</span><br><span class="line">[<span class="built_in">INFO</span>] Joint4: <span class="attribute">cmd</span>=120, <span class="attribute">response</span>=OK</span><br><span class="line">[WARN]<span class="built_in"> Watchdog </span>triggered, emergency stop</span><br></pre></td></tr></table></figure>
 
 <p><strong>影响</strong>：</p>
 <ul>
@@ -316,17 +316,17 @@
 <p><strong>检查1：示波器抓取CAN信号</strong></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 测量点：CAN_H和CAN_L差分信号</span></span><br><span class="line"><span class="comment"># 工具：Tektronix MDO3024示波器</span></span><br><span class="line"></span><br><span class="line">测量结果：</span><br><span class="line">- 差分电压：2.5V（符合ISO 11898标准）</span><br><span class="line">- 上升/下降时间：&lt;100ns（正常）</span><br><span class="line">- 无振铃、过冲</span><br><span class="line">- 波形干净</span><br></pre></td></tr></table></figure>
 
-<p><strong>结论</strong>：❌ 不是信号质量问题</p>
+<p><strong>结论</strong>：当前采样窗口没有观察到明显波形异常，但这只能降低物理层假设的优先级；error frame 若持续出现，仍要在故障时刻触发并回看波形。</p>
 <hr>
 <p><strong>检查2：终端电阻验证</strong></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># CAN总线两端应该有120Ω终端电阻</span></span><br><span class="line"><span class="comment"># 测量总阻抗：</span></span><br><span class="line">万用表测量CAN_H和CAN_L之间：60Ω ✅</span><br><span class="line">计算：120Ω || 120Ω = 60Ω（正确）</span><br></pre></td></tr></table></figure>
 
-<p><strong>结论</strong>：❌ 终端电阻正确</p>
+<p><strong>结论</strong>：静态阻值符合两个 120 Ω 终端并联的预期；还需确认终端位置、支线拓扑和上电状态下的动态波形。</p>
 <hr>
 <p><strong>检查3：电缆长度与波特率</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># CAN规范：</span></span><br><span class="line"><span class="comment"># 500kbps -&gt; 最大总线长度100m</span></span><br><span class="line"><span class="comment"># 实际测量：</span></span><br><span class="line">主控到最远关节：15m ✅（远小于100m）</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 记录实际参数：</span></span><br><span class="line"><span class="comment"># bitrate：500 kbit/s</span></span><br><span class="line"><span class="comment"># 主干与最长支线长度</span></span><br><span class="line"><span class="comment"># 收发器传播延迟、采样点和时钟误差</span></span><br></pre></td></tr></table></figure>
 
-<p><strong>结论</strong>：❌ 不是物理层问题</p>
+<p>CAN 可用线长不是只由 bitrate 决定，还受收发器、线缆、拓扑、采样点和时钟误差影响。这里不再引用“500 kbit&#x2F;s 必然可达 100 m”作为排除依据。</p>
 <hr>
 <h3 id="第二层：CAN帧分析"><a href="#第二层：CAN帧分析" class="headerlink" title="第二层：CAN帧分析"></a>第二层：CAN帧分析</h3><p><strong>工具</strong>：CANalyzer + Kvaser USB接口</p>
 <p><strong>抓包配置</strong>：</p>
@@ -336,47 +336,39 @@
 <figure class="highlight dns"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">时间戳        CAN ID   数据                类型</span><br><span class="line">----------------------------------------------------</span><br><span class="line"><span class="number">10.123456</span>    <span class="number">0</span>x101    [<span class="number">00 64 00 00</span> <span class="number">00 00 00 00</span>]  Data</span><br><span class="line"><span class="number">10.124123</span>    <span class="number">0</span>x201    [<span class="number">00 96 00 00</span> <span class="number">00 00 00 00</span>]  Data</span><br><span class="line"><span class="number">10.125789</span>    <span class="number">0</span>x301    [<span class="number">00</span> C<span class="number">8 00 00 00</span> <span class="number">00</span> <span class="number">00</span> <span class="number">00</span>]  Data</span><br><span class="line"><span class="number">10.126234</span>    ERROR    -                          Error Frame ← 错误帧！</span><br><span class="line"><span class="number">10.127456</span>    <span class="number">0</span>x301    [<span class="number">00</span> C<span class="number">8 00 00 00</span> <span class="number">00</span> <span class="number">00</span> <span class="number">00</span>]  Data (重传)</span><br></pre></td></tr></table></figure>
 
 <p><strong>Error Frame详情</strong>：</p>
-<figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">错误类型：<span class="keyword">Bit </span>Error</span><br><span class="line">错误位置：ACK slot</span><br><span class="line">发送节点：<span class="keyword">Joint3（ID </span><span class="number">0x301</span>）</span><br><span class="line"></span><br><span class="line">原因：<span class="keyword">Joint3发送帧后，未收到其他节点的ACK</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight vhdl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">错误类型：<span class="built_in">Bit</span> <span class="literal">Error</span></span><br><span class="line">错误位置：分析工具标记在 ACK slot 附近</span><br><span class="line">发送节点：Joint3（ID <span class="number">0</span>x301）</span><br><span class="line"></span><br><span class="line">可能含义：发送节点在 ACK slot 未检测到 dominant <span class="built_in">bit</span>，或者在相邻位观察到其他位错误。必须结合发送/接收错误计数器、错误状态和物理层波形确认；不能仅凭一行解码就断言具体根因。</span><br></pre></td></tr></table></figure>
 
+<p>这里的 <strong>ACK slot 是 CAN 链路层确认位</strong>：任何正确接收该帧的节点都可以拉低 ACK bit。它与应用协议中的“命令执行完成 response 帧”是两回事。后文统一把 <code>0x200-0x2FF</code> 一类业务消息称为 response，避免混淆。</p>
 <p><strong>统计数据</strong>（1小时抓包）：</p>
 <figure class="highlight erlang-repl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">总帧数：<span class="number">1</span>,<span class="number">200</span>,<span class="number">000</span></span><br><span class="line">错误帧：<span class="number">127</span> (<span class="number">0.01</span><span class="comment">%)</span></span><br><span class="line">重传成功：<span class="number">124</span> (<span class="number">97.6</span><span class="comment">%)</span></span><br><span class="line">重传失败：<span class="number">3</span> (<span class="number">2.4</span><span class="comment">%)  ← 导致超时</span></span><br></pre></td></tr></table></figure>
 
 <hr>
 <h3 id="第三层：SocketCAN驱动分析"><a href="#第三层：SocketCAN驱动分析" class="headerlink" title="第三层：SocketCAN驱动分析"></a>第三层：SocketCAN驱动分析</h3><p><strong>查看CAN接口统计</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">ip -s -d <span class="built_in">link</span> show can0</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出：</span></span><br><span class="line">can0: &lt;NOARP,UP,LOWER_UP,ECHO&gt; mtu 16 qdisc pfifo_fast state UP mode DEFAULT</span><br><span class="line">    <span class="built_in">link</span>/can</span><br><span class="line">    can state ERROR-ACTIVE restart-ms 100</span><br><span class="line">    bitrate 500000 sample-point 0.875</span><br><span class="line">    tq 125 prop-seg 6 phase-seg1 7 phase-seg2 2 sjw 1</span><br><span class="line"></span><br><span class="line">    RX: packets errs drop ovr mcast</span><br><span class="line">        1234567  127   23   0   0</span><br><span class="line"></span><br><span class="line">    TX: packets errs drop ovr mcast</span><br><span class="line">        1234560   15    0   0   0</span><br><span class="line"></span><br><span class="line">    错误统计：</span><br><span class="line">    - RX errors: 127  ← 接收错误</span><br><span class="line">    - RX dropped: 23  ← 驱动丢包！</span><br><span class="line">    - TX errors: 15   ← 发送错误</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">ip -s -d <span class="built_in">link</span> show can0</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出：</span></span><br><span class="line">can0: &lt;NOARP,UP,LOWER_UP,ECHO&gt; mtu 16 qdisc pfifo_fast state UP mode DEFAULT</span><br><span class="line">    <span class="built_in">link</span>/can</span><br><span class="line">    can state ERROR-ACTIVE restart-ms 100</span><br><span class="line">    bitrate 500000 sample-point 0.875</span><br><span class="line">    tq 125 prop-seg 6 phase-seg1 7 phase-seg2 2 sjw 1</span><br><span class="line"></span><br><span class="line">    RX: packets errs drop ovr mcast</span><br><span class="line">        1234567  127   23   0   0</span><br><span class="line"></span><br><span class="line">    TX: packets errs drop ovr mcast</span><br><span class="line">        1234560   15    0   0   0</span><br><span class="line"></span><br><span class="line">    错误统计：</span><br><span class="line">    - RX errors: 127</span><br><span class="line">    - RX dropped: 23</span><br><span class="line">    - TX errors: 15</span><br></pre></td></tr></table></figure>
 
-<p><strong>关键发现</strong>：</p>
-<ul>
-<li>✅ 硬件错误127次（与CANalyzer一致）</li>
-<li>❌ <strong>驱动丢包23次</strong>（这是新发现！）</li>
-</ul>
+<p>这些计数说明接收错误、发送错误和接收丢弃都发生过，但不同驱动如何映射 <code>rx_errors</code>、<code>rx_dropped</code> 需要查对应驱动实现。它们不能仅凭名称就一一对应 CANalyzer 中的 error frame 数量。</p>
 <hr>
 <p><strong>查看驱动日志</strong>：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">dmesg | grep can0</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出：</span></span><br><span class="line">[12345.678] can0: RX overflow, dropping frame</span><br><span class="line">[12389.123] can0: RX overflow, dropping frame</span><br><span class="line">[12456.789] can0: RX overflow, dropping frame</span><br></pre></td></tr></table></figure>
 
-<p><strong>问题定位</strong>：</p>
-<ul>
-<li>CAN控制器的RX FIFO满了（硬件buffer只有3个帧）</li>
-<li>驱动来不及处理，新帧被丢弃</li>
-<li>高负载时更明显（7个关节同时回复）</li>
-</ul>
+<p>如果驱动明确报告硬件 FIFO overrun，才能确认控制器来不及搬走帧；如果只是 socket 接收缓冲溢出，则应检查应用消费速度和 <code>SO_RCVBUF</code>。两者修复位置不同，不能都归结为“驱动队列太小”。</p>
 <hr>
 <h3 id="第四层：定时与Guard机制"><a href="#第四层：定时与Guard机制" class="headerlink" title="第四层：定时与Guard机制"></a>第四层：定时与Guard机制</h3><p><strong>查看发送时序</strong>：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ROS 2控制节点（Python）</span></span><br><span class="line"><span class="keyword">for</span> joint_id <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, <span class="number">8</span>):</span><br><span class="line">    send_can_frame(joint_id, command)</span><br><span class="line">    <span class="comment"># ❌ 没有间隔！立即发送下一帧</span></span><br></pre></td></tr></table></figure>
 
 <p><strong>时序图</strong>：</p>
-<figure class="highlight inform7"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">主控发送：</span><br><span class="line">T0:    <span class="comment">[Joint1]</span> <span class="comment">[Joint2]</span> <span class="comment">[Joint3]</span> <span class="comment">[Joint4]</span> <span class="comment">[Joint5]</span> <span class="comment">[Joint6]</span> <span class="comment">[Joint7]</span></span><br><span class="line">        ↓        ↓        ↓        ↓        ↓        ↓        ↓</span><br><span class="line">T0+1ms: 所有关节几乎同时回复 ACK</span><br><span class="line">        ↓↓↓↓↓↓↓</span><br><span class="line">        总线冲突！需要仲裁！</span><br><span class="line"></span><br><span class="line">RX FIFO: <span class="comment">[ACK1]</span> <span class="comment">[ACK2]</span> <span class="comment">[ACK3]</span>  ← 满了！</span><br><span class="line">         <span class="comment">[ACK4]</span> <span class="comment">[ACK5]</span> ...      ← 丢弃！</span><br></pre></td></tr></table></figure>
+<figure class="highlight inform7"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">主控发送：</span><br><span class="line">T0:    <span class="comment">[Joint1]</span> <span class="comment">[Joint2]</span> <span class="comment">[Joint3]</span> <span class="comment">[Joint4]</span> <span class="comment">[Joint5]</span> <span class="comment">[Joint6]</span> <span class="comment">[Joint7]</span></span><br><span class="line">        ↓        ↓        ↓        ↓        ↓        ↓        ↓</span><br><span class="line">随后：多个关节几乎同时准备发送业务 response</span><br><span class="line">      CAN 按标识符逐帧仲裁，低优先级帧等待后重试，不发生以太网式碰撞</span><br><span class="line"></span><br><span class="line">主控 RX FIFO: <span class="comment">[RESP1]</span> <span class="comment">[RESP2]</span> <span class="comment">[RESP3]</span></span><br><span class="line">             后续帧继续串行到达；若驱动/NAPI/应用消费不及时，才可能发生 overrun</span><br></pre></td></tr></table></figure>
 
-<p><strong>根因</strong>：</p>
+<p><strong>待验证假设</strong>：</p>
 <ul>
 <li>7个命令连续发送，无间隔</li>
-<li>7个ACK几乎同时返回</li>
-<li>RX FIFO (深度&#x3D;3) 瞬间满</li>
-<li>驱动来不及处理，丢包</li>
+<li>7个控制器形成 response burst</li>
+<li>CAN 仲裁把 burst 串行化，但高优先级 response 可能让低优先级帧等待</li>
+<li>主控控制器 FIFO、内核接收队列或应用 socket 中任一层消费不足，都可能表现为业务 response 超时</li>
 </ul>
 <hr>
 <p><strong>Watchdog检测机制</strong>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 关节控制器MCU代码</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">can_rx_handler</span><span class="params">(<span class="type">can_frame_t</span> *frame)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (frame-&gt;id == JOINT_ID) &#123;</span><br><span class="line">        <span class="comment">// 收到命令，执行并回复ACK</span></span><br><span class="line">        <span class="built_in">execute_command</span>(frame-&gt;data);</span><br><span class="line">        <span class="built_in">send_ack</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 重置watchdog</span></span><br><span class="line">        <span class="built_in">watchdog_reset</span>();  <span class="comment">// 100ms超时</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Watchdog超时处理</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">watchdog_timeout_handler</span><span class="params">(<span class="type">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 100ms内未收到命令 -&gt; 紧急停止</span></span><br><span class="line">    <span class="built_in">emergency_stop</span>();</span><br><span class="line">    <span class="built_in">set_safe_state</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 关节控制器MCU代码</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">can_rx_handler</span><span class="params">(<span class="type">can_frame_t</span> *frame)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (frame-&gt;id == JOINT_ID) &#123;</span><br><span class="line">        <span class="comment">// 收到命令，执行并发送业务 response</span></span><br><span class="line">        <span class="built_in">execute_command</span>(frame-&gt;data);</span><br><span class="line">        <span class="built_in">send_response</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 重置watchdog</span></span><br><span class="line">        <span class="built_in">watchdog_reset</span>();  <span class="comment">// 100ms超时</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Watchdog超时处理</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">watchdog_timeout_handler</span><span class="params">(<span class="type">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 100ms内未收到命令 -&gt; 紧急停止</span></span><br><span class="line">    <span class="built_in">emergency_stop</span>();</span><br><span class="line">    <span class="built_in">set_safe_state</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p><strong>问题</strong>：</p>
 <ul>
@@ -385,142 +377,104 @@
 <li>触发紧急停止</li>
 </ul>
 <hr>
-<h3 id="第五层：SocketCAN内核源码审查"><a href="#第五层：SocketCAN内核源码审查" class="headerlink" title="第五层：SocketCAN内核源码审查"></a>第五层：SocketCAN内核源码审查</h3><p><strong>驱动代码</strong>（drivers&#x2F;net&#x2F;can&#x2F;dev&#x2F;rx-offload.c）：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">can_rx_offload_queue_tail</span><span class="params">(<span class="keyword">struct</span> can_rx_offload *offload,</span></span><br><span class="line"><span class="params">                               <span class="keyword">struct</span> sk_buff *skb)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">can_rx_offload_cb</span> *<span class="title">cb</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (skb_queue_len(&amp;offload-&gt;skb_queue) &gt;</span><br><span class="line">        offload-&gt;skb_queue_len_max) &#123;</span><br><span class="line">        <span class="comment">// ❌ 队列满，丢弃帧</span></span><br><span class="line">        kfree_skb(skb);</span><br><span class="line">        offload-&gt;dev-&gt;stats.rx_dropped++;</span><br><span class="line">        <span class="keyword">return</span> -ENOBUFS;  <span class="comment">// 返回错误，但没人检查</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 加入队列</span></span><br><span class="line">    skb_queue_tail(&amp;offload-&gt;skb_queue, skb);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 问题：skb_queue_len_max 默认值太小</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> skb_queue_len_max = <span class="number">10</span>;  <span class="comment">// 只能缓存10个帧！</span></span><br></pre></td></tr></table></figure>
+<h3 id="第五层：SocketCAN内核源码审查"><a href="#第五层：SocketCAN内核源码审查" class="headerlink" title="第五层：SocketCAN内核源码审查"></a>第五层：SocketCAN内核源码审查</h3><p><strong>接收路径示意</strong>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">CAN controller RX FIFO</span><br><span class="line">    -&gt; driver IRQ/NAPI or CAN RX offload <span class="built_in">queue</span></span><br><span class="line">    -&gt; SocketCAN receive path</span><br><span class="line">    -&gt; per-socket receive buffer</span><br><span class="line">    -&gt; application <span class="title function_">recvmsg</span><span class="params">()</span>/<span class="title function_">read</span><span class="params">()</span></span><br></pre></td></tr></table></figure>
 
-<p><strong>根因确认</strong>：</p>
-<ul>
-<li>RX FIFO深度：3（硬件）</li>
-<li>RX队列深度：10（软件）</li>
-<li>7个ACK同时到达 -&gt; FIFO满 -&gt; 队列满 -&gt; 丢包</li>
-</ul>
+<p>Linux 的 CAN RX offload 队列上限由具体控制器&#x2F;驱动初始化，不是一个可假定为 10 的通用全局参数；<code>ip link set can0 txqueuelen ...</code> 调整的是<strong>发送队列</strong>，不会扩大硬件 RX FIFO 或 socket receive buffer。</p>
+<p>因此要分别收集：控制器 overrun&#x2F;error counter、<code>ip -s -d link</code>、驱动 tracepoint、<code>SO_RXQ_OVFL</code>&#x2F;socket 缓冲统计和应用接收时间戳，再确定丢弃发生在哪一层。</p>
 <hr>
-<h2 id="三、解决方案（三步优化）"><a href="#三、解决方案（三步优化）" class="headerlink" title="三、解决方案（三步优化）"></a>三、解决方案（三步优化）</h2><h3 id="优化1：增加发送间隔（应用层）"><a href="#优化1：增加发送间隔（应用层）" class="headerlink" title="优化1：增加发送间隔（应用层）"></a>优化1：增加发送间隔（应用层）</h3><p><strong>原理</strong>：错开关节回复时间，避免RX FIFO满</p>
+<h2 id="三、解决方案（三步优化）"><a href="#三、解决方案（三步优化）" class="headerlink" title="三、解决方案（三步优化）"></a>三、解决方案（三步优化）</h2><h3 id="优化1：对命令与-response-做可计算的整形"><a href="#优化1：对命令与-response-做可计算的整形" class="headerlink" title="优化1：对命令与 response 做可计算的整形"></a>优化1：对命令与 response 做可计算的整形</h3><p><strong>原理</strong>：限制一个控制周期内的最坏 burst，让总线利用率、response deadline 和接收路径服务能力都留有余量。固定 <code>sleep(1 ms)</code> 只能作为实验手段，正式方案应使用单调时钟、绝对周期和明确的帧预算。</p>
 <p><strong>代码改进</strong>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 原始代码（❌ 错误）</span></span><br><span class="line"><span class="keyword">for</span> joint_id <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, <span class="number">8</span>):</span><br><span class="line">    send_can_frame(joint_id, command)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 优化后（✅ 正确）</span></span><br><span class="line"><span class="keyword">for</span> joint_id <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, <span class="number">8</span>):</span><br><span class="line">    send_can_frame(joint_id, command)</span><br><span class="line">    time.sleep(<span class="number">0.001</span>)  <span class="comment"># 1ms间隔</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 原始代码（❌ 错误）</span></span><br><span class="line"><span class="keyword">for</span> joint_id <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, <span class="number">8</span>):</span><br><span class="line">    send_can_frame(joint_id, command)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 实验性整形：正式实现应使用绝对时间调度，并检查超期</span></span><br><span class="line"><span class="keyword">for</span> joint_id <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, <span class="number">8</span>):</span><br><span class="line">    send_can_frame(joint_id, command)</span><br><span class="line">    wait_until_next_tx_slot()</span><br></pre></td></tr></table></figure>
 
 <p><strong>时序对比</strong>：</p>
-<figure class="highlight prolog"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">优化前：</span><br><span class="line"><span class="symbol">T0</span>:    [<span class="symbol">J1</span>][<span class="symbol">J2</span>][<span class="symbol">J3</span>][<span class="symbol">J4</span>][<span class="symbol">J5</span>][<span class="symbol">J6</span>][<span class="symbol">J7</span>]  ← 连续发送</span><br><span class="line"><span class="symbol">T1ms</span>:  [<span class="symbol">ACK1</span>][<span class="symbol">ACK2</span>][<span class="symbol">ACK3</span>][<span class="symbol">ACK4</span>]...  ← 同时回复，<span class="symbol">FIFO</span>满</span><br><span class="line"></span><br><span class="line">优化后：</span><br><span class="line"><span class="symbol">T0</span>:    [<span class="symbol">J1</span>]                          ← 发送<span class="symbol">J1</span></span><br><span class="line"><span class="symbol">T0</span><span class="number">.5</span>ms:     [<span class="symbol">ACK1</span>]                   ← <span class="symbol">J1</span>回复</span><br><span class="line"><span class="symbol">T1ms</span>:  [<span class="symbol">J2</span>]                          ← 发送<span class="symbol">J2</span></span><br><span class="line"><span class="symbol">T1</span><span class="number">.5</span>ms:     [<span class="symbol">ACK2</span>]                   ← <span class="symbol">J2</span>回复</span><br><span class="line">...</span><br><span class="line"><span class="symbol">T6ms</span>:  [<span class="symbol">J7</span>]</span><br><span class="line"><span class="symbol">T6</span><span class="number">.5</span>ms:     [<span class="symbol">ACK7</span>]                   ← 错开时间，<span class="symbol">FIFO</span>不满</span><br></pre></td></tr></table></figure>
+<figure class="highlight prolog"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">优化前：</span><br><span class="line"><span class="symbol">T0</span>:    [<span class="symbol">J1</span>][<span class="symbol">J2</span>][<span class="symbol">J3</span>][<span class="symbol">J4</span>][<span class="symbol">J5</span>][<span class="symbol">J6</span>][<span class="symbol">J7</span>]  ← 连续发送</span><br><span class="line">随后:  [<span class="symbol">RESP1</span>][<span class="symbol">RESP2</span>][<span class="symbol">RESP3</span>][<span class="symbol">RESP4</span>]...  ← response burst</span><br><span class="line"></span><br><span class="line">优化后：</span><br><span class="line"><span class="symbol">T0</span>:    [<span class="symbol">J1</span>]                          ← 发送<span class="symbol">J1</span></span><br><span class="line"><span class="symbol">T0</span><span class="number">.5</span>ms:     [<span class="symbol">RESP1</span>]                  ← <span class="symbol">J1</span>回复</span><br><span class="line"><span class="symbol">T1ms</span>:  [<span class="symbol">J2</span>]                          ← 发送<span class="symbol">J2</span></span><br><span class="line"><span class="symbol">T1</span><span class="number">.5</span>ms:     [<span class="symbol">RESP2</span>]                  ← <span class="symbol">J2</span>回复</span><br><span class="line">...</span><br><span class="line"><span class="symbol">T6ms</span>:  [<span class="symbol">J7</span>]</span><br><span class="line"><span class="symbol">T6</span><span class="number">.5</span>ms:     [<span class="symbol">RESP7</span>]                  ← 错开时间，降低峰值积压</span><br></pre></td></tr></table></figure>
 
-<p><strong>效果</strong>：</p>
-<ul>
-<li>RX FIFO最大占用：1（原来3）</li>
-<li>丢包率：0.01% -&gt; 0.001%（降低10倍）</li>
-</ul>
+<p>是否有效要用硬件 overrun、socket overflow、response latency 和总线利用率共同验证，不能只看业务层“超时次数”。</p>
 <hr>
-<h3 id="优化2：调整CAN驱动参数（驱动层）"><a href="#优化2：调整CAN驱动参数（驱动层）" class="headerlink" title="优化2：调整CAN驱动参数（驱动层）"></a>优化2：调整CAN驱动参数（驱动层）</h3><p><strong>增加RX队列深度</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看当前配置</span></span><br><span class="line"><span class="built_in">cat</span> /sys/class/net/can0/rx_queue_len</span><br><span class="line"><span class="comment"># 输出：10</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 增加到64</span></span><br><span class="line"><span class="built_in">sudo</span> ip <span class="built_in">link</span> <span class="built_in">set</span> can0 txqueuelen 64</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或者在启动脚本中设置</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&#x27;ip link set can0 txqueuelen 64&#x27;</span> &gt;&gt; /etc/rc.local</span><br></pre></td></tr></table></figure>
+<h3 id="优化2：按丢弃层级调优驱动与-socket"><a href="#优化2：按丢弃层级调优驱动与-socket" class="headerlink" title="优化2：按丢弃层级调优驱动与 socket"></a>优化2：按丢弃层级调优驱动与 socket</h3><p><code>txqueuelen</code> 只影响发送 qdisc。若发送侧出现 <code>ENOBUFS</code> 或排队延迟，可以评估发送队列；若是接收丢弃，应检查其他层：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 发送队列与链路状态</span></span><br><span class="line">ip -s -d <span class="built_in">link</span> show can0</span><br><span class="line"></span><br><span class="line"><span class="comment"># 应用设置并读取 socket 接收缓冲</span></span><br><span class="line">sysctl net.core.rmem_max</span><br><span class="line"></span><br><span class="line"><span class="comment"># 驱动/控制器特定统计与中断负载</span></span><br><span class="line">ethtool -S can0 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line"><span class="built_in">cat</span> /proc/interrupts</span><br></pre></td></tr></table></figure>
 
-<p><strong>调整CAN控制器FIFO</strong>（如果硬件支持）：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 设备树配置（部分CAN控制器支持）</span></span><br><span class="line">&amp;can0 &#123;</span><br><span class="line">    status = <span class="string">&quot;okay&quot;</span>;</span><br><span class="line">    clock-frequency = &lt;<span class="number">24000000</span>&gt;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 增加硬件FIFO深度（如果支持）</span></span><br><span class="line">    rx-fifo-depth = &lt;<span class="number">8</span>&gt;;  <span class="comment">// 默认3，增加到8</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p><strong>效果</strong>：</p>
-<ul>
-<li>RX队列深度：10 -&gt; 64</li>
-<li>丢包率：0.001% -&gt; 0%</li>
-</ul>
+<p>应用可启用 <code>SO_RXQ_OVFL</code> 获取 socket 丢包辅助计数，并提高接收线程优先级或批量读取；硬件 FIFO、watermark、DMA、IRQ affinity 与 NAPI&#x2F;offload 配置则必须查具体控制器 binding 和驱动实现，不能假定存在通用 <code>rx-fifo-depth</code> 属性。</p>
+<p>扩大缓冲只能吸收有限 burst，也会增加排队延迟；如果平均到达率持续高于消费率，最终仍会溢出。</p>
 <hr>
-<h3 id="优化3：优化MCU的ACK机制（固件层）"><a href="#优化3：优化MCU的ACK机制（固件层）" class="headerlink" title="优化3：优化MCU的ACK机制（固件层）"></a>优化3：优化MCU的ACK机制（固件层）</h3><p><strong>问题</strong>：MCU立即回复ACK，无延迟</p>
-<p><strong>优化</strong>：引入随机延迟，避免冲突</p>
+<h3 id="优化3：为业务-response-设计确定性时槽"><a href="#优化3：为业务-response-设计确定性时槽" class="headerlink" title="优化3：为业务 response 设计确定性时槽"></a>优化3：为业务 response 设计确定性时槽</h3><p>这里讨论的是业务 response 数据帧，不是 CAN ACK bit。多个节点同时准备发送时，CAN 会通过 ID 仲裁选择一个 winner，其余节点等待；问题是 response burst、优先级饥饿和 deadline，而不是“总线碰撞”。</p>
+<p>随机延迟会增加不可预测性。更稳妥的方案是由 command ID&#x2F;周期号定义 response 窗口，或为每个 joint 分配确定性 offset，并对过期 response 丢弃而不是无限排队。</p>
 <p><strong>代码改进</strong>：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原始代码（❌ 立即回复）</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">can_rx_handler</span><span class="params">(<span class="type">can_frame_t</span> *frame)</span> &#123;</span><br><span class="line">    execute_command(frame-&gt;data);</span><br><span class="line">    send_ack();  <span class="comment">// 立即发送</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 优化后（✅ 随机延迟）</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">can_rx_handler</span><span class="params">(<span class="type">can_frame_t</span> *frame)</span> &#123;</span><br><span class="line">    execute_command(frame-&gt;data);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 根据关节ID引入延迟（100us * ID）</span></span><br><span class="line">    <span class="type">uint32_t</span> delay_us = <span class="number">100</span> * joint_id;</span><br><span class="line">    delay_us(delay_us);</span><br><span class="line"></span><br><span class="line">    send_ack();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原始代码（❌ 立即回复）</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">can_rx_handler</span><span class="params">(<span class="type">can_frame_t</span> *frame)</span> &#123;</span><br><span class="line">    execute_command(frame-&gt;data);</span><br><span class="line">    send_response();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 示例：按 joint ID 使用确定性时槽</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">can_rx_handler</span><span class="params">(<span class="type">can_frame_t</span> *frame)</span> &#123;</span><br><span class="line">    execute_command(frame-&gt;data);</span><br><span class="line"></span><br><span class="line">    <span class="type">uint32_t</span> slot_offset_us = response_slot_us(joint_id);</span><br><span class="line">    schedule_response(frame-&gt;command_id, slot_offset_us);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 到时再次确认 command_id 仍是当前代，再发送 response</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p><strong>时序对比</strong>：</p>
-<figure class="highlight inform7"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">优化前：</span><br><span class="line">T0:    主控发送 <span class="comment">[J1]</span></span><br><span class="line">T0.5ms: 所有关节收到，立即回复</span><br><span class="line">        <span class="comment">[ACK1]</span><span class="comment">[ACK2]</span><span class="comment">[ACK3]</span>... ← 冲突</span><br><span class="line"></span><br><span class="line">优化后：</span><br><span class="line">T0:    主控发送 <span class="comment">[J1]</span></span><br><span class="line">T0.5ms: J1收到，延迟0us，回复 <span class="comment">[ACK1]</span></span><br><span class="line">T0.6ms: J2收到，延迟100us，回复 <span class="comment">[ACK2]</span></span><br><span class="line">T0.7ms: J3收到，延迟200us，回复 <span class="comment">[ACK3]</span></span><br><span class="line">...    ← 错开时间，无冲突</span><br></pre></td></tr></table></figure>
+<figure class="highlight inform7"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">优化前：</span><br><span class="line">T0:    主控发送 <span class="comment">[J1]</span></span><br><span class="line">T0.5ms: 多个节点准备发送</span><br><span class="line">        <span class="comment">[RESP1]</span><span class="comment">[RESP2]</span><span class="comment">[RESP3]</span>... ← 由仲裁串行，但形成burst</span><br><span class="line"></span><br><span class="line">优化后：</span><br><span class="line">T0:    主控发送 <span class="comment">[J1]</span></span><br><span class="line">T0.5ms: J1的确定性时槽 <span class="comment">[RESP1]</span></span><br><span class="line">T0.6ms: J2的确定性时槽 <span class="comment">[RESP2]</span></span><br><span class="line">T0.7ms: J3的确定性时槽 <span class="comment">[RESP3]</span></span><br><span class="line">...    ← 可计算的峰值与最坏响应延迟</span><br></pre></td></tr></table></figure>
 
-<p><strong>效果</strong>：</p>
-<ul>
-<li>总线仲裁减少90%</li>
-<li>延迟增加：&lt;700us（可接受）</li>
-</ul>
+<p>时槽长度必须包含帧位数、stuff bit 上界、总线速率、仲裁&#x2F;错误重传余量和时钟误差，并用真实 trace 验证。</p>
 <hr>
-<h3 id="优化4：改进Watchdog策略（可靠性）"><a href="#优化4：改进Watchdog策略（可靠性）" class="headerlink" title="优化4：改进Watchdog策略（可靠性）"></a>优化4：改进Watchdog策略（可靠性）</h3><p><strong>问题</strong>：一次丢包 -&gt; Watchdog超时 -&gt; 紧急停止</p>
-<p><strong>优化</strong>：容忍短暂丢包</p>
+<h3 id="优化4：分离通信健康监控与安全停止条件"><a href="#优化4：分离通信健康监控与安全停止条件" class="headerlink" title="优化4：分离通信健康监控与安全停止条件"></a>优化4：分离通信健康监控与安全停止条件</h3><p>不能为了减少误停就简单允许“连续丢 3 次”。控制系统是否还能安全运行取决于命令新鲜度、执行器本地安全状态、速度&#x2F;力矩和风险分析。</p>
+<p>更稳妥的状态机至少区分：单帧业务 response 缺失、command deadline 超期、设备通信失联和安全监控触发。业务 response 缺失可以重试或降级；超过设备允许的数据年龄则应进入经过安全分析的 safe state。</p>
 <p><strong>代码改进</strong>：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原始代码（❌ 一次超时就停止）</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">watchdog_timeout_handler</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    emergency_stop();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 优化后（✅ margin机制）</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> WATCHDOG_MARGIN 3  <span class="comment">// 容忍3次丢包</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">uint8_t</span> watchdog_miss_count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">can_rx_handler</span><span class="params">(<span class="type">can_frame_t</span> *frame)</span> &#123;</span><br><span class="line">    <span class="comment">// 收到命令，重置计数</span></span><br><span class="line">    watchdog_miss_count = <span class="number">0</span>;</span><br><span class="line">    watchdog_reset();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">watchdog_timeout_handler</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    watchdog_miss_count++;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (watchdog_miss_count &gt;= WATCHDOG_MARGIN) &#123;</span><br><span class="line">        <span class="comment">// 连续3次丢包，才触发紧急停止</span></span><br><span class="line">        emergency_stop();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 容忍1-2次丢包，只记录日志</span></span><br><span class="line">        log_warning(<span class="string">&quot;Watchdog miss: %d/%d&quot;</span>,</span><br><span class="line">                   watchdog_miss_count, WATCHDOG_MARGIN);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原始代码（❌ 一次超时就停止）</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">watchdog_timeout_handler</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    emergency_stop();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 优化后（✅ margin机制）</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> COMMAND_MAX_AGE_NS  3000000ULL</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">uint64_t</span> last_valid_command_ns;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">can_rx_handler</span><span class="params">(<span class="type">can_frame_t</span> *frame)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (validate_command_id(frame) &amp;&amp; validate_crc(frame)) &#123;</span><br><span class="line">        last_valid_command_ns = monotonic_now_ns();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">watchdog_timeout_handler</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (monotonic_now_ns() - last_valid_command_ns &gt; COMMAND_MAX_AGE_NS) &#123;</span><br><span class="line">        enter_validated_safe_state();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p><strong>效果</strong>：</p>
+<p>阈值必须来自控制周期、制动时间和危害分析；博客示例不能替代 ISO 13849&#x2F;IEC 61508 等适用流程或真机安全验证。</p>
+<hr>
+<h2 id="四、验证矩阵与容量预算"><a href="#四、验证矩阵与容量预算" class="headerlink" title="四、验证矩阵与容量预算"></a>四、验证矩阵与容量预算</h2><h3 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h3><p>原稿曾写“500 kbit&#x2F;s、7 个关节、每关节 1 kHz，并且每周期都有命令和 response”。这个组合在经典 CAN 上无法成立：即使不精确展开 bit stuffing，一个 8 字节经典 CAN 数据帧在总线上的开销也远大于 64 bit；每毫秒发送 14 帧会明显超过 500 kbit&#x2F;s。</p>
+<p>因此应区分：</p>
 <ul>
-<li>容忍偶发丢包（&lt;3次）</li>
-<li>紧急停止触发率：15次&#x2F;天 -&gt; 0次&#x2F;天</li>
+<li>关节 MCU 内部可以运行 1 kHz 本地控制环；</li>
+<li>CAN 命令&#x2F;状态更新率必须根据标识符长度、payload、bit stuffing 上界、response 数量、错误重传和目标利用率单独预算；</li>
+<li>不能用“应用想要 1 kHz”代替链路容量计算。</li>
 </ul>
 <hr>
-<h2 id="四、性能对比"><a href="#四、性能对比" class="headerlink" title="四、性能对比"></a>四、性能对比</h2><h3 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h3><p><strong>测试场景</strong>：</p>
-<ul>
-<li>7个关节控制器</li>
-<li>1kHz控制频率（每个关节）</li>
-<li>连续运行24小时</li>
-</ul>
-<hr>
-<h3 id="丢包率对比"><a href="#丢包率对比" class="headerlink" title="丢包率对比"></a>丢包率对比</h3><table>
+<h3 id="必须同时记录的指标"><a href="#必须同时记录的指标" class="headerlink" title="必须同时记录的指标"></a>必须同时记录的指标</h3><table>
 <thead>
 <tr>
-<th>优化阶段</th>
-<th>丢包率</th>
-<th>紧急停止次数&#x2F;天</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>优化前</td>
-<td>0.01% (120次&#x2F;小时)</td>
-<td>15次</td>
-</tr>
-<tr>
-<td>+应用层间隔</td>
-<td>0.001% (12次&#x2F;小时)</td>
-<td>3次</td>
-</tr>
-<tr>
-<td>+驱动队列</td>
-<td>0.0001% (1次&#x2F;小时)</td>
-<td>0次</td>
-</tr>
-<tr>
-<td>+MCU延迟</td>
-<td>0% (0次)</td>
-<td>0次</td>
-</tr>
-</tbody></table>
-<hr>
-<h3 id="延迟对比"><a href="#延迟对比" class="headerlink" title="延迟对比"></a>延迟对比</h3><table>
-<thead>
-<tr>
+<th>层级</th>
 <th>指标</th>
-<th>优化前</th>
-<th>优化后</th>
-<th>说明</th>
+<th>目的</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>命令发送周期</td>
-<td>1ms</td>
-<td>7ms</td>
-<td>7个关节轮询</td>
+<td>CAN 控制器</td>
+<td>TEC&#x2F;REC、error-active&#x2F;passive、bus-off、FIFO overrun</td>
+<td>区分协议&#x2F;物理错误与接收搬运不及时</td>
 </tr>
 <tr>
-<td>单关节响应延迟</td>
-<td>0.5ms</td>
-<td>0.5-1.2ms</td>
-<td>增加&lt;700us</td>
+<td>netdev&#x2F;驱动</td>
+<td>rx_errors、rx_dropped、tx_errors、队列停顿</td>
+<td>定位内核与驱动路径异常</td>
 </tr>
 <tr>
-<td>最坏情况延迟</td>
-<td>无限（超时）</td>
-<td>1.2ms</td>
-<td>稳定</td>
+<td>socket</td>
+<td><code>SO_RXQ_OVFL</code>、接收缓冲占用、<code>recvmsg()</code> 间隔</td>
+<td>判断应用是否消费过慢</td>
+</tr>
+<tr>
+<td>业务协议</td>
+<td>command ID 缺口、重复、迟到 response、response deadline</td>
+<td>判断任务语义是否完整</td>
+</tr>
+<tr>
+<td>安全状态机</td>
+<td>命令数据年龄、降级次数、safe-state 进入原因</td>
+<td>验证安全边界没有被“容错”绕过</td>
 </tr>
 </tbody></table>
 <hr>
-<h3 id="总线负载对比"><a href="#总线负载对比" class="headerlink" title="总线负载对比"></a>总线负载对比</h3><p><strong>优化前</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">canbusload can0@500000 -r</span><br><span class="line"><span class="comment"># 输出：</span></span><br><span class="line">Average: 42%</span><br><span class="line">Peak:    98%  ← 瞬时负载过高</span><br></pre></td></tr></table></figure>
+<h3 id="测试阶段"><a href="#测试阶段" class="headerlink" title="测试阶段"></a>测试阶段</h3><ol>
+<li><strong>空载基线</strong>：单节点、低频率，确认 bit timing、终端和 error counter 正常。</li>
+<li><strong>阶梯负载</strong>：逐步增加命令&#x2F;response 频率，记录第一个出现排队、overrun 或 deadline miss 的层级。</li>
+<li><strong>突发测试</strong>：在相同平均带宽下改变 burst 大小，验证接收路径容量。</li>
+<li><strong>优先级测试</strong>：构造高优先级持续流，确认低优先级 response 不会饥饿。</li>
+<li><strong>故障注入</strong>：使用 <code>vcan</code> 验证业务状态机，真实 CAN 上再验证错误帧、bus-off 和恢复。</li>
+<li><strong>长稳测试</strong>：保存原始 trace、软件版本、总帧数和每层计数器，才能支持“未再复现”的结论。</li>
+</ol>
+<hr>
+<h3 id="总线负载观测"><a href="#总线负载观测" class="headerlink" title="总线负载观测"></a>总线负载观测</h3><p><strong>优化前</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">canbusload can0@500000 -r</span><br><span class="line"><span class="comment"># 保存观察窗口、帧 ID 分布与错误计数器</span></span><br></pre></td></tr></table></figure>
 
-<p><strong>优化后</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">canbusload can0@500000 -r</span><br><span class="line"><span class="comment"># 输出：</span></span><br><span class="line">Average: 38%</span><br><span class="line">Peak:    55%  ← 负载平滑</span><br></pre></td></tr></table></figure>
-
+<p>平均利用率无法反映短时 burst、优先级饥饿和错误重传。正式报告应给出观察窗口、峰值定义、帧 ID 分布与 error counter，而不是只列一组百分比。</p>
 <hr>
 <h2 id="五、调试工具链"><a href="#五、调试工具链" class="headerlink" title="五、调试工具链"></a>五、调试工具链</h2><h3 id="工具1：CANalyzer"><a href="#工具1：CANalyzer" class="headerlink" title="工具1：CANalyzer"></a>工具1：CANalyzer</h3><p><strong>用途</strong>：实时监控、错误分析</p>
 <p><strong>配置</strong>：</p>
-<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">过滤器：</span><br><span class="line"><span class="bullet">- </span>Data Frames: 0x100-0x1FF (命令)</span><br><span class="line"><span class="bullet">- </span>Data Frames: 0x200-0x2FF (ACK)</span><br><span class="line"><span class="bullet">- </span>Error Frames: All</span><br><span class="line"></span><br><span class="line">触发器：</span><br><span class="line"><span class="bullet">- </span>错误帧出现时停止录制</span><br><span class="line"><span class="bullet">- </span>保存前后各1000帧</span><br></pre></td></tr></table></figure>
+<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">过滤器：</span><br><span class="line"><span class="bullet">- </span>Data Frames: 0x100-0x1FF (命令)</span><br><span class="line"><span class="bullet">- </span>Data Frames: 0x200-0x2FF (业务response)</span><br><span class="line"><span class="bullet">- </span>Error Frames: All</span><br><span class="line"></span><br><span class="line">触发器：</span><br><span class="line"><span class="bullet">- </span>错误帧出现时停止录制</span><br><span class="line"><span class="bullet">- </span>保存前后各1000帧</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h3 id="工具2：SocketCAN工具集"><a href="#工具2：SocketCAN工具集" class="headerlink" title="工具2：SocketCAN工具集"></a>工具2：SocketCAN工具集</h3><p><strong>candump</strong>（抓包）：</p>
@@ -537,7 +491,7 @@
 <figure class="highlight vbnet"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">CH1:</span> CAN_H</span><br><span class="line"><span class="symbol">CH2:</span> CAN_L</span><br><span class="line"><span class="symbol">Math:</span> CH1 - CH2 (差分)</span><br><span class="line"></span><br><span class="line">触发条件：<span class="keyword">Error</span> Frame</span><br></pre></td></tr></table></figure>
 
 <p><strong>验证时序</strong>：</p>
-<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">逻辑分析仪 + CAN解码：</span><br><span class="line"><span class="bullet">- </span>测量发送间隔</span><br><span class="line"><span class="bullet">- </span>验证ACK延迟</span><br><span class="line"><span class="bullet">- </span>检测总线仲裁</span><br></pre></td></tr></table></figure>
+<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">逻辑分析仪 + CAN解码：</span><br><span class="line"><span class="bullet">- </span>测量发送间隔</span><br><span class="line"><span class="bullet">- </span>分别验证链路层 ACK slot 与业务 response 延迟</span><br><span class="line"><span class="bullet">- </span>检测总线仲裁</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="六、经验总结"><a href="#六、经验总结" class="headerlink" title="六、经验总结"></a>六、经验总结</h2><h3 id="CAN总线调试方法论"><a href="#CAN总线调试方法论" class="headerlink" title="CAN总线调试方法论"></a>CAN总线调试方法论</h3><p><strong>五层排查法</strong>：</p>
@@ -552,11 +506,11 @@
 <h3 id="常见坑点"><a href="#常见坑点" class="headerlink" title="常见坑点"></a>常见坑点</h3><p><strong>坑1：忘记配置终端电阻</strong></p>
 <figure class="highlight objectivec"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">症状：通信不稳定，错误率高</span><br><span class="line">检查：万用表测量<span class="built_in">CAN_H</span>/<span class="built_in">CAN_L</span>阻抗</span><br><span class="line">应该：<span class="number">60</span>Ω（两个<span class="number">120</span>Ω并联）</span><br></pre></td></tr></table></figure>
 
-<p><strong>坑2：波特率配置错误</strong></p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ 错误：采样点不合适</span></span><br><span class="line">ip link <span class="built_in">set</span> can0 type can bitrate <span class="number">500000</span> sample-point <span class="number">0.5</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// ✅ 正确：采样点87.5%（推荐）</span></span><br><span class="line">ip link <span class="built_in">set</span> can0 type can bitrate <span class="number">500000</span> sample-point <span class="number">0.875</span></span><br></pre></td></tr></table></figure>
+<p><strong>坑2：bit timing 只抄一个“推荐采样点”</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 错误：不看控制器时钟、收发器、线长和其他节点就照抄参数</span></span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> can0 <span class="built_in">type</span> can bitrate 500000 sample-point 0.5</span><br><span class="line"></span><br><span class="line"><span class="comment"># 正确方向：按硬件手册和全网节点约束计算并验证；87.5%只是常见起点之一</span></span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> can0 <span class="built_in">type</span> can bitrate 500000 sample-point 0.875</span><br></pre></td></tr></table></figure>
 
 <p><strong>坑3：高负载下RX FIFO满</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 检查是否有RX overflow</span></span><br><span class="line">ip -s <span class="built_in">link</span> show can0 | grep drop</span><br><span class="line"></span><br><span class="line"><span class="comment"># 解决：增加队列深度</span></span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> can0 txqueuelen 64</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 同时检查控制器、netdev和socket，不把txqueuelen当RX参数</span></span><br><span class="line">ip -s -d <span class="built_in">link</span> show can0</span><br><span class="line"><span class="built_in">cat</span> /proc/interrupts</span><br><span class="line"></span><br><span class="line"><span class="comment"># 应用侧读取SO_RXQ_OVFL，并记录recvmsg间隔</span></span><br></pre></td></tr></table></figure>
 
 <hr>
 <h3 id="Trade-off分析"><a href="#Trade-off分析" class="headerlink" title="Trade-off分析"></a>Trade-off分析</h3><table>
@@ -575,22 +529,22 @@
 <td>低频控制</td>
 </tr>
 <tr>
-<td>驱动队列增大</td>
-<td>透明</td>
-<td>内存占用</td>
-<td>高频突发</td>
+<td>分层接收路径调优</td>
+<td>能针对真实丢弃点</td>
+<td>依赖控制器和驱动</td>
+<td>已定位 FIFO&#x2F;socket overflow</td>
 </tr>
 <tr>
-<td>MCU随机延迟</td>
-<td>错开冲突</td>
-<td>固件改动</td>
-<td>多节点</td>
+<td>确定性response时槽</td>
+<td>峰值和最坏延迟可计算</td>
+<td>需要时钟与协议设计</td>
+<td>多节点周期控制</td>
 </tr>
 <tr>
-<td>Watchdog margin</td>
-<td>容错</td>
-<td>安全风险</td>
-<td>可靠性优先</td>
+<td>数据年龄安全状态机</td>
+<td>把业务重试与安全边界分开</td>
+<td>需要危害分析与真机验证</td>
+<td>安全关键控制</td>
 </tr>
 </tbody></table>
 <hr>
@@ -600,23 +554,23 @@
 <li><strong>冗余总线</strong>：双CAN总线，互为备份</li>
 </ol>
 <hr>
-<h2 id="八、总结"><a href="#八、总结" class="headerlink" title="八、总结"></a>八、总结</h2><p>通过<strong>五层排查法</strong>，定位到CAN总线丢包的根因：</p>
+<h2 id="八、总结"><a href="#八、总结" class="headerlink" title="八、总结"></a>八、总结</h2><p>通过<strong>五层排查法</strong>，可以把同一个“业务 response 超时”拆成不同候选原因：</p>
 <ul>
-<li>✅ 应用层：命令连续发送，无间隔</li>
-<li>✅ 驱动层：RX队列深度不足</li>
-<li>✅ 固件层：ACK同时回复，FIFO满</li>
+<li>应用层：命令发送形成 burst，业务 deadline 或 command ID 处理不完整；</li>
+<li>接收路径：控制器 FIFO、驱动&#x2F;offload 队列或 socket 消费不足；</li>
+<li>协议&#x2F;物理层：ACK error、bit error、错误重传、error-passive 或 bus-off。</li>
 </ul>
-<p>通过<strong>三步优化</strong>，彻底解决问题：</p>
+<p>修复应和证据一一对应：</p>
 <ul>
-<li>✅ 应用层间隔：1ms</li>
-<li>✅ 驱动队列：10 -&gt; 64</li>
-<li>✅ MCU延迟：100us * ID</li>
+<li>按链路预算整形命令与 response，而不是随意 <code>sleep</code>；</li>
+<li>只在确认丢弃层级后调整 FIFO、IRQ、socket 缓冲或消费者；</li>
+<li>response 使用确定性时槽和 command ID，过期代际不得污染当前任务；</li>
+<li>通信健康与安全停止条件分离，但都不能绕过命令数据年龄上限。</li>
 </ul>
 <p><strong>效果</strong>：</p>
 <ul>
-<li>丢包率：0.01% -&gt; 0%</li>
-<li>紧急停止：15次&#x2F;天 -&gt; 0次&#x2F;天</li>
-<li>总线负载峰值：98% -&gt; 55%</li>
+<li>原稿记录中业务 response 超时和误触发停止均显著下降；原始 trace 未公开，因此不把“0%”写成可复现保证</li>
+<li>总线负载、错误计数器、FIFO overrun、socket overflow 与 response deadline 应分别报告</li>
 </ul>
 <p><strong>关键经验</strong>：</p>
 <ul>
@@ -628,6 +582,8 @@
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
 <li><a target="_blank" rel="noopener" href="https://docs.kernel.org/networking/can.html">Linux SocketCAN 文档</a></li>
 <li><a target="_blank" rel="noopener" href="https://docs.kernel.org/networking/can.html#can-error-message-frames">Linux CAN 错误计数器文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/linux-can/can-utils">linux-can&#x2F;can-utils 工具清单</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.can-cia.org/can-knowledge/can-cc">CAN in Automation：CAN CC 基础</a></li>
 </ul>
 
         </div>

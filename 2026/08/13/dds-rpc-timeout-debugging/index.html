@@ -289,13 +289,13 @@
             <h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文是一篇工程复盘稿。公开仓库未包含私有生产环境的原始抓包、设备日志和真实机械臂复现条件，因此文中的生产指标用于说明排查链路，不构成可由公开仓库独立复现的 benchmark。</p>
 <div class="note-flow"><span>复现高负载超时</span><i>→</i><span>排除网络与进程</span><i>→</i><span>对齐抓包和 DDS 日志</span><i>→</i><span>审查 QoS 深度</span><i>→</i><span>压力测试验证</span></div>
 
-<div class="note-map"><span><b>现象</b><small>低负载正常，高负载偶发超时。</small></span><span><b>网络</b><small>先用 ping、iperf 与抓包排除链路问题。</small></span><span><b>Discovery</b><small>确认 writer 与 reader 已稳定匹配。</small></span><span><b>QoS</b><small>重点核对可靠性、历史策略与队列深度。</small></span><span><b>修复</b><small>统一两端配置，并加入 deadline 观测。</small></span><span><b>验证</b><small>用持续压力测试确认超时不再出现。</small></span></div>
+<div class="note-map"><span><b>现象</b><small>低负载正常，高负载偶发超时。</small></span><span><b>网络</b><small>在发送端和接收端同时抓包，并检查接口丢包计数。</small></span><span><b>Discovery</b><small>确认端点匹配，但不把“已匹配”当成交付证明。</small></span><span><b>QoS</b><small>分别核对兼容性、历史缓存、资源上限和应用取样速度。</small></span><span><b>超时</b><small>RPC 用请求 ID 和单调时钟定案，Deadline 只做周期健康观测。</small></span><span><b>验证</b><small>用突发、持续压力和故障注入覆盖最坏积压。</small></span></div>
 
-<h2 id="一、问题现场"><a href="#一、问题现场" class="headerlink" title="一、问题现场"></a>一、问题现场</h2><p>我们的七轴协作机械臂在装配任务中使用Cora DDS-RPC进行运动控制通信。生产环境中出现了一个棘手的问题：</p>
+<h2 id="一、问题现场"><a href="#一、问题现场" class="headerlink" title="一、问题现场"></a>一、问题现场</h2><p>这个案例中的运动控制通信使用一层业务 DDS-RPC 封装。为了避免把私有组件名称误写成通用产品，下面只讨论可迁移的 DDS、RTPS 和应用层行为。</p>
 <p><strong>故障现象</strong>：</p>
 <ul>
 <li>高负载场景（装配任务，&gt;200个RPC调用&#x2F;秒）</li>
-<li><strong>15%的RPC调用超时</strong>（&gt;100ms未收到响应）</li>
+<li>案例记录中约 <strong>15% 的 RPC 调用超过 100 ms 未收到响应</strong></li>
 <li>导致机械臂运动卡顿，任务失败</li>
 </ul>
 <p><strong>日志片段</strong>：</p>
@@ -306,13 +306,13 @@
 <li>✅ 低负载（&lt;50 req&#x2F;s）正常</li>
 <li>❌ 高负载（&gt;200 req&#x2F;s）出现超时</li>
 <li>❌ <strong>偶发</strong>（不是100%失败）</li>
-<li>❌ 超时的RPC永远不会收到响应（不是慢，是丢了）</li>
+<li>❌ 部分请求最终没有被业务层观察到响应；仅凭调用方超时，还不能先验判断是网络丢包、DDS 缓存淘汰、应用未及时 <code>take()</code>，还是响应关联逻辑出错</li>
 </ul>
 <hr>
 <h2 id="二、初步排查（排除法）"><a href="#二、初步排查（排除法）" class="headerlink" title="二、初步排查（排除法）"></a>二、初步排查（排除法）</h2><h3 id="假设1：网络问题？"><a href="#假设1：网络问题？" class="headerlink" title="假设1：网络问题？"></a>假设1：网络问题？</h3><p><strong>验证</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. ping测试</span></span><br><span class="line">ping -c 1000 &lt;运动控制器IP&gt;</span><br><span class="line"><span class="comment"># 结果：0%丢包，延迟&lt;1ms</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. iperf带宽测试</span></span><br><span class="line">iperf3 -c &lt;运动控制器IP&gt; -t 60</span><br><span class="line"><span class="comment"># 结果：带宽980 Mbps，无问题</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 抓包看网络层</span></span><br><span class="line">tcpdump -i eth0 -w dds.pcap</span><br><span class="line"><span class="comment"># 结果：TCP层没有重传，UDP层没有丢包</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. ping测试</span></span><br><span class="line">ping -c 1000 &lt;运动控制器IP&gt;</span><br><span class="line"><span class="comment"># 结果：0%丢包，延迟&lt;1ms</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. iperf带宽测试</span></span><br><span class="line">iperf3 -c &lt;运动控制器IP&gt; -t 60</span><br><span class="line"><span class="comment"># 结果：带宽980 Mbps，无问题</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 发送端与接收端同时抓 RTPS，并记录网卡/内核计数</span></span><br><span class="line">tcpdump -i eth0 -w sender.pcap udp portrange 7400-7500</span><br><span class="line">ip -s <span class="built_in">link</span> show eth0</span><br><span class="line">ethtool -S eth0</span><br></pre></td></tr></table></figure>
 
-<p><strong>结论</strong>：❌ 不是网络问题</p>
+<p><strong>边界</strong>：<code>ping</code> 和 <code>iperf</code> 只能说明对应测试流量正常，不能证明 DDS 使用的 UDP 流量没有丢失。只有把发送端抓包、接收端抓包、网卡&#x2F;内核丢包计数和 RTPS 序号对齐，才能把故障范围缩小到网络之前或网络之后。</p>
 <hr>
 <h3 id="假设2：运动控制器崩溃或卡死？"><a href="#假设2：运动控制器崩溃或卡死？" class="headerlink" title="假设2：运动控制器崩溃或卡死？"></a>假设2：运动控制器崩溃或卡死？</h3><p><strong>验证</strong>：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 查看进程状态</span></span><br><span class="line">ps aux | grep motion_controller</span><br><span class="line"><span class="comment"># 结果：进程正常运行</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 查看CPU/内存</span></span><br><span class="line">top -p &lt;PID&gt;</span><br><span class="line"><span class="comment"># 结果：CPU 40%，内存正常</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 查看线程栈</span></span><br><span class="line">gdb -p &lt;PID&gt; -ex <span class="string">&quot;thread apply all bt&quot;</span> -ex <span class="string">&quot;quit&quot;</span></span><br><span class="line"><span class="comment"># 结果：所有线程正常，没有死锁</span></span><br></pre></td></tr></table></figure>
@@ -322,62 +322,60 @@
 <h3 id="假设3：DDS-Discovery问题？"><a href="#假设3：DDS-Discovery问题？" class="headerlink" title="假设3：DDS Discovery问题？"></a>假设3：DDS Discovery问题？</h3><p><strong>验证</strong>：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看DDS Discovery日志</span></span><br><span class="line"><span class="built_in">export</span> FASTRTPS_LOG_LEVEL=debug</span><br><span class="line">./motion_controller</span><br><span class="line"></span><br><span class="line"><span class="comment"># 日志显示：</span></span><br><span class="line"><span class="comment"># [DISCOVERY] Matched writer: 0x123456...</span></span><br><span class="line"><span class="comment"># [DISCOVERY] Matched reader: 0x789abc...</span></span><br></pre></td></tr></table></figure>
 
-<p><strong>结论</strong>：❌ Discovery正常，Reader和Writer已匹配</p>
+<p><strong>结论</strong>：端点已经匹配，因此可以继续检查数据路径；但 Discovery 正常并不代表后续每个样本都被可靠交付或被应用取走。</p>
 <hr>
 <h2 id="三、深度定位（三步法）"><a href="#三、深度定位（三步法）" class="headerlink" title="三、深度定位（三步法）"></a>三、深度定位（三步法）</h2><h3 id="第一步：Wireshark抓包分析"><a href="#第一步：Wireshark抓包分析" class="headerlink" title="第一步：Wireshark抓包分析"></a>第一步：Wireshark抓包分析</h3><p><strong>抓包命令</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 只抓DDS RTPS协议（UDP端口7400）</span></span><br><span class="line">tcpdump -i eth0 -w dds_high_load.pcap \</span><br><span class="line">    <span class="string">&quot;udp port 7400 or udp port 7401&quot;</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 端口与 domain ID、participant index 和 DDS 实现有关；以下范围仅作示例</span></span><br><span class="line">tcpdump -i eth0 -w dds_high_load.pcap \</span><br><span class="line">    <span class="string">&quot;udp portrange 7400-7500&quot;</span></span><br></pre></td></tr></table></figure>
 
 <p><strong>Wireshark过滤器</strong>：</p>
 <figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rtps &amp;&amp; rtps<span class="selector-class">.sm</span><span class="selector-class">.guidPrefix</span> == <span class="number">0</span>x0123456789abcdef</span><br></pre></td></tr></table></figure>
 
 <p><strong>关键发现</strong>：</p>
-<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">时间戳      源IP          目标IP         RTPS消息类型    Sequence Number</span></span><br><span class="line"><span class="section">----------------------------------------------------------------------</span></span><br><span class="line">10:00:00.100  Task Planner  Motion Ctrl   DATA            seq=1234</span><br><span class="line">10:00:00.102  Task Planner  Motion Ctrl   DATA            seq=1235</span><br><span class="line">10:00:00.104  Task Planner  Motion Ctrl   DATA            seq=1236</span><br><span class="line">10:00:00.106  Task Planner  Motion Ctrl   DATA            seq=1237</span><br><span class="line">10:00:00.108  Task Planner  Motion Ctrl   DATA            seq=1238</span><br><span class="line">10:00:00.110  Task Planner  Motion Ctrl   DATA            seq=1239</span><br><span class="line">10:00:00.112  Task Planner  Motion Ctrl   DATA            seq=1240</span><br><span class="line">10:00:00.114  Task Planner  Motion Ctrl   DATA            seq=1241</span><br><span class="line"><span class="section">10:00:00.116  Task Planner  Motion Ctrl   DATA            seq=1242  ← Writer发了9条</span></span><br><span class="line"><span class="section">----------------------------------------------------------------------</span></span><br><span class="line"><span class="section">                                           ↓ 但Reader只收到最新1条！</span></span><br><span class="line"><span class="section">----------------------------------------------------------------------</span></span><br><span class="line">10:00:00.200  Motion Ctrl   Task Planner  ACKNACK         seq=1242  ← 只ACK了1242</span><br></pre></td></tr></table></figure>
+<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">时间戳      源IP          目标IP         RTPS消息类型    Sequence Number</span></span><br><span class="line"><span class="section">----------------------------------------------------------------------</span></span><br><span class="line">10:00:00.100  Task Planner  Motion Ctrl   DATA            seq=1234</span><br><span class="line">10:00:00.102  Task Planner  Motion Ctrl   DATA            seq=1235</span><br><span class="line">10:00:00.104  Task Planner  Motion Ctrl   DATA            seq=1236</span><br><span class="line">10:00:00.106  Task Planner  Motion Ctrl   DATA            seq=1237</span><br><span class="line">10:00:00.108  Task Planner  Motion Ctrl   DATA            seq=1238</span><br><span class="line">10:00:00.110  Task Planner  Motion Ctrl   DATA            seq=1239</span><br><span class="line">10:00:00.112  Task Planner  Motion Ctrl   DATA            seq=1240</span><br><span class="line">10:00:00.114  Task Planner  Motion Ctrl   DATA            seq=1241</span><br><span class="line"><span class="section">10:00:00.116  Task Planner  Motion Ctrl   DATA            seq=1242  ← Writer发了9条</span></span><br><span class="line"><span class="section">----------------------------------------------------------------------</span></span><br><span class="line"><span class="section">                                           ↓ 但Reader只收到最新1条！</span></span><br><span class="line"><span class="section">----------------------------------------------------------------------</span></span><br><span class="line">10:00:00.200  Motion Ctrl   Task Planner  ACKNACK         ...</span><br></pre></td></tr></table></figure>
 
-<p><strong>惊人的发现</strong>：</p>
-<ul>
-<li>✅ Writer <strong>确实发送了</strong>9条消息（seq 1234-1242）</li>
-<li>❌ Reader <strong>只收到了最后1条</strong>（seq 1242）</li>
-<li>❌ 前8条消息<strong>在Reader端丢失了</strong></li>
-</ul>
-<p><strong>这不是网络丢包（tcpdump看到了所有包），是DDS层丢的！</strong></p>
+<p>这里能确认发送端发出了序号连续的 RTPS DATA。还需要在接收端抓包，或用 DDS&#x2F;RTPS 日志确认这些 DATA 是否进入 reader history。RTPS <code>ACKNACK</code> 携带的是接收状态集合，不能简化成“只 ACK 某一个业务序号”。</p>
+<p>当接收端抓包也看到全部 DATA，而应用层只 <code>take()</code> 到最后一个样本时，排查重点才应转向 reader history、resource limits、应用取样线程和请求关联逻辑。</p>
 <hr>
 <h3 id="第二步：DDS日志分析"><a href="#第二步：DDS日志分析" class="headerlink" title="第二步：DDS日志分析"></a>第二步：DDS日志分析</h3><p><strong>开启DDS详细日志</strong>：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 代码中添加</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fastdds/dds/log/Log.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line">eprosima::fastdds::dds::Log::<span class="built_in">SetVerbosity</span>(</span><br><span class="line">    eprosima::fastdds::dds::Log::Kind::Info</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
 
-<p><strong>关键日志片段</strong>：</p>
+<p><strong>示意日志</strong>（字段名随 DDS 实现和日志级别变化，不能当作 Fast DDS 固定输出格式）：</p>
 <figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[RTPS_MSG_IN] Received DATA message, <span class="attribute">seq</span>=1234</span><br><span class="line">[RTPS_READER] Adding sample <span class="keyword">to</span> history queue, <span class="attribute">seq</span>=1234</span><br><span class="line">[RTPS_READER] History<span class="built_in"> queue </span>full (<span class="attribute">size</span>=1), dropping oldest sample</span><br><span class="line">[RTPS_READER] Adding sample <span class="keyword">to</span> history queue, <span class="attribute">seq</span>=1235</span><br><span class="line">[RTPS_READER] History<span class="built_in"> queue </span>full (<span class="attribute">size</span>=1), dropping oldest sample</span><br><span class="line">[RTPS_READER] Adding sample <span class="keyword">to</span> history queue, <span class="attribute">seq</span>=1236</span><br><span class="line"><span class="built_in">..</span>.</span><br><span class="line">[RTPS_READER] Adding sample <span class="keyword">to</span> history queue, <span class="attribute">seq</span>=1242</span><br><span class="line">[RTPS_READER] Notifying<span class="built_in"> user </span>callback with <span class="attribute">seq</span>=1242</span><br></pre></td></tr></table></figure>
 
-<p><strong>根因浮现</strong>：</p>
+<p><strong>由日志可验证的事实</strong>：</p>
 <ul>
-<li>Reader的history queue大小是1</li>
-<li>新消息到来时，旧消息被覆盖（样本覆盖）</li>
-<li>应用层只能收到最新的那一条</li>
+<li>多个请求写入同一个未键控 topic instance；</li>
+<li>Reader 使用 <code>KEEP_LAST(depth=1)</code>；</li>
+<li>应用取样速度低于突发到达速度；</li>
+<li>新样本进入 history 时，未取走的旧样本被淘汰。</li>
 </ul>
+<p><code>RELIABLE</code> 约束的是 DDS writer 与 reader 之间的可靠交付行为，不等于应用一定处理每个历史样本。如果 history&#x2F;resource limits 允许旧样本被替换，或者应用没有及时 <code>take()</code>，业务层仍可能看不到所有请求。</p>
 <hr>
 <h3 id="第三步：代码审查（找配置）"><a href="#第三步：代码审查（找配置）" class="headerlink" title="第三步：代码审查（找配置）"></a>第三步：代码审查（找配置）</h3><p><strong>Writer端QoS配置</strong>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TaskPlanner.cpp</span></span><br><span class="line">DataWriterQos writer_qos;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ✅ Writer配置了history.depth = 8</span></span><br><span class="line">writer_qos.<span class="built_in">history</span>().kind = KEEP_LAST_HISTORY_QOS;</span><br><span class="line">writer_qos.<span class="built_in">history</span>().depth = <span class="number">8</span>;  <span class="comment">// 保留最近8条消息，支持重传</span></span><br><span class="line"></span><br><span class="line">writer_qos.<span class="built_in">reliability</span>().kind = RELIABLE_RELIABILITY_QOS;</span><br><span class="line"></span><br><span class="line">writer_ = publisher_-&gt;<span class="built_in">create_datawriter</span>(topic_, writer_qos);</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TaskPlanner.cpp</span></span><br><span class="line">DataWriterQos writer_qos;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Writer 保留最近 8 个样本，供可靠传输与未确认样本管理使用</span></span><br><span class="line">writer_qos.<span class="built_in">history</span>().kind = KEEP_LAST_HISTORY_QOS;</span><br><span class="line">writer_qos.<span class="built_in">history</span>().depth = <span class="number">8</span>;</span><br><span class="line"></span><br><span class="line">writer_qos.<span class="built_in">reliability</span>().kind = RELIABLE_RELIABILITY_QOS;</span><br><span class="line"></span><br><span class="line">writer_ = publisher_-&gt;<span class="built_in">create_datawriter</span>(topic_, writer_qos);</span><br></pre></td></tr></table></figure>
 
 <p><strong>Reader端QoS配置</strong>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// MotionController.cpp</span></span><br><span class="line">DataReaderQos reader_qos;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ❌ Reader配置了history.depth = 1 !!</span></span><br><span class="line">reader_qos.<span class="built_in">history</span>().kind = KEEP_LAST_HISTORY_QOS;</span><br><span class="line">reader_qos.<span class="built_in">history</span>().depth = <span class="number">1</span>;  <span class="comment">// 只保留最新1条消息</span></span><br><span class="line"></span><br><span class="line">reader_qos.<span class="built_in">reliability</span>().kind = RELIABLE_RELIABILITY_QOS;</span><br><span class="line"></span><br><span class="line">reader_ = subscriber_-&gt;<span class="built_in">create_datareader</span>(topic_, reader_qos);</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// MotionController.cpp</span></span><br><span class="line">DataReaderQos reader_qos;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Reader 只保留最近 1 个未取走样本；这对“最新状态”合理，</span></span><br><span class="line"><span class="comment">// 但对每个请求都必须处理的 RPC request stream 风险很高</span></span><br><span class="line">reader_qos.<span class="built_in">history</span>().kind = KEEP_LAST_HISTORY_QOS;</span><br><span class="line">reader_qos.<span class="built_in">history</span>().depth = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">reader_qos.<span class="built_in">reliability</span>().kind = RELIABLE_RELIABILITY_QOS;</span><br><span class="line"></span><br><span class="line">reader_ = subscriber_-&gt;<span class="built_in">create_datareader</span>(topic_, reader_qos);</span><br></pre></td></tr></table></figure>
 
 <p><strong>根因确认</strong>：</p>
 <ul>
-<li>Writer和Reader的QoS配置<strong>不对称</strong></li>
-<li>Writer: history.depth &#x3D; 8（可以重传8条）</li>
-<li>Reader: history.depth &#x3D; 1（只能存1条）</li>
+<li>Writer 与 Reader 的 history depth <strong>不要求协议层必须相等</strong>；depth 也不是 DDS 端点匹配的 Request&#x2F;Offered 兼容条件；</li>
+<li>真正的问题是 Reader 的 <code>KEEP_LAST(depth=1)</code> 与业务语义不匹配：多个未键控 RPC 请求共享一个 instance，而应用可能来不及取样；</li>
+<li>Writer depth、Reader depth、resource limits 和应用消费速度必须分别覆盖各自的最坏积压，不能靠“配置成相同数字”代替容量分析。</li>
 </ul>
 <p><strong>为什么会丢消息？</strong></p>
-<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">时间线：</span><br><span class="line">T0: Writer发送<span class="attribute">seq</span>=1234，Reader收到并存入history queue（<span class="attribute">size</span>=1）</span><br><span class="line">    Reader正忙（处理上一个请求），还没调用用户回调</span><br><span class="line"></span><br><span class="line">T1: Writer发送<span class="attribute">seq</span>=1235，Reader收到</span><br><span class="line">    history queue满了（<span class="attribute">size</span>=1），丢弃1234，存入1235</span><br><span class="line"></span><br><span class="line">T2: Writer发送<span class="attribute">seq</span>=1236，Reader收到</span><br><span class="line">    history queue满了，丢弃1235，存入1236</span><br><span class="line"></span><br><span class="line"><span class="built_in">..</span>.</span><br><span class="line"></span><br><span class="line">T8: Writer发送<span class="attribute">seq</span>=1242，Reader收到，存入1242</span><br><span class="line"></span><br><span class="line">T9: Reader终于空闲了，调用用户回调</span><br><span class="line">    但只能取到<span class="attribute">seq</span>=1242，前面8条都被覆盖了！</span><br></pre></td></tr></table></figure>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">时间线：</span><br><span class="line">T0: Writer发送<span class="attribute">seq</span>=1234，Reader收到并存入history queue（<span class="attribute">size</span>=1）</span><br><span class="line">    Reader正忙（处理上一个请求），还没调用用户回调</span><br><span class="line"></span><br><span class="line">T1: Writer发送<span class="attribute">seq</span>=1235，Reader收到</span><br><span class="line">    在本案例的KEEP_LAST/resource-limit配置下，1234尚未被应用取走，</span><br><span class="line">    新样本使旧样本从reader history中被淘汰</span><br><span class="line"></span><br><span class="line">T2: Writer发送<span class="attribute">seq</span>=1236，Reader收到</span><br><span class="line">    history queue满了，丢弃1235，存入1236</span><br><span class="line"></span><br><span class="line"><span class="built_in">..</span>.</span><br><span class="line"></span><br><span class="line">T8: Writer发送<span class="attribute">seq</span>=1242，Reader收到，存入1242</span><br><span class="line"></span><br><span class="line">T9: 应用线程终于执行take()</span><br><span class="line">    只能取得仍留在history中的最新样本；前面的请求已经无法被业务层处理</span><br></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="四、解决方案"><a href="#四、解决方案" class="headerlink" title="四、解决方案"></a>四、解决方案</h2><h3 id="方案1：统一QoS配置（最简单）"><a href="#方案1：统一QoS配置（最简单）" class="headerlink" title="方案1：统一QoS配置（最简单）"></a>方案1：统一QoS配置（最简单）</h3><p><strong>修改Reader端代码</strong>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// MotionController.cpp</span></span><br><span class="line">DataReaderQos reader_qos;</span><br><span class="line"></span><br><span class="line">reader_qos.<span class="built_in">history</span>().kind = KEEP_LAST_HISTORY_QOS;</span><br><span class="line">reader_qos.<span class="built_in">history</span>().depth = <span class="number">8</span>;  <span class="comment">// 改成8，与Writer一致</span></span><br><span class="line"></span><br><span class="line">reader_qos.<span class="built_in">reliability</span>().kind = RELIABLE_RELIABILITY_QOS;</span><br><span class="line"></span><br><span class="line">reader_ = subscriber_-&gt;<span class="built_in">create_datareader</span>(topic_, reader_qos);</span><br></pre></td></tr></table></figure>
+<h2 id="四、解决方案"><a href="#四、解决方案" class="headerlink" title="四、解决方案"></a>四、解决方案</h2><h3 id="方案1：按最坏积压扩大-Reader-容量"><a href="#方案1：按最坏积压扩大-Reader-容量" class="headerlink" title="方案1：按最坏积压扩大 Reader 容量"></a>方案1：按最坏积压扩大 Reader 容量</h3><p><strong>修改Reader端代码</strong>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// MotionController.cpp</span></span><br><span class="line">DataReaderQos reader_qos;</span><br><span class="line"></span><br><span class="line">reader_qos.<span class="built_in">history</span>().kind = KEEP_LAST_HISTORY_QOS;</span><br><span class="line">reader_qos.<span class="built_in">history</span>().depth = <span class="number">8</span>;  <span class="comment">// 示例值：必须由突发量和消费延迟验证</span></span><br><span class="line"></span><br><span class="line">reader_qos.<span class="built_in">reliability</span>().kind = RELIABLE_RELIABILITY_QOS;</span><br><span class="line"></span><br><span class="line">reader_ = subscriber_-&gt;<span class="built_in">create_datareader</span>(topic_, reader_qos);</span><br></pre></td></tr></table></figure>
 
-<p><strong>效果</strong>：</p>
+<p>还应显式设置并检查 <code>resource_limits</code>，确保 <code>max_samples</code>、<code>max_samples_per_instance</code> 等上限不小于 history 需要的容量。不同 Fast DDS 版本的 API 与默认值可能不同，配置时应以所用版本文档为准。</p>
+<p><strong>案例观察</strong>：</p>
 <ul>
-<li>✅ Reader可以缓存8条消息</li>
-<li>✅ 高负载下不会样本覆盖</li>
-<li>✅ 实机测试100+小时，零丢包</li>
+<li>Reader 可以同时保留更多未取走请求；</li>
+<li>在案例压力模型下，业务层不再观察到原先的样本淘汰；</li>
+<li>原稿记录了 100 小时稳定运行，但原始日志没有公开，因此这里只把它作为案例观察，不写成可复现的“零丢包”证明。</li>
 </ul>
 <p><strong>代价</strong>：</p>
 <ul>
@@ -391,18 +389,18 @@
 <li><strong>可靠性优先级 &gt; 内存占用</strong></li>
 </ul>
 <hr>
-<h3 id="方案2：增加DEADLINE-QoS（长期优化）"><a href="#方案2：增加DEADLINE-QoS（长期优化）" class="headerlink" title="方案2：增加DEADLINE QoS（长期优化）"></a>方案2：增加DEADLINE QoS（长期优化）</h3><p><strong>问题</strong>：即使修复了样本覆盖，如何<strong>提前发现</strong>通信异常？</p>
-<p><strong>方案</strong>：使用DDS的DEADLINE QoS</p>
+<h3 id="方案2：用-Deadline-监控周期健康，用请求截止时间定案-RPC"><a href="#方案2：用-Deadline-监控周期健康，用请求截止时间定案-RPC" class="headerlink" title="方案2：用 Deadline 监控周期健康，用请求截止时间定案 RPC"></a>方案2：用 Deadline 监控周期健康，用请求截止时间定案 RPC</h3><p><strong>问题</strong>：即使修复了 history 淘汰，如何发现周期性数据流中断，并给每个 RPC 设置明确的完成边界？</p>
+<p><code>Deadline</code> 表达的是“同一 instance 的样本更新间隔期望”。它适合监控周期性控制流或心跳是否按约定刷新，但它不是单个 RPC request&#x2F;response 的超时器。RPC 仍应携带 request ID，并在客户端用单调时钟维护每个请求的 deadline、取消与迟到响应策略。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Writer端</span></span><br><span class="line">writer_qos.<span class="built_in">deadline</span>().period = <span class="built_in">Duration_t</span>(<span class="number">0</span>, <span class="number">100</span> * <span class="number">1000</span> * <span class="number">1000</span>);  <span class="comment">// 100ms</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Reader端</span></span><br><span class="line">reader_qos.<span class="built_in">deadline</span>().period = <span class="built_in">Duration_t</span>(<span class="number">0</span>, <span class="number">100</span> * <span class="number">1000</span> * <span class="number">1000</span>);  <span class="comment">// 100ms</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 注册回调</span></span><br><span class="line">reader_listener_.on_requested_deadline_missed =</span><br><span class="line">    [](DataReader* reader, <span class="type">const</span> RequestedDeadlineMissedStatus&amp; status) &#123;</span><br><span class="line">        <span class="built_in">LOG_ERROR</span>(<span class="string">&quot;Deadline missed! count=%d&quot;</span>, status.total_count);</span><br><span class="line">        <span class="comment">// 触发告警、记录事件</span></span><br><span class="line">    &#125;;</span><br></pre></td></tr></table></figure>
 
-<p><strong>效果</strong>：</p>
+<p><strong>效果与边界</strong>：</p>
 <ul>
-<li>✅ 如果100ms内没收到消息，触发回调</li>
-<li>✅ 可以主动降级（切换到安全模式）</li>
-<li>✅ 比gRPC timeout更精确（DDS层检测）</li>
+<li>周期性 instance 超过约定更新间隔时，可通过 requested&#x2F;offered deadline missed 状态观测；</li>
+<li>是否切换安全模式必须由上层安全策略决定，不能在通用 listener 中直接等同于急停；</li>
+<li>对单个 RPC，仍以请求 ID 对应的应用层 deadline 和实际 response&#x2F;result 为准。</li>
 </ul>
 <hr>
-<h2 id="五、复现与验证"><a href="#五、复现与验证" class="headerlink" title="五、复现与验证"></a>五、复现与验证</h2><h3 id="复现步骤"><a href="#复现步骤" class="headerlink" title="复现步骤"></a>复现步骤</h3><p><strong>构造高频RPC场景</strong>：</p>
+<h2 id="五、复现与验证"><a href="#五、复现与验证" class="headerlink" title="五、复现与验证"></a>五、复现与验证</h2><h3 id="复现步骤"><a href="#复现步骤" class="headerlink" title="复现步骤"></a>复现步骤</h3><p><strong>构造高频 RPC 场景</strong>（以下是业务封装接口示意，不是可直接编译的 Fast DDS API）：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// test_high_load.cpp</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">stress_test</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    std::vector&lt;std::future&lt;Result&gt;&gt; futures;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">1000</span>; ++i) &#123;</span><br><span class="line">        <span class="comment">// 发送RPC请求（不等响应）</span></span><br><span class="line">        <span class="keyword">auto</span> future = client.<span class="built_in">async_call</span>(<span class="string">&quot;MoveToTarget&quot;</span>, target_pose);</span><br><span class="line">        futures.<span class="built_in">push_back</span>(std::<span class="built_in">move</span>(future));</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 高频发送，不等上一个完成</span></span><br><span class="line">        std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">milliseconds</span>(<span class="number">5</span>));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 统计超时率</span></span><br><span class="line">    <span class="type">int</span> timeout_count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; future : futures) &#123;</span><br><span class="line">        <span class="keyword">if</span> (future.<span class="built_in">wait_for</span>(std::chrono::<span class="built_in">milliseconds</span>(<span class="number">100</span>))</span><br><span class="line">            == std::future_status::timeout) &#123;</span><br><span class="line">            ++timeout_count;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;Timeout rate: &quot;</span></span><br><span class="line">              &lt;&lt; (<span class="number">100.0</span> * timeout_count / <span class="number">1000</span>) &lt;&lt; <span class="string">&quot;%&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p><strong>修复前</strong>：</p>
@@ -419,9 +417,10 @@
 <figure class="highlight subunit"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">Test </span>completed: 0 errors in 100 hours</span><br><span class="line">Total RPC calls: 7,200,000</span><br><span class="line">Timeout rate: 0.000%</span><br></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="六、技术沉淀"><a href="#六、技术沉淀" class="headerlink" title="六、技术沉淀"></a>六、技术沉淀</h2><h3 id="1-DDS-QoS配置最佳实践"><a href="#1-DDS-QoS配置最佳实践" class="headerlink" title="1. DDS QoS配置最佳实践"></a>1. DDS QoS配置最佳实践</h3><p><strong>History Depth选择公式</strong>：</p>
-<figure class="highlight abnf"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">depth &gt;<span class="operator">=</span> (发送频率 Hz) × (最大处理延迟 s)</span><br></pre></td></tr></table></figure>
+<h2 id="六、技术沉淀"><a href="#六、技术沉淀" class="headerlink" title="六、技术沉淀"></a>六、技术沉淀</h2><h3 id="1-DDS-QoS配置最佳实践"><a href="#1-DDS-QoS配置最佳实践" class="headerlink" title="1. DDS QoS配置最佳实践"></a>1. DDS QoS配置最佳实践</h3><p><strong>History Depth容量估算起点</strong>：</p>
+<figure class="highlight arcade"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">reader_depth &gt;= <span class="built_in">ceil</span>(峰值到达率 × 最坏未取样时间) + 突发余量</span><br></pre></td></tr></table></figure>
 
+<p>这只是容量估算起点，不是 DDS 规范公式。还要考虑 topic 是否 keyed、每个 instance 的独立历史、应用一次 <code>take()</code> 的批量、writer 未确认样本上限，以及 <code>resource_limits</code>。</p>
 <p><strong>示例</strong>：</p>
 <ul>
 <li>发送频率：200 Hz</li>
@@ -429,8 +428,8 @@
 <li>推荐depth：200 × 0.05 &#x3D; <strong>10</strong></li>
 </ul>
 <hr>
-<p><strong>Writer-Reader对称性原则</strong>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ❌ 不对称（会导致样本覆盖）</span></span><br><span class="line">writer_qos.<span class="built_in">history</span>().depth = <span class="number">8</span>;</span><br><span class="line">reader_qos.<span class="built_in">history</span>().depth = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ✅ 对称（推荐）</span></span><br><span class="line">writer_qos.<span class="built_in">history</span>().depth = <span class="number">8</span>;</span><br><span class="line">reader_qos.<span class="built_in">history</span>().depth = <span class="number">8</span>;</span><br></pre></td></tr></table></figure>
+<p><strong>Writer 与 Reader 分开预算</strong>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 数字不同本身不构成错误；错误在于任一侧容量小于自己的最坏积压</span></span><br><span class="line">writer_qos.<span class="built_in">history</span>().depth = <span class="number">8</span>;</span><br><span class="line">reader_qos.<span class="built_in">history</span>().depth = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 示例：两端按各自职责独立预算</span></span><br><span class="line">writer_qos.<span class="built_in">history</span>().depth = writer_backlog_budget;</span><br><span class="line">reader_qos.<span class="built_in">history</span>().depth = reader_backlog_budget;</span><br></pre></td></tr></table></figure>
 
 <hr>
 <p><strong>QoS配置对比表</strong>：</p>
@@ -445,30 +444,31 @@
 </thead>
 <tbody><tr>
 <td>KEEP_LAST(depth&#x3D;1)</td>
-<td>状态型数据（传感器读数）</td>
-<td>省内存</td>
-<td>高频下样本覆盖</td>
+<td>只关心最新值的状态流</td>
+<td>省内存、旧状态自然淘汰</td>
+<td>不适合每个样本都必须处理的请求流</td>
 </tr>
 <tr>
 <td>KEEP_LAST(depth&#x3D;N)</td>
-<td>RPC、命令消息</td>
-<td>平衡</td>
-<td>需要评估N</td>
+<td>有界积压的请求、命令或遥测</td>
+<td>内存有界</td>
+<td>N 必须覆盖突发与最坏消费延迟</td>
 </tr>
 <tr>
 <td>KEEP_ALL</td>
-<td>日志、事件</td>
-<td>不丢数据</td>
-<td>内存无上限</td>
+<td>需要保留全部样本且能施加背压的场景</td>
+<td>不因 history depth 淘汰旧样本</td>
+<td>仍受 resource limits 限制</td>
 </tr>
 </tbody></table>
 <hr>
 <h3 id="2-配置Review-Checklist"><a href="#2-配置Review-Checklist" class="headerlink" title="2. 配置Review Checklist"></a>2. 配置Review Checklist</h3><p>在Code Review时检查：</p>
 <ul>
-<li><input disabled="" type="checkbox"> Writer和Reader的history depth是否一致？</li>
-<li><input disabled="" type="checkbox"> history depth是否足够（&gt;&#x3D; 发送频率 × 最大延迟）？</li>
-<li><input disabled="" type="checkbox"> 是否配置了DEADLINE QoS（关键路径）？</li>
-<li><input disabled="" type="checkbox"> 是否配置了resource limits（避免内存泄漏）？</li>
+<li><input disabled="" type="checkbox"> Reliability、Durability、Deadline 等 Request&#x2F;Offered QoS 是否兼容？</li>
+<li><input disabled="" type="checkbox"> Writer 未确认窗口和 Reader 未取样窗口是否分别完成容量预算？</li>
+<li><input disabled="" type="checkbox"> History 与 resource limits 是否一致，满载时是阻塞、失败还是淘汰？</li>
+<li><input disabled="" type="checkbox"> 应用是否批量 <code>take()</code>，回调中是否执行阻塞业务？</li>
+<li><input disabled="" type="checkbox"> 周期流是否需要 Deadline；RPC 是否有独立 request ID、单调时钟 deadline 与迟到响应策略？</li>
 <li><input disabled="" type="checkbox"> 是否考虑了高负载场景（压力测试）？</li>
 </ul>
 <hr>
@@ -484,39 +484,29 @@
 <tbody><tr>
 <td>depth&#x3D;1</td>
 <td>省内存</td>
-<td>高频下丢消息</td>
-<td>低频状态数据</td>
+<td>只保留最新未取样值</td>
+<td>最新状态流</td>
 </tr>
 <tr>
-<td>depth&#x3D;8</td>
-<td>平衡</td>
-<td>内存+64KB</td>
-<td>中频RPC（&lt;100Hz）</td>
+<td>depth&#x3D;N</td>
+<td>有界积压</td>
+<td>需要测量突发与消费延迟</td>
+<td>请求、命令和遥测</td>
 </tr>
 <tr>
-<td>depth&#x3D;32</td>
-<td>高可靠</td>
-<td>内存+256KB</td>
-<td>高频RPC（&gt;500Hz）</td>
-</tr>
-<tr>
-<td>KEEP_ALL</td>
-<td>不丢数据</td>
-<td>内存无上限</td>
-<td>日志、事件</td>
+<td>KEEP_ALL + 有界 resource limits</td>
+<td>避免按 depth 淘汰</td>
+<td>满载时必须定义背压&#x2F;失败行为</td>
+<td>审计事件、受控日志流</td>
 </tr>
 </tbody></table>
 <hr>
-<h3 id="我们的选择"><a href="#我们的选择" class="headerlink" title="我们的选择"></a>我们的选择</h3><p><strong>depth&#x3D;8，理由</strong>：</p>
-<ol>
-<li>机械臂RPC频率&lt;100Hz，8足够</li>
-<li>内存增加64KB可以接受</li>
-<li>可靠性优先级 &gt; 内存占用</li>
-</ol>
+<h3 id="我们的选择"><a href="#我们的选择" class="headerlink" title="我们的选择"></a>我们的选择</h3><p>案例最终选择 <code>depth=8</code>，因为在当时测得的突发和消费延迟下它覆盖了 reader backlog，且资源开销可接受。这个值不是通用推荐；换 payload、频率、回调模型或 DDS 实现后必须重新测量。</p>
 <p><strong>如果未来需要支持&gt;500Hz呢？</strong></p>
 <ul>
-<li>考虑depth&#x3D;32（内存+256KB）</li>
-<li>或者用shared memory代替DDS（零拷贝）</li>
+<li>先测 reader backlog、writer unacknowledged samples 和 resource-limit 命中；</li>
+<li>再决定扩大有界队列、拆分 instance&#x2F;topic、批量取样或增加消费者；</li>
+<li>shared-memory transport 只能减少序列化和拷贝成本，不能自动解决消费速度不足或请求超时语义。</li>
 </ul>
 <hr>
 <h2 id="八、相关问题"><a href="#八、相关问题" class="headerlink" title="八、相关问题"></a>八、相关问题</h2><h3 id="Q1-为什么不用gRPC？"><a href="#Q1-为什么不用gRPC？" class="headerlink" title="Q1: 为什么不用gRPC？"></a>Q1: 为什么不用gRPC？</h3><table>
@@ -528,24 +518,24 @@
 </tr>
 </thead>
 <tbody><tr>
-<td>延迟</td>
-<td>1-5ms</td>
-<td>0.1-1ms</td>
+<td>通信模型</td>
+<td>HTTP&#x2F;2 RPC、streaming</td>
+<td>数据中心发布订阅，可构建 request&#x2F;reply</td>
 </tr>
 <tr>
 <td>发现</td>
-<td>需要服务注册中心</td>
-<td>自动发现</td>
+<td>通常依赖地址、DNS、负载均衡或服务发现</td>
+<td>DDS participant&#x2F;topic 自动发现</td>
 </tr>
 <tr>
-<td>QoS</td>
-<td>无</td>
-<td>丰富（Reliability, Deadline, …）</td>
+<td>时限</td>
+<td>原生 deadline&#x2F;cancellation API</td>
+<td>Deadline QoS 监控 instance 更新；RPC 时限仍需应用协议</td>
 </tr>
 <tr>
-<td>生态</td>
-<td>语言支持好</td>
-<td>机器人专用</td>
+<td>策略</td>
+<td>keepalive、流控、重试、负载均衡等</td>
+<td>Reliability、Durability、History、Deadline 等 DDS QoS</td>
 </tr>
 </tbody></table>
 <p><strong>我们的选择</strong>：</p>
@@ -554,8 +544,8 @@
 <li>普通路径：用gRPC（任务规划、HMI）</li>
 </ul>
 <hr>
-<h3 id="Q2-DDS-vs-ROS-2的关系？"><a href="#Q2-DDS-vs-ROS-2的关系？" class="headerlink" title="Q2: DDS vs ROS 2的关系？"></a>Q2: DDS vs ROS 2的关系？</h3><p><strong>ROS 2底层就是DDS</strong>：</p>
-<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ROS <span class="number">2</span> 应用层</span><br><span class="line">    ↓</span><br><span class="line">rclcpp<span class="symbol">/rclpy</span> (ROS <span class="number">2</span> client library)</span><br><span class="line">    ↓</span><br><span class="line">rmw (ROS Middleware Interface)</span><br><span class="line">    ↓</span><br><span class="line">DDS实现 (Fast DDS <span class="symbol">/</span> Cyclone DDS <span class="symbol">/</span> RTI Connext)</span><br></pre></td></tr></table></figure>
+<h3 id="Q2-DDS-vs-ROS-2的关系？"><a href="#Q2-DDS-vs-ROS-2的关系？" class="headerlink" title="Q2: DDS vs ROS 2的关系？"></a>Q2: DDS vs ROS 2的关系？</h3><p>ROS 2 通过 <code>rmw</code> 抽象接入中间件。主流 RMW 使用 DDS，也存在非 DDS 实现，因此不能把两者写成完全等号：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ROS <span class="number">2</span> 应用层</span><br><span class="line">    ↓</span><br><span class="line">rclcpp<span class="symbol">/rclpy</span> (ROS <span class="number">2</span> client library)</span><br><span class="line">    ↓</span><br><span class="line">rmw (ROS Middleware Interface)</span><br><span class="line">    ↓</span><br><span class="line">DDS或其他RMW实现 (Fast DDS <span class="symbol">/</span> Cyclone DDS <span class="symbol">/</span> RTI Connext <span class="symbol">/</span> Zenoh ...)</span><br></pre></td></tr></table></figure>
 
 <p><strong>我们遇到的问题也适用于ROS 2！</strong></p>
 <hr>
@@ -591,9 +581,9 @@
 <td>⭐⭐⭐⭐⭐</td>
 </tr>
 </tbody></table>
-<p><strong>我们用的</strong>：Fast DDS（开源、性能够用、ROS 2默认）</p>
+<p><strong>案例使用</strong>：Fast DDS。ROS 2 的默认 RMW 会随发行版和安装方式变化，应以目标系统的 <code>RMW_IMPLEMENTATION</code> 与发行版文档为准。</p>
 <hr>
-<h2 id="九、经验教训"><a href="#九、经验教训" class="headerlink" title="九、经验教训"></a>九、经验教训</h2><h3 id="1-配置不对称是隐蔽的bug"><a href="#1-配置不对称是隐蔽的bug" class="headerlink" title="1. 配置不对称是隐蔽的bug"></a>1. 配置不对称是隐蔽的bug</h3><p><strong>特点</strong>：</p>
+<h2 id="九、经验教训"><a href="#九、经验教训" class="headerlink" title="九、经验教训"></a>九、经验教训</h2><h3 id="1-业务语义与缓存策略不匹配是隐蔽的-bug"><a href="#1-业务语义与缓存策略不匹配是隐蔽的-bug" class="headerlink" title="1. 业务语义与缓存策略不匹配是隐蔽的 bug"></a>1. 业务语义与缓存策略不匹配是隐蔽的 bug</h3><p><strong>特点</strong>：</p>
 <ul>
 <li>✅ 低负载正常（消息处理及时，不会覆盖）</li>
 <li>❌ 高负载失败（消息堆积，触发覆盖）</li>
@@ -601,7 +591,7 @@
 </ul>
 <p><strong>教训</strong>：</p>
 <ul>
-<li>配置要成对检查（Writer和Reader）</li>
+<li>Writer 和 Reader 要分别按职责完成兼容性与容量检查</li>
 <li>压力测试必不可少</li>
 </ul>
 <hr>
@@ -636,15 +626,16 @@
 <hr>
 <h2 id="十、总结"><a href="#十、总结" class="headerlink" title="十、总结"></a>十、总结</h2><h3 id="问题回顾"><a href="#问题回顾" class="headerlink" title="问题回顾"></a>问题回顾</h3><ol>
 <li><strong>现象</strong>：高负载下15%的RPC超时</li>
-<li><strong>根因</strong>：Writer和Reader的QoS history depth不对称（8&#x2F;1）</li>
-<li><strong>后果</strong>：Reader端样本覆盖，消息丢失</li>
-<li><strong>解决</strong>：统一配置（都改成8）</li>
-<li><strong>验证</strong>：100+小时零丢包</li>
+<li><strong>根因</strong>：Reader 的 <code>KEEP_LAST(depth=1)</code> 与“每个请求都必须处理”的业务语义不匹配，应用消费速度又不足以覆盖突发</li>
+<li><strong>后果</strong>：未取走请求从 reader history 中被淘汰，业务层无法处理对应请求</li>
+<li><strong>解决</strong>：按最坏积压扩大并验证 Reader history&#x2F;resource limits，同时补齐单请求 deadline 与观测</li>
+<li><strong>验证</strong>：压力测试未再复现原故障；100 小时记录未公开，作为案例观察保留</li>
 </ol>
 <hr>
 <h3 id="关键技术点"><a href="#关键技术点" class="headerlink" title="关键技术点"></a>关键技术点</h3><ul>
-<li>✅ DDS QoS配置要对称</li>
-<li>✅ history depth &gt;&#x3D; 发送频率 × 最大延迟</li>
+<li>✅ QoS 先检查兼容性，再分别预算 writer 与 reader 容量</li>
+<li>✅ <code>RELIABLE</code> 不等于应用必然处理每个历史样本</li>
+<li>✅ RPC deadline 与 DDS Deadline QoS 解决的是不同问题</li>
 <li>✅ 压力测试是必须的</li>
 <li>✅ 监控告警要到位</li>
 </ul>
@@ -657,9 +648,10 @@
 </ol>
 <hr>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
-<li>eProsima Fast DDS文档: <a target="_blank" rel="noopener" href="https://fast-dds.docs.eprosima.com/">https://fast-dds.docs.eprosima.com/</a></li>
-<li>OMG DDS规范: <a target="_blank" rel="noopener" href="https://www.omg.org/spec/DDS/">https://www.omg.org/spec/DDS/</a></li>
-<li>ROS 2 QoS设计: <a target="_blank" rel="noopener" href="https://design.ros2.org/articles/qos.html">https://design.ros2.org/articles/qos.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://fast-dds.docs.eprosima.com/en/latest/fastdds/dds_layer/core/policy/standardQosPolicies.html">Fast DDS 标准 QoS 策略</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Quality-of-Service-Settings.html">ROS 2 QoS 兼容性与策略说明</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.omg.org/spec/DDS/">OMG Data Distribution Service 规范入口</a></li>
+<li><a target="_blank" rel="noopener" href="https://grpc.io/docs/guides/deadlines/">gRPC Deadlines 指南</a></li>
 </ol>
 
         </div>
