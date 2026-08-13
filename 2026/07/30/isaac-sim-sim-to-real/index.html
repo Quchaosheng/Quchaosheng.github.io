@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="仿真里的机械臂能连续抓到杯子，真机却在逆光和轻微打滑时频繁抓空。问题通常不在“画面够不够像”，而在仿真有没有覆盖相机曝光、标定误差、执行器延迟和摩擦变化。Isaac Sim 用 USD、物理仿真、ROS 2 Bridge 和 Replicator 把这些变量放进同一套可回放的场景里，价值也在这里。 Domain Randomization 的经典工作已...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="仿真里的机械臂能连续抓到杯子，真机却在逆光和轻微打滑时频繁抓空。问题通常不在“画面够不够像”，而在仿真有没有覆盖相机曝光、标定误差、执行器延迟和摩擦变化。Isaac Sim 用 USD、物理仿真、ROS 2 Bridge 和 Replicator 把这些变量放进同一套可回放的场景里，价值也在这里。 Domain Randomization 的经典工作已...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="仿真里的机械臂能连续抓到杯子，真机却在逆光和轻微打滑时频繁抓空。问题通常不在“画面够不够像”，而在仿真有没有覆盖相机曝光、标定误差、执行器延迟和摩擦变化。Isaac Sim 用 USD、物理仿真、ROS 2 Bridge 和 Replicator 把这些变量放进同一套可回放的场景里，价值也在这里。 Domain Randomization 的经典工作已...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界","description":"仿真里的机械臂能连续抓到杯子，真机却在逆光和轻微打滑时频繁抓空。问题通常不在“画面够不够像”，而在仿真有没有覆盖相机曝光、标定误差、执行器延迟和摩擦变化。Isaac Sim 用 USD、物理仿真、ROS 2 Bridge 和 Replicator 把这些变量放进同一套可回放的场景里，价值也在这里。 Domain Randomization 的经典工作已...","datePublished":"2026-07-23T06:00:00.000Z","dateModified":"2026-07-23T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"Isaac Sim, Sim-to-Real, 合成数据","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Isaac Sim 与 Sim-to-Real：仿真机器人怎样接近真实世界</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-07-23&nbsp;&nbsp;14:00:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/Isaac-Sim/">#Isaac Sim</a>
+                            
+                                <a href="/tag/Sim-to-Real/">#Sim-to-Real</a>
+                            
+                                <a href="/tag/%E5%90%88%E6%88%90%E6%95%B0%E6%8D%AE/">#合成数据</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>仿真里的机械臂能连续抓到杯子，真机却在逆光和轻微打滑时频繁抓空。问题通常不在“画面够不够像”，而在仿真有没有覆盖相机曝光、标定误差、执行器延迟和摩擦变化。Isaac Sim 用 USD、物理仿真、ROS 2 Bridge 和 Replicator 把这些变量放进同一套可回放的场景里，价值也在这里。</p>
+<p>Domain Randomization 的经典工作已经说明，模拟图像不必追求照片级真实，关键是随机化范围能覆盖真实任务里的变化。这个结论可以指导 Isaac Sim 的参数选择，但不能替代真机测量。论文和工程实现的对应关系，放在<a href="/2026/03/10/vla-paper-reading-guide/">《VLA 论文怎么读》</a>的 Sim-to-Real 小节里。</p>
+<div class="note-flow"><span>建立机器人与传感器模型</span><i>→</i><span>标定物理和噪声参数</span><i>→</i><span>随机化场景与扰动</span><i>→</i><span>批量训练和回归</span><i>→</i><span>实机小范围验证再迭代</span></div>
+
+<figure class="note-visual"><figcaption><span>验证图</span>仿真覆盖已知误差，实机暴露新误差，两边通过同一指标和版本记录闭环。</figcaption><div class="note-map"><span><b>机器人资产</b><small>固定几何、关节、质量、惯量和执行器限制</small></span><span><b>传感器模型</b><small>加入标定误差、噪声、时延、曝光和失效条件</small></span><span><b>场景扰动</b><small>范围来自实测差异，不把随机化当作随意改参数</small></span><span><b>回归指标</b><small>同时记录成功率、碰撞、轨迹误差和尾延迟</small></span><span><b>小范围实机</b><small>先限速、限区域验证，再逐步放开任务边界</small></span><span><b>失败回灌</b><small>把真实失败条件转为新场景、数据或安全约束</small></span></div></figure>
+
+<h2 id="场景里至少要把三种误差写出来"><a href="#场景里至少要把三种误差写出来" class="headerlink" title="场景里至少要把三种误差写出来"></a>场景里至少要把三种误差写出来</h2><p>第一层是<strong>几何和坐标系</strong>：URDF&#x2F;机器人资产中的关节轴、限位、质量、惯量、相机内外参都要与真实设备一致。坐标轴方向错 90 度、相机安装高度错 3 cm，往往足以让看似正常的导航或抓取在实机上失败。</p>
+<p>第二层是<strong>动力学和执行器</strong>：轮胎摩擦、地面材质、关节阻尼、最大速度&#x2F;加速度、控制频率和指令延迟。它们不必一开始就极其精确，但必须把不确定性写出来，不能偷偷用“理想电机”和“零延迟通信”掩盖问题。</p>
+<p>第三层是<strong>传感器</strong>：相机的曝光、畸变、滚动快门、噪声、运动模糊和遮挡，深度相机的空洞，IMU 的偏置和漂移。合成数据若只在完美光照和干净背景下生成，会训练出只会看演示场景的模型。</p>
+<h2 id="时间错了，成功率就没有意义"><a href="#时间错了，成功率就没有意义" class="headerlink" title="时间错了，成功率就没有意义"></a>时间错了，成功率就没有意义</h2><p>机器人仿真常见的隐蔽错误是所有节点都在用不同的时间。ROS 2 Bridge 需要明确仿真时钟来源；控制器、传感器与记录器都应以同一仿真时间推进。否则视觉结果可能来自未来帧，控制器则在过去的状态上积分，得到的成功率没有解释价值。</p>
+<p>建议每次回归固定以下信息：场景版本、机器人资产版本、物理步长、传感器频率、随机种子和软件镜像版本。这样某次轨迹变差时，才能知道是算法改动还是场景参数漂移。</p>
+<h2 id="随机化要由失败样本驱动"><a href="#随机化要由失败样本驱动" class="headerlink" title="随机化要由失败样本驱动"></a>随机化要由失败样本驱动</h2><p>域随机化应该从真实世界误差的优先级出发。比如移动底盘的视觉定位，更值得随机化的是照度、反光、相机曝光、地面纹理、轮子打滑和传感器延迟；而不是先随机一个从未见过的科幻场景。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">真实数据回放 -&gt; 找出失败条件 -&gt; 选择可解释的扰动维度</span><br><span class="line">          -&gt; 在仿真中覆盖该范围 -&gt; 检查策略是否仍满足安全约束</span><br><span class="line">          -&gt; 用少量新实机数据校准，再进入下一轮</span><br></pre></td></tr></table></figure>
+
+<p>这套闭环的关键是“失败条件驱动仿真”，不是“仿真通过后假设现实也通过”。</p>
+<h2 id="实机验收从小范围开始"><a href="#实机验收从小范围开始" class="headerlink" title="实机验收从小范围开始"></a>实机验收从小范围开始</h2><ol>
+<li>用仿真先验证 Action 的开始、取消、超时和安全停止路径。</li>
+<li>在实机上只开放低速、小范围、有人监护的模式，先验证传感器时间戳和坐标系。</li>
+<li>记录真实轨迹、图像和控制指令，把失败片段回灌仿真。</li>
+<li>只有在丢帧、遮挡、网络延迟和执行器饱和等边界条件下仍可控，才逐步扩大速度和工作空间。</li>
+</ol>
+<p>仿真通过只能证明算法在已建模条件下成立；它不能替代硬件急停、限位和真实环境下的安全验收。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.isaacsim.omniverse.nvidia.com/latest/">Isaac Sim Documentation</a> · <a target="_blank" rel="noopener" href="https://docs.isaacsim.omniverse.nvidia.com/latest/replicator_tutorials/index.html">Isaac Sim Replicator</a></p>
+<p><strong>证据边界：</strong>仿真通过只说明已建模条件下的结果，不能替代急停、限位和真机验收。本文没有给出仿真到真机的成功率或参数迁移比例，具体范围要由实测失败片段反推。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/">https://quchaosheng.github.io/2026/07/30/isaac-sim-sim-to-real/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/13/ai-robot-vla-human-intervention-state-machine/">
+                            <span>VLA 规划接入机器人：动作候选、人工接管和可取消状态机</span>
+                            <time datetime="2026-08-13T01:30:00.000Z">2026-08-13</time>
+                        </a>
+                    
+                        <a href="/2026/08/11/ai-robot-voxel-memory-budget/">
+                            <span>三维场景记忆的显存预算：体素地图为什么越跑越大</span>
+                            <time datetime="2026-08-11T01:30:00.000Z">2026-08-11</time>
+                        </a>
+                    
+                        <a href="/2026/08/10/ai-robot-tensorrt-precision-regression/">
+                            <span>TensorRT FP16 和 INT8 精度回归：别只看推理时间</span>
+                            <time datetime="2026-08-10T01:30:00.000Z">2026-08-10</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/Isaac-Sim/"># Isaac Sim</a>
+                    
+                        <a href="/tag/Sim-to-Real/"># Sim-to-Real</a>
+                    
+                        <a href="/tag/%E5%90%88%E6%88%90%E6%95%B0%E6%8D%AE/"># 合成数据</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/30/isaac-ros-vslam-nvblox/">Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/30/tensorrt-robot-inference/">TensorRT 机器人推理：从训练模型到稳定延迟</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

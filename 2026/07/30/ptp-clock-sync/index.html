@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>PTP 时间同步：让分布式设备共享微秒级时间 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="分布式实时系统不只需要每台设备“走得很准”，还需要所有设备对“现在几点”有相同理解。相机曝光、伺服控制、TSN 门控和多传感器融合都依赖共同时间轴。PTP（IEEE 1588）通过同步与延迟测量消息估计从时钟相对主时钟的偏差；若网卡支持硬件时间戳，收发时刻会在 MAC&amp;#x2F;PHY 附近记录，能避开操作系统调度与协议栈抖动。 选择 Grandmas...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/30/ptp-clock-sync/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PTP 时间同步：让分布式设备共享微秒级时间 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="分布式实时系统不只需要每台设备“走得很准”，还需要所有设备对“现在几点”有相同理解。相机曝光、伺服控制、TSN 门控和多传感器融合都依赖共同时间轴。PTP（IEEE 1588）通过同步与延迟测量消息估计从时钟相对主时钟的偏差；若网卡支持硬件时间戳，收发时刻会在 MAC&amp;#x2F;PHY 附近记录，能避开操作系统调度与协议栈抖动。 选择 Grandmas...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/30/ptp-clock-sync/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="PTP 时间同步：让分布式设备共享微秒级时间">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="PTP 时间同步：让分布式设备共享微秒级时间 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="分布式实时系统不只需要每台设备“走得很准”，还需要所有设备对“现在几点”有相同理解。相机曝光、伺服控制、TSN 门控和多传感器融合都依赖共同时间轴。PTP（IEEE 1588）通过同步与延迟测量消息估计从时钟相对主时钟的偏差；若网卡支持硬件时间戳，收发时刻会在 MAC&amp;#x2F;PHY 附近记录，能避开操作系统调度与协议栈抖动。 选择 Grandmas...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"PTP 时间同步：让分布式设备共享微秒级时间","description":"分布式实时系统不只需要每台设备“走得很准”，还需要所有设备对“现在几点”有相同理解。相机曝光、伺服控制、TSN 门控和多传感器融合都依赖共同时间轴。PTP（IEEE 1588）通过同步与延迟测量消息估计从时钟相对主时钟的偏差；若网卡支持硬件时间戳，收发时刻会在 MAC&#x2F;PHY 附近记录，能避开操作系统调度与协议栈抖动。 选择 Grandmas...","datePublished":"2026-06-25T06:00:00.000Z","dateModified":"2026-06-25T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/30/ptp-clock-sync/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / Linux实时","keywords":"PTP, PHC, 时间同步","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">PTP 时间同步：让分布式设备共享微秒级时间</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-06-25&nbsp;&nbsp;14:00:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">Linux实时</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/PTP/">#PTP</a>
+                            
+                                <a href="/tag/PHC/">#PHC</a>
+                            
+                                <a href="/tag/%E6%97%B6%E9%97%B4%E5%90%8C%E6%AD%A5/">#时间同步</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>分布式实时系统不只需要每台设备“走得很准”，还需要所有设备对“现在几点”有相同理解。相机曝光、伺服控制、TSN 门控和多传感器融合都依赖共同时间轴。PTP（IEEE 1588）通过同步与延迟测量消息估计从时钟相对主时钟的偏差；若网卡支持硬件时间戳，收发时刻会在 MAC&#x2F;PHY 附近记录，能避开操作系统调度与协议栈抖动。</p>
+<div class="note-flow"><span>选择 Grandmaster</span><i>→</i><span>交换同步与延迟消息</span><i>→</i><span>硬件记录时间戳</span><i>→</i><span>估计 offset/path delay</span><i>→</i><span>伺服算法调整 PHC/系统钟</span></div>
+
+<h2 id="四个时间戳怎样得到偏差"><a href="#四个时间戳怎样得到偏差" class="headerlink" title="四个时间戳怎样得到偏差"></a>四个时间戳怎样得到偏差</h2><p>在常见的双向延迟测量里，主机发送 Sync 时刻为 <code>t1</code>，从机收到时刻为 <code>t2</code>；从机发送 Delay_Req 为 <code>t3</code>，主机收到为 <code>t4</code>。在链路往返近似对称时，可以用下式估计平均链路时延和主从 offset：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mean_path_delay = ((t2 - t1) + (t4 - t3)) / 2</span><br><span class="line">offset_from_master = (t2 - t1) - mean_path_delay</span><br></pre></td></tr></table></figure>
+
+<p>真实网络未必完全对称，所以链路配置、交换机行为、光电转换和时间戳位置都会影响结果。硬件时间戳不能消除物理不对称，却能消除大量软件排队噪声，是微秒级目标的重要基础。</p>
+<div class="note-map"><span><b>Grandmaster</b><small>按 BMCA 选出的参考时钟，提供全网时间基准</small></span><span><b>PHC</b><small>网卡的 PTP Hardware Clock，独立于系统 CLOCK_REALTIME</small></span><span><b>ptp4l</b><small>在网络端口间运行 PTP 协议并校准 PHC</small></span><span><b>phc2sys</b><small>在 PHC 与系统时钟之间传递已同步时间</small></span><span><b>硬件时间戳</b><small>在靠近收发器的位置记录时刻，减少软件抖动</small></span><span><b>监控</b><small>持续观察 offset、频率调整和锁定状态，而非只看启动成功</small></span></div>
+
+<h2 id="Linux-上的基本检查和启动顺序"><a href="#Linux-上的基本检查和启动顺序" class="headerlink" title="Linux 上的基本检查和启动顺序"></a>Linux 上的基本检查和启动顺序</h2><p>先确认网卡及驱动是否暴露硬件时间戳能力，再启动 PTP 协议，最后按需求把 PHC 同步到系统时钟。接口名、主从角色和域号要按网络设计配置，下面只是单端口实验的起点。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ethtool -T eth0</span><br><span class="line"><span class="built_in">sudo</span> ptp4l -i eth0 -m -H</span><br><span class="line"><span class="built_in">sudo</span> phc2sys -s eth0 -c CLOCK_REALTIME -w</span><br></pre></td></tr></table></figure>
+
+<p><code>ethtool -T</code> 用于查看时间戳能力；<code>ptp4l</code> 负责网络侧同步；<code>phc2sys</code> 常用于将网卡 PHC 与系统时钟关联。生产系统还应以配置文件固定 profile、domain、transport 与日志级别，而不是靠命令行临时试出来。</p>
+<h2 id="哪些现象说明-PTP-没有真正“锁住”"><a href="#哪些现象说明-PTP-没有真正“锁住”" class="headerlink" title="哪些现象说明 PTP 没有真正“锁住”"></a>哪些现象说明 PTP 没有真正“锁住”</h2><p>只要看到服务启动，不等于时间已经可靠。应持续记录 offset 的均值、标准差和最大值，观察 servo 是否频繁从锁定状态退回；还要检查网卡是否退回软件时间戳、交换机是否支持所需 PTP profile，以及系统负载升高后 offset 是否恶化。</p>
+<p>多网卡设备尤其要明确哪一块 PHC 是时间源。若相机、EtherCAT、TSN 网卡各自有时钟，却没有统一同步关系，日志看上去都带“正确时间戳”，实际仍然无法对齐。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://github.com/richardcochran/linuxptp">linuxptp</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/driver-api/ptp.html">Linux PTP hardware clock infrastructure</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/30/ptp-clock-sync/">https://quchaosheng.github.io/2026/07/30/ptp-clock-sync/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/30/tsn-deterministic-network/">
+                            <span>TSN：以太网怎样提供确定性时延</span>
+                            <time datetime="2026-06-26T02:00:00.000Z">2026-06-26</time>
+                        </a>
+                    
+                        <a href="/2026/07/30/realtime-regression-baseline/">
+                            <span>实时回归测试：把一次调优变成可持续的延迟基线</span>
+                            <time datetime="2026-07-15T12:00:00.000Z">2026-07-15</time>
+                        </a>
+                    
+                        <a href="/2026/07/30/realtime-network-path/">
+                            <span>Linux 实时网络路径：从网卡中断到应用线程</span>
+                            <time datetime="2026-07-14T02:00:00.000Z">2026-07-14</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/PTP/"># PTP</a>
+                    
+                        <a href="/tag/PHC/"># PHC</a>
+                    
+                        <a href="/tag/%E6%97%B6%E9%97%B4%E5%90%8C%E6%AD%A5/"># 时间同步</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/30/tsn-deterministic-network/">TSN：以太网怎样提供确定性时延</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/30/cyclictest-latency/">cyclictest：怎样测量 Linux 实时调度延迟</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>AprilTag Docking Demo | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="将 AprilTag 观测、置信门、Guard 和复用的 Nav2 SimpleChargingDock 串成可复现的 Gazebo 停靠流程。">
+
+<link rel="canonical" href="https://quchaosheng.github.io/projects/apriltag-docking/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="website">
+<meta property="og:title" content="AprilTag Docking Demo | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="将 AprilTag 观测、置信门、Guard 和复用的 Nav2 SimpleChargingDock 串成可复现的 Gazebo 停靠流程。">
+
+<meta property="og:url" content="https://quchaosheng.github.io/projects/apriltag-docking/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/apriltag-docking.png">
+    <meta property="og:image:alt" content="AprilTag Docking Demo">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AprilTag Docking Demo | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="将 AprilTag 观测、置信门、Guard 和复用的 Nav2 SimpleChargingDock 串成可复现的 Gazebo 停靠流程。">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/apriltag-docking.png">
+
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    <article class="post-wrap page">
+        
+        <h1 class="post-title">AprilTag Docking Demo</h1>
+        
+        <section class="post-content">
+            <div class="page-lead"><p class="section-kicker">项目说明</p><p>AprilTag Docking Demo 在 Gazebo 中让 TurtleBot3 靠近充电桩。连续有效观测通过门控后，任务才会交给复用的 Nav2 SimpleChargingDock 做最后接近；低置信、多 Tag、位姿跳变、Guard 失效和取消都会走明确的处理分支。</p></div>
+
+<figure class="project-hero-image"><img src="/image/projects/apriltag-docking.png" alt="Gazebo 中的 AprilTag 视觉停靠演示"></figure>
+
+<div class="project-facts"><div><span>仿真平台</span><strong>Gazebo Harmonic · TurtleBot3 Waffle Pi</strong></div><div><span>ROS 2</span><strong>Jazzy · apriltag_ros · Nav2 Docking</strong></div><div><span>关键门限</span><strong>三帧确认 · Tag loss · pose jump · Guard</strong></div></div>
+
+<h2 id="任务怎么开始"><a href="#任务怎么开始" class="headerlink" title="任务怎么开始"></a>任务怎么开始</h2><div class="note-flow"><span>Gazebo RGB<br>camera</span><i>→</i><span>apriltag_ros<br>detection + TF</span><i>→</i><span>Tag pose bridge<br>置信与去抖</span><i>→</i><span>Guard + task bridge</span><i>→</i><span>Nav2 Docking<br>DockRobot Action</span></div>
+
+<p>项目复用 <code>opennav_docking::SimpleChargingDock</code>。自定义部分负责 Tag 到 dock type 的映射、观测门限、状态桥接和诊断。只有确认过的 <code>PoseStamped</code> 才会进入 Docking。</p>
+<h2 id="哪些观测会被拒绝"><a href="#哪些观测会被拒绝" class="headerlink" title="哪些观测会被拒绝"></a>哪些观测会被拒绝</h2><div class="note-map"><span><b>低置信 / Hamming</b><small>decision margin 不够或 Hamming distance 非零时，忽略这次观测。</small></span><span><b>未知 / 多 Tag</b><small>ID 没映射或同时出现多个 Tag 时，不给停靠目标。</small></span><span><b>三帧确认</b><small>连续三帧通过后才发布，避免偶然识别改变任务状态。</small></span><span><b>位姿跳变</b><small>平移或 yaw 超过门限时重新确认，防止错误 TF 混进来。</small></span><span><b>Tag 丢失</b><small>接受的样本超时会报告出来，由 Nav2 按 stale-pose 和 retry 处理。</small></span><span><b>Guard</b><small>缺失、过期或 false Guard 会阻止新目标，也能取消正在执行的 DockRobot。</small></span></div>
+
+<h2 id="先跑一次"><a href="#先跑一次" class="headerlink" title="先跑一次"></a>先跑一次</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">source</span> /opt/ros/jazzy/setup.bash</span><br><span class="line">colcon build --symlink-install</span><br><span class="line"><span class="built_in">source</span> install/setup.bash</span><br><span class="line">ros2 launch demo2_apriltag_docking demo.launch.py headless:=<span class="literal">true</span> rviz:=<span class="literal">false</span></span><br><span class="line">ros2 service call /demo2/start_docking std_srvs/srv/Trigger <span class="string">&quot;&#123;&#125;&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>需要 Guard 时，以 transient-local 方式发布 <code>/guard/docking_allowed</code>。随后检查 <code>/demo2/tag_state</code>、<code>/demo2/docking_state</code> 和 <code>/diagnostics</code>。</p>
+<h2 id="这只是仿真"><a href="#这只是仿真" class="headerlink" title="这只是仿真"></a>这只是仿真</h2><ul>
+<li>可以复现 staging、Tag 确认、Guard、DockRobot、取消、状态诊断和多种拒绝路径。</li>
+<li><code>SimpleChargingDock</code> 用距离行为表示停靠成功，不表示真实充电接触。</li>
+<li>没有包括物理接点、电池电流、底盘制动、传感器噪声、动态障碍物和生产级安全认证。</li>
+</ul>
+<p>上真机前，先分别测相机内外参、地面摩擦、停靠误差、传感器失效和独立安全停止。</p>
+<p><strong>链接：</strong> <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo">GitHub 源码、视频与测试</a></p>
+
+        </section>
+    </article>
+</main>
+
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>Linux 进程与线程入门：PID、TID、task 和共享资源 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="程序明明只有一个 PID， top -H 却显示十几个可调度对象；给进程发信号和给线程发信号，结果也可能不同。后面要学绑核、优先级和实时调度，必须先把进程、线程和 Linux 内核里的 task 分清。 进程更像资源容器，里面有地址空间、文件描述符、信号处理配置和一个或多个执行流。线程是这些执行流在用户态的抽象。Linux 内核最终调度的是 task_...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/03/19/linux-process-thread-task-basics/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 进程与线程入门：PID、TID、task 和共享资源 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="程序明明只有一个 PID， top -H 却显示十几个可调度对象；给进程发信号和给线程发信号，结果也可能不同。后面要学绑核、优先级和实时调度，必须先把进程、线程和 Linux 内核里的 task 分清。 进程更像资源容器，里面有地址空间、文件描述符、信号处理配置和一个或多个执行流。线程是这些执行流在用户态的抽象。Linux 内核最终调度的是 task_...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/03/19/linux-process-thread-task-basics/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 进程与线程入门：PID、TID、task 和共享资源">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 进程与线程入门：PID、TID、task 和共享资源 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="程序明明只有一个 PID， top -H 却显示十几个可调度对象；给进程发信号和给线程发信号，结果也可能不同。后面要学绑核、优先级和实时调度，必须先把进程、线程和 Linux 内核里的 task 分清。 进程更像资源容器，里面有地址空间、文件描述符、信号处理配置和一个或多个执行流。线程是这些执行流在用户态的抽象。Linux 内核最终调度的是 task_...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Linux 进程与线程入门：PID、TID、task 和共享资源","description":"程序明明只有一个 PID， top -H 却显示十几个可调度对象；给进程发信号和给线程发信号，结果也可能不同。后面要学绑核、优先级和实时调度，必须先把进程、线程和 Linux 内核里的 task 分清。 进程更像资源容器，里面有地址空间、文件描述符、信号处理配置和一个或多个执行流。线程是这些执行流在用户态的抽象。Linux 内核最终调度的是 task_...","datePublished":"2026-03-19T01:30:00.000Z","dateModified":"2026-03-19T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/03/19/linux-process-thread-task-basics/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / Linux内核","keywords":"调度, 进程, 线程, task, PID, TID","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Linux 进程与线程入门：PID、TID、task 和共享资源</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-03-19&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%86%85%E6%A0%B8/">Linux内核</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E8%B0%83%E5%BA%A6/">#调度</a>
+                            
+                                <a href="/tag/%E8%BF%9B%E7%A8%8B/">#进程</a>
+                            
+                                <a href="/tag/%E7%BA%BF%E7%A8%8B/">#线程</a>
+                            
+                                <a href="/tag/task/">#task</a>
+                            
+                                
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>程序明明只有一个 PID，<code>top -H</code> 却显示十几个可调度对象；给进程发信号和给线程发信号，结果也可能不同。后面要学绑核、优先级和实时调度，必须先把进程、线程和 Linux 内核里的 <code>task</code> 分清。</p>
+<p>进程更像资源容器，里面有地址空间、文件描述符、信号处理配置和一个或多个执行流。线程是这些执行流在用户态的抽象。Linux 内核最终调度的是 <code>task_struct</code> 对应的任务，进程与线程的差别主要来自创建时共享了哪些资源。</p>
+<div class="note-flow"><span>启动一个进程</span><i>→</i><span>创建多个线程</span><i>→</i><span>内核为每个执行流维护 task</span><i>→</i><span>共享地址空间与文件</span><i>→</i><span>分别参与调度和信号投递</span></div>
+
+<figure class="note-visual"><figcaption><span>进程线程图</span>同一线程组共享大部分进程资源，但每个线程仍有独立的执行现场和调度状态。</figcaption><div class="note-map"><span><b>PID</b><small>线程组 ID 通常由主线程占用，也是大多数工具默认显示的进程号。</small></span><span><b>TID</b><small>每个线程自己的任务 ID，调度、绑核和线程定向信号会用到。</small></span><span><b>task_struct</b><small>内核保存调度、状态、凭据和资源引用的任务对象。</small></span><span><b>地址空间</b><small>同一进程的线程共享代码、堆和映射，但每个线程有自己的栈。</small></span><span><b>文件表</b><small>线程通常共享打开文件；一个线程关闭 fd 会影响其他线程。</small></span><span><b>信号</b><small>进程级 pending、线程屏蔽字和线程定向信号需要分别理解。</small></span></div></figure>
+
+<h2 id="用命令先看到线程"><a href="#用命令先看到线程" class="headerlink" title="用命令先看到线程"></a>用命令先看到线程</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ps -eLf</span><br><span class="line">ps -T -p &lt;PID&gt;</span><br><span class="line">top -H -p &lt;PID&gt;</span><br><span class="line"><span class="built_in">ls</span> /proc/&lt;PID&gt;/task</span><br></pre></td></tr></table></figure>
+
+<p><code>ps -T</code> 会列出同一进程里的线程，<code>/proc/&lt;PID&gt;/task</code> 下每个目录名都是一个 TID。主线程的 TID 通常等于 PID，其他线程有各自的 TID。调试线程绑核时，应检查具体 TID，而不是只看进程号。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">grep -E <span class="string">&#x27;^(Name|Pid|Tgid|Threads|Cpus_allowed_list):&#x27;</span> /proc/&lt;PID&gt;/status</span><br><span class="line">grep -E <span class="string">&#x27;^(Name|Pid|Tgid|Cpus_allowed_list):&#x27;</span> /proc/&lt;PID&gt;/task/&lt;TID&gt;/status</span><br></pre></td></tr></table></figure>
+
+<p><code>Tgid</code> 是线程组 ID，<code>Pid</code> 在任务状态文件里表示该 task 的 ID。工具的列名不完全一致，排查时最好回到 <code>/proc</code> 核对。</p>
+<h3 id="写一个程序打印-PID-和-TID"><a href="#写一个程序打印-PID-和-TID" class="headerlink" title="写一个程序打印 PID 和 TID"></a>写一个程序打印 PID 和 TID</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/syscall.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">print_identity</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *name)</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%s: pid=%d tid=%ld\n&quot;</span>, name, getpid(), syscall(SYS_gettid));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> *<span class="title function_">worker</span><span class="params">(<span class="type">void</span> *arg)</span> &#123;</span><br><span class="line">    (<span class="type">void</span>)arg;</span><br><span class="line">    print_identity(<span class="string">&quot;worker&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="type">pthread_t</span> thread;</span><br><span class="line">    print_identity(<span class="string">&quot;main&quot;</span>);</span><br><span class="line">    pthread_create(&amp;thread, <span class="literal">NULL</span>, worker, <span class="literal">NULL</span>);</span><br><span class="line">    pthread_join(thread, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -O2 -Wall -Wextra -pthread pid_tid.c -o pid_tid</span><br><span class="line">./pid_tid</span><br></pre></td></tr></table></figure>
+
+<p>两行输出的 PID 相同，TID 不同。这个实验是理解线程绑核、线程定向信号和 <code>/proc/&lt;PID&gt;/task</code> 的起点。</p>
+<h2 id="哪些资源共享，哪些独立"><a href="#哪些资源共享，哪些独立" class="headerlink" title="哪些资源共享，哪些独立"></a>哪些资源共享，哪些独立</h2><p>同一进程的线程通常共享虚拟地址空间、打开文件、当前工作目录和信号处理函数。它们有独立的寄存器、用户栈、线程局部存储、调度策略、CPU affinity 和信号屏蔽字。</p>
+<p>共享地址空间让线程通信很快，也让错误互相影响。一个线程写坏堆内存，另一个线程可能稍后才崩；一个线程关闭共享 fd，其他线程继续使用时会失败。线程安全不是“用了 mutex 就结束”，还要说清对象生命周期、退出顺序和取消路径。</p>
+<h2 id="fork-和-pthread-create-不做同一件事"><a href="#fork-和-pthread-create-不做同一件事" class="headerlink" title="fork 和 pthread_create 不做同一件事"></a>fork 和 pthread_create 不做同一件事</h2><p><code>fork()</code> 创建新的进程视图，子进程获得独立的虚拟地址空间语义，物理页通常先通过写时复制共享。<code>pthread_create()</code> 创建同一进程中的新线程，直接共享地址空间和文件表。</p>
+<p>在 Linux 内核里，两者最终都依赖类似 <code>clone</code> 的资源共享选择。用户程序应使用 <code>fork()</code> 和 pthread 接口，不要因为内核实现相近就混用语义。</p>
+<h2 id="调度器看到的是什么"><a href="#调度器看到的是什么" class="headerlink" title="调度器看到的是什么"></a>调度器看到的是什么</h2><p>调度器选择的是可运行 task。两个线程属于同一进程，也会分别进入运行队列，拥有各自的调度策略、优先级和 affinity。一个进程有八个 CPU 密集线程，就可能同时占用八颗 CPU；“只有一个 PID”不代表只使用一个核心。</p>
+<p>这也是后续绑核文章要按线程检查的原因：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">进程资源范围：地址空间、文件、凭据</span><br><span class="line">线程调度范围：TID、策略、优先级、CPU mask</span><br><span class="line">系统干扰范围：IRQ、softirq、其他进程和内核工作</span><br></pre></td></tr></table></figure>
+
+<h2 id="退出时容易漏掉什么"><a href="#退出时容易漏掉什么" class="headerlink" title="退出时容易漏掉什么"></a>退出时容易漏掉什么</h2><p>主线程从 <code>main()</code> 返回会终止整个进程；某个工作线程返回只结束自己。Joinable 线程退出后仍保留少量状态，直到其他线程 <code>pthread_join()</code>；detached 线程则由线程库自动回收。没有设计 join、detach 和停止协议，长期运行服务会积累资源或在退出时访问已销毁对象。</p>
+<p>理解这一层后，可以继续看<a href="/2026/02/06/linux-thread-cpu-affinity/">线程绑核</a>和<a href="/2026/02/27/linux-periodic-control-loop-basics/">周期控制循环</a>。前者操作具体 TID 的 CPU 集合，后者把 affinity、调度和 deadline 放进同一个循环。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/pthreads.7.html">pthreads(7)</a></li>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/clone.2.html">clone(2)</a></li>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/proc_pid_task.5.html">proc_pid_task(5)</a></li>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/sched.7.html">sched(7)</a></li>
+</ul>
+<p><strong>证据边界：</strong>本文解释 Linux 用户态线程与内核 task 的基本关系，没有覆盖所有 namespace、凭据和信号细节。命令输出会受发行版、工具版本和容器环境影响。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/03/19/linux-process-thread-task-basics/">https://quchaosheng.github.io/2026/03/19/linux-process-thread-task-basics/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/linux-process-signals/">
+                            <span>Linux 信号：异步事件如何送达进程</span>
+                            <time datetime="2026-05-04T02:00:00.000Z">2026-05-04</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/linux-fork-exec-cow/">
+                            <span>fork、exec 与 COW：进程是怎样创建的</span>
+                            <time datetime="2026-04-07T02:00:00.000Z">2026-04-07</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/embedded-software-timer/">
+                            <span>软件定时器：用一个硬件时基管理多个超时</span>
+                            <time datetime="2026-06-02T06:00:00.000Z">2026-06-02</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E8%B0%83%E5%BA%A6/"># 调度</a>
+                    
+                        <a href="/tag/%E8%BF%9B%E7%A8%8B/"># 进程</a>
+                    
+                        <a href="/tag/%E7%BA%BF%E7%A8%8B/"># 线程</a>
+                    
+                        <a href="/tag/task/"># task</a>
+                    
+                        <a href="/tag/PID/"># PID</a>
+                    
+                        <a href="/tag/TID/"># TID</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/qemu-gdbstub-debugging/">QEMU gdbstub：从启动第一条指令调试系统</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/riscv-hibernation/">RISC-V 休眠与恢复：把运行现场写入交换区</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>Gazebo 无显示 CI 为何偶发超时：从相机 0 帧到 QoS 启动竞态 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="Gazebo 在 CI 里正常启动， /camera/camera_info 也收到了一条消息，但图像计数始终是 0。修完渲染路径后，同一套测试又出现“有时 16 秒通过，有时等满 180 秒”的现象。它们不是同一个问题：前者发生在 Gazebo 相机与 ROS 2 bridge 之间，后者是测试错过了一条 transient-local 状态消息。...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/08/10/gazebo-headless-camera-ci/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Gazebo 无显示 CI 为何偶发超时：从相机 0 帧到 QoS 启动竞态 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="Gazebo 在 CI 里正常启动， /camera/camera_info 也收到了一条消息，但图像计数始终是 0。修完渲染路径后，同一套测试又出现“有时 16 秒通过，有时等满 180 秒”的现象。它们不是同一个问题：前者发生在 Gazebo 相机与 ROS 2 bridge 之间，后者是测试错过了一条 transient-local 状态消息。...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/08/10/gazebo-headless-camera-ci/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Gazebo 无显示 CI 为何偶发超时：从相机 0 帧到 QoS 启动竞态">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Gazebo 无显示 CI 为何偶发超时：从相机 0 帧到 QoS 启动竞态 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="Gazebo 在 CI 里正常启动， /camera/camera_info 也收到了一条消息，但图像计数始终是 0。修完渲染路径后，同一套测试又出现“有时 16 秒通过，有时等满 180 秒”的现象。它们不是同一个问题：前者发生在 Gazebo 相机与 ROS 2 bridge 之间，后者是测试错过了一条 transient-local 状态消息。...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Gazebo 无显示 CI 为何偶发超时：从相机 0 帧到 QoS 启动竞态","description":"Gazebo 在 CI 里正常启动， /camera/camera_info 也收到了一条消息，但图像计数始终是 0。修完渲染路径后，同一套测试又出现“有时 16 秒通过，有时等满 180 秒”的现象。它们不是同一个问题：前者发生在 Gazebo 相机与 ROS 2 bridge 之间，后者是测试错过了一条 transient-local 状态消息。...","datePublished":"2026-08-10T14:45:00.000Z","dateModified":"2026-08-10T14:45:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/10/gazebo-headless-camera-ci/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / ROS 2","keywords":"相机, Gazebo, CI, headless, AprilTag","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Gazebo 无显示 CI 为何偶发超时：从相机 0 帧到 QoS 启动竞态</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-08-10&nbsp;&nbsp;22:45:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/ROS-2/">ROS 2</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E7%9B%B8%E6%9C%BA/">#相机</a>
+                            
+                                <a href="/tag/Gazebo/">#Gazebo</a>
+                            
+                                <a href="/tag/CI/">#CI</a>
+                            
+                                <a href="/tag/headless/">#headless</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>Gazebo 在 CI 里正常启动，<code>/camera/camera_info</code> 也收到了一条消息，但图像计数始终是 0。修完渲染路径后，同一套测试又出现“有时 16 秒通过，有时等满 180 秒”的现象。它们不是同一个问题：前者发生在 Gazebo 相机与 ROS 2 bridge 之间，后者是测试错过了一条 transient-local 状态消息。</p>
+<p>这个问题来自 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo">ros2-apriltag-docking-demo</a> 的真实 CI 排障。最初使用 server-only 参数后，测试记录为 <code>Image messages received: 0</code>，而 CameraInfo 为 1；直接去掉 <code>-s</code> 又触发 Qt 的 <code>could not connect to display</code>。增加 <code>--headless-rendering</code> 曾让一次运行通过，却不能重复。最终方案使用 Xvfb 提供显示上下文、由同一个 <code>parameter_bridge</code> 桥接图像与 CameraInfo，并让测试以匹配的 QoS 读取初始状态。</p>
+<div class="note-flow"><span>确认仿真进程存活</span><i>→</i><span>分别统计图像与 CameraInfo</span><i>→</i><span>稳定渲染与桥接路径</span><i>→</i><span>逐项记录测试判据</span><i>→</i><span>修正状态话题 QoS</span></div>
+
+<figure class="note-visual"><figcaption><span>无显示相机链路</span>世界更新、传感器渲染、消息桥接和测试订阅是四个不同的故障边界。</figcaption><div class="note-map"><span><b>Server</b><small>推进物理世界和仿真时间，不保证所有渲染传感器产出图像。</small></span><span><b>Renderer</b><small>在无窗口环境创建离屏渲染上下文并生成相机帧。</small></span><span><b>Bridge</b><small>把 Gazebo transport 消息转换为 ROS 2 话题。</small></span><span><b>Subscriber</b><small>按兼容 QoS 接收图像并检查时间戳与数量。</small></span><span><b>Process</b><small>测试结束时核对目标进程状态，而非接受任意子进程退出。</small></span><span><b>Evidence</b><small>保存启动参数、消息计数、日志和通过的 CI 运行。</small></span></div></figure>
+
+<h2 id="s-不是-headless-rendering"><a href="#s-不是-headless-rendering" class="headerlink" title="-s 不是 headless rendering"></a><code>-s</code> 不是 headless rendering</h2><p>Gazebo 的 <code>-s</code> 表示 server-only，目的是不启动图形客户端。它解决了“不要弹 GUI”的问题，却没有自动承诺相机传感器能够在没有显示服务器时完成渲染。相机、深度相机等传感器需要渲染后端；世界能推进、里程计能更新，也可能仍然没有图像。</p>
+<p><code>--headless-rendering</code> 解决的是另一件事：让渲染传感器在无窗口环境使用离屏渲染路径。它是需要单独验证的后端选择，不是“加上就必然稳定”的开关。这个案例验证过的离屏命令是：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gz sim -r -s --headless-rendering -v2 --seed 42 &lt;world.sdf&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>-r</code> 让仿真直接运行，<code>-s</code> 保持 server-only，<code>--headless-rendering</code> 选择离屏渲染，固定 seed 则减少测试输入漂移。它们各自承担不同职责，不能因为都和“没有窗口”有关就互相替代。本项目后来改用 Xvfb + Ogre 的显示上下文路径，因为托管 runner 上的 Ogre2&#x2F;EGL 结果不能稳定重复。</p>
+<h2 id="为什么-CameraInfo-有-1-条仍然不能证明相机正常"><a href="#为什么-CameraInfo-有-1-条仍然不能证明相机正常" class="headerlink" title="为什么 CameraInfo 有 1 条仍然不能证明相机正常"></a>为什么 CameraInfo 有 1 条仍然不能证明相机正常</h2><p>CameraInfo 主要描述内参、畸变模型和图像尺寸。驱动或桥接层可以在初始化时发布一次这类静态信息，即使后续像素帧从未生成。因此，“CameraInfo 非空”只能证明配置链路的一部分已经建立，不能证明渲染循环持续输出。</p>
+<p>CI 至少应该分别检查：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ros2 topic info /camera/image_raw --verbose</span><br><span class="line">ros2 topic <span class="built_in">echo</span> /camera/camera_info --once</span><br><span class="line">ros2 topic hz /camera/image_raw</span><br></pre></td></tr></table></figure>
+
+<p>测试代码还要记录图像总数、第一帧时间、最后一帧时间和仿真时间。只检查话题名称存在也不够，bridge 可以创建话题却收不到上游消息。若订阅计数为 0，再依次核对 Gazebo 原生话题、bridge 映射与 ROS 2 QoS，能够更快确定断点。</p>
+<h2 id="去掉-s-为什么会得到-Qt-display-错误"><a href="#去掉-s-为什么会得到-Qt-display-错误" class="headerlink" title="去掉 -s 为什么会得到 Qt display 错误"></a>去掉 <code>-s</code> 为什么会得到 Qt display 错误</h2><p>删除 server-only 参数后，Gazebo 会尝试启动图形客户端。托管 CI 通常没有 X11 或 Wayland display，于是 Qt 在真正执行相机测试前就以 <code>could not connect to display</code> 退出。这条错误说明 GUI 路径依赖显示服务，并不能证明相机插件本身有问题。</p>
+<p>Xvfb 并不意味着必须启动 Gazebo GUI。最终工作流仍使用 <code>-s</code> 运行 server-only，只让 Xvfb 为相机渲染提供显示上下文。这样避开了 Qt 客户端，也避开了该 runner 上不稳定的 EGL 路径。选择 Xvfb 还是离屏渲染，应由重复运行的证据决定，而不是由“headless”这个名称决定。</p>
+<h2 id="测试通过一次，为什么仍会等满-180-秒"><a href="#测试通过一次，为什么仍会等满-180-秒" class="headerlink" title="测试通过一次，为什么仍会等满 180 秒"></a>测试通过一次，为什么仍会等满 180 秒</h2><p>相机链路稳定后，手动探针已经能看到约 30 FPS 图像、AprilTag <code>id=0</code> detection 和 <code>/detected_dock_pose</code>，但 launch test 仍偶发超时。逐项检查三个完成条件后发现，缺失的是 <code>/demo2/docking_state=IDLE</code>。</p>
+<p>状态发布者使用 reliable + transient-local QoS，在节点初始化时只发布一次 <code>IDLE</code>。测试却用默认 volatile QoS 订阅，而且测试订阅器经常晚于发布者创建。volatile 订阅器不会读取历史样本，于是这条状态永久丢失；只有测试恰好抢先完成 discovery 时才会通过。</p>
+<p>修复不是增加 sleep，而是让订阅契约匹配发布者：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">state_qos = QoSProfile(</span><br><span class="line">    depth=<span class="number">1</span>,</span><br><span class="line">    reliability=ReliabilityPolicy.RELIABLE,</span><br><span class="line">    durability=DurabilityPolicy.TRANSIENT_LOCAL,</span><br><span class="line">)</span><br><span class="line">node.create_subscription(String, <span class="string">&#x27;/demo2/docking_state&#x27;</span>, on_state, state_qos)</span><br></pre></td></tr></table></figure>
+
+<p>这条经验适用于所有“启动时只发布一次”的状态：发布者选择 transient-local 只是第一步，晚加入的订阅者也必须请求 transient-local，才能拿到缓存样本。</p>
+<h2 id="不要让“某个进程退出”误伤测试"><a href="#不要让“某个进程退出”误伤测试" class="headerlink" title="不要让“某个进程退出”误伤测试"></a>不要让“某个进程退出”误伤测试</h2><p>多进程 launch 测试常见另一个陷阱：监控脚本发现任意后台进程退出，就判定仿真失败。bridge、探针或清理进程可能按设计提前结束，笼统的 <code>wait -n</code> 会让日志看起来像 Gazebo 崩溃。</p>
+<p>进程断言应该带身份和阶段。仿真启动阶段要求 Gazebo server 与必要 bridge 存活；测试运行阶段要求相机消息持续到达；清理阶段允许收到终止信号，并分别收集退出码。失败信息至少写出进程名、PID、退出码和对应日志。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ! <span class="built_in">kill</span> -0 <span class="string">&quot;<span class="variable">$GZ_PID</span>&quot;</span> 2&gt;/dev/null; <span class="keyword">then</span></span><br><span class="line">  <span class="built_in">echo</span> <span class="string">&quot;Gazebo server exited before camera assertion&quot;</span></span><br><span class="line">  <span class="built_in">wait</span> <span class="string">&quot;<span class="variable">$GZ_PID</span>&quot;</span></span><br><span class="line">  <span class="built_in">exit</span> $?</span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure>
+
+<p>这段示意只检查 Gazebo PID。真实工作流还应为 bridge 和测试节点设置各自的预期生命周期，避免把正常退出与非预期崩溃混成一个状态。</p>
+<h2 id="把修复写成可以复核的证据链"><a href="#把修复写成可以复核的证据链" class="headerlink" title="把修复写成可以复核的证据链"></a>把修复写成可以复核的证据链</h2><p>这次排障可以拆成三个相互区分的实验：</p>
+<table>
+<thead>
+<tr>
+<th>实验</th>
+<th>观察</th>
+<th>能说明什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>-s</code></td>
+<td>Image 0，CameraInfo 1</td>
+<td>server 存活，但图像渲染链路没有产出</td>
+</tr>
+<tr>
+<td>去掉 <code>-s</code></td>
+<td>Qt 无法连接 display</td>
+<td>GUI 客户端需要当前 CI 不提供的显示服务</td>
+</tr>
+<tr>
+<td><code>-s --headless-rendering</code></td>
+<td>一次通过，后续又出现 0 帧</td>
+<td>只能证明单次运行可用，不能证明稳定</td>
+</tr>
+<tr>
+<td>Xvfb + Ogre + 单一 bridge</td>
+<td>图像约 30 FPS，Tag 与 pose 正常</td>
+<td>渲染、桥接和检测链路可用</td>
+</tr>
+<tr>
+<td>volatile 状态订阅</td>
+<td>偶发 16 秒通过或 180 秒超时</td>
+<td>测试结果受 discovery 时序影响</td>
+</tr>
+<tr>
+<td>transient-local 状态订阅</td>
+<td>本地 Jazzy 完整套件 89 项通过</td>
+<td>初始 <code>IDLE</code> 可被晚加入测试读取</td>
+</tr>
+</tbody></table>
+<p>中间修复提交 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo/commit/0c825f69fe7bcdbcba664c158cee41161feb12a2">0c825f6</a> 和 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo/actions/runs/31401068673">GitHub Actions 运行 31401068673</a> 解释了为什么当时会判断“已经修好”；后续重复运行又推翻了这个结论。最终修复合入 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo/commit/e5483b1141ce55ed78dc59b8c271ccda5210ba01">e5483b1</a>，对应的 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo/actions/runs/31416156349">main 分支 CI 运行 31416156349</a> 完整通过。保留成功与失败证据，比只保留最后一张绿灯截图更能说明修复边界。</p>
+<h2 id="进一步排查时按层缩小范围"><a href="#进一步排查时按层缩小范围" class="headerlink" title="进一步排查时按层缩小范围"></a>进一步排查时按层缩小范围</h2><p>如果增加 headless rendering 后仍是 0 帧，先确认容器中存在渲染依赖与可用后端，再检查 SDF 传感器更新率、Gazebo 原生话题和 bridge 映射。随后核对图像 QoS，尤其是 sensor data 常用的 best-effort。若图像、detection 和 pose 都已正常，则应逐项打印测试完成条件，并检查 transient-local 状态是否被 volatile 订阅器错过。</p>
+<p>不要同时改世界文件、QoS、bridge 和启动参数。每轮只改变一个边界，并保存消息计数和日志差异。这样即使最终问题来自镜像或渲染驱动，也能说明哪些路径已经被排除。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://gazebosim.org/api/sim/8/gz_sim.html">Gazebo Sim command line</a></li>
+<li><a target="_blank" rel="noopener" href="https://gazebosim.org/docs/latest/sensors/">Gazebo sensors</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Quality-of-Service-Settings.html">ROS 2 QoS settings</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/gazebosim/ros_gz/tree/ros2/ros_gz_bridge">ros_gz_bridge</a></li>
+</ul>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文的现象、参数、提交和 CI 链接来自上述公开仓库。通过结果证明的是该提交在对应 GitHub Actions 环境中满足了工作流断言，不代表所有 Gazebo 版本、GPU&#x2F;CPU 渲染后端或容器镜像都适用，也不证明真实相机、真实 AprilTag 检测或实体机器人对接性能。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/08/10/gazebo-headless-camera-ci/">https://quchaosheng.github.io/2026/08/10/gazebo-headless-camera-ci/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/05/ai-robot-rolling-shutter-motion-blur/">
+                            <span>Rolling Shutter、曝光与运动模糊：为什么移动机器人会错一拍</span>
+                            <time datetime="2026-08-05T01:30:00.000Z">2026-08-05</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E7%9B%B8%E6%9C%BA/"># 相机</a>
+                    
+                        <a href="/tag/Gazebo/"># Gazebo</a>
+                    
+                        <a href="/tag/CI/"># CI</a>
+                    
+                        <a href="/tag/headless/"># headless</a>
+                    
+                        <a href="/tag/AprilTag/"># AprilTag</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/08/11/ai-robot-voxel-memory-budget/">三维场景记忆的显存预算：体素地图为什么越跑越大</a>
+            
+            
+            <a class="next" rel="next" href="/2026/08/10/robot-task-completion-needs-evidence/">函数返回 OK，为什么机器人任务仍然可能失败</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

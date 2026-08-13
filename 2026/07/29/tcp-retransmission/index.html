@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>TCP 重传：可靠传输如何发现并修复丢包 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="TCP 的可靠性不是“发一遍没到就再发一遍”这么简单。发送端为每段数据分配序列号并保留未确认数据；接收端通过累计 ACK 和 SACK 告诉发送端哪些字节已到达、哪里存在缺口；发送端依据 RTT 估计、重复 ACK、SACK 和记分板判断是否丢包，并在合适的时机重传。重传既恢复可靠性，也会触发拥塞控制，因此它会直接改变吞吐、延迟和连接状态。 发送带序列...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/tcp-retransmission/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TCP 重传：可靠传输如何发现并修复丢包 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="TCP 的可靠性不是“发一遍没到就再发一遍”这么简单。发送端为每段数据分配序列号并保留未确认数据；接收端通过累计 ACK 和 SACK 告诉发送端哪些字节已到达、哪里存在缺口；发送端依据 RTT 估计、重复 ACK、SACK 和记分板判断是否丢包，并在合适的时机重传。重传既恢复可靠性，也会触发拥塞控制，因此它会直接改变吞吐、延迟和连接状态。 发送带序列...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/tcp-retransmission/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="TCP 重传：可靠传输如何发现并修复丢包">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TCP 重传：可靠传输如何发现并修复丢包 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="TCP 的可靠性不是“发一遍没到就再发一遍”这么简单。发送端为每段数据分配序列号并保留未确认数据；接收端通过累计 ACK 和 SACK 告诉发送端哪些字节已到达、哪里存在缺口；发送端依据 RTT 估计、重复 ACK、SACK 和记分板判断是否丢包，并在合适的时机重传。重传既恢复可靠性，也会触发拥塞控制，因此它会直接改变吞吐、延迟和连接状态。 发送带序列...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"TCP 重传：可靠传输如何发现并修复丢包","description":"TCP 的可靠性不是“发一遍没到就再发一遍”这么简单。发送端为每段数据分配序列号并保留未确认数据；接收端通过累计 ACK 和 SACK 告诉发送端哪些字节已到达、哪里存在缺口；发送端依据 RTT 估计、重复 ACK、SACK 和记分板判断是否丢包，并在合适的时机重传。重传既恢复可靠性，也会触发拥塞控制，因此它会直接改变吞吐、延迟和连接状态。 发送带序列...","datePublished":"2026-02-05T06:00:00.000Z","dateModified":"2026-02-05T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/tcp-retransmission/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / Linux网络","keywords":"TCP, 重传, 拥塞控制","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">TCP 重传：可靠传输如何发现并修复丢包</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-02-05&nbsp;&nbsp;14:00:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E7%BD%91%E7%BB%9C/">Linux网络</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/TCP/">#TCP</a>
+                            
+                                <a href="/tag/%E9%87%8D%E4%BC%A0/">#重传</a>
+                            
+                                <a href="/tag/%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6/">#拥塞控制</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>TCP 的可靠性不是“发一遍没到就再发一遍”这么简单。发送端为每段数据分配序列号并保留未确认数据；接收端通过累计 ACK 和 SACK 告诉发送端哪些字节已到达、哪里存在缺口；发送端依据 RTT 估计、重复 ACK、SACK 和记分板判断是否丢包，并在合适的时机重传。重传既恢复可靠性，也会触发拥塞控制，因此它会直接改变吞吐、延迟和连接状态。</p>
+<div class="note-flow"><span>发送带序列号的数据</span><i>→</i><span>接收端返回 ACK/SACK</span><i>→</i><span>识别缺口或超时</span><i>→</i><span>重传丢失段</span><i>→</i><span>调整拥塞窗口</span></div>
+
+<h2 id="两条主要的丢包发现路径"><a href="#两条主要的丢包发现路径" class="headerlink" title="两条主要的丢包发现路径"></a>两条主要的丢包发现路径</h2><p><strong>重传超时（RTO）</strong>：某段数据长时间未被确认，发送端认为它可能丢失，触发超时重传。这条路径保守但代价高，因为等待超时会增加尾延迟。</p>
+<p><strong>快速重传&#x2F;基于 SACK 的恢复</strong>：接收端持续确认更高序列号的数据，却反复暴露中间缺口，发送端可以在 RTO 前推断丢失段并重传。SACK 能精确描述已收到的非连续区间，避免把已经到达的段重复发送。</p>
+<div class="note-map"><span><b>序列号</b><small>把字节流位置编号，发送端据此追踪未确认数据</small></span><span><b>累计 ACK</b><small>确认连续前缀；出现缺口时会反复指向同一位置</small></span><span><b>SACK</b><small>补充已到达的非连续范围，帮助精准恢复</small></span><span><b>RTT/RTO</b><small>根据往返时延及其抖动估计超时，不应固定常数</small></span><span><b>快速恢复</b><small>尽早重传疑似丢失段，避免等待 RTO</small></span><span><b>拥塞控制</b><small>丢包通常被视为拥塞信号，会影响拥塞窗口与发送速率</small></span></div>
+
+<h2 id="重传不一定意味着链路真的丢了包"><a href="#重传不一定意味着链路真的丢了包" class="headerlink" title="重传不一定意味着链路真的丢了包"></a>重传不一定意味着链路真的丢了包</h2><p>乱序、ACK 延迟、对端 CPU 忙、接收窗口受限、队列积压或中间设备重排都可能导致类似现象。TCP 的恢复算法会综合多种证据，但应用排障不能看到“Retrans”就立刻换网卡。应结合 RTT、cwnd、rttvar、对端处理时间、网卡&#x2F;softnet 丢包计数和抓包时间戳判断。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ss -ti dst &lt;peer-ip&gt;</span><br><span class="line">nstat -az | grep -i retrans</span><br><span class="line">tcpdump -i eth0 -nn -ttt host &lt;peer-ip&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>ss -ti</code> 适合查看连接级状态，<code>nstat</code> 适合系统计数变化，抓包则能看线上的 ACK&#x2F;SACK 和乱序现象。抓包本身也有丢包&#x2F;时间戳误差，必要时使用硬件时间戳或多点采集。</p>
+<h2 id="对实时业务意味着什么"><a href="#对实时业务意味着什么" class="headerlink" title="对实时业务意味着什么"></a>对实时业务意味着什么</h2><p>TCP 为可靠性引入的排队、拥塞窗口和重传时间，天然与“每个状态必须在 10 ms 内有用”存在冲突。控制&#x2F;状态类协议要明确 deadline：过期状态重传回来时，应用是否仍应执行？很多实时系统会将关键控制放在带序号&#x2F;时间戳的 UDP 或现场总线之上，将 TCP 留给配置、日志、文件与可靠命令通道。</p>
+<p>无论使用哪种协议，都应把“发送成功”“内核确认”“对端收到”“对端业务处理完成”区分开。TCP 保障字节流可靠到达，不替代业务层的时效性与幂等性设计。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/tcp.7.html">TCP(7)</a> · <a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc5681">TCP loss recovery</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/29/tcp-retransmission/">https://quchaosheng.github.io/2026/07/29/tcp-retransmission/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/quic-overview/">
+                            <span>QUIC：在 UDP 之上重建可靠传输</span>
+                            <time datetime="2026-05-11T06:00:00.000Z">2026-05-11</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/tcp-drop-tracing/">
+                            <span>TCP 丢包追踪：用 kprobe 与 tracepoint 串起证据链</span>
+                            <time datetime="2026-04-23T06:00:00.000Z">2026-04-23</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/gro-rps-rfs/">
+                            <span>GRO、RPS 与 RFS：Linux 收包如何降低每包成本</span>
+                            <time datetime="2026-04-14T06:00:00.000Z">2026-04-14</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/TCP/"># TCP</a>
+                    
+                        <a href="/tag/%E9%87%8D%E4%BC%A0/"># 重传</a>
+                    
+                        <a href="/tag/%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6/"># 拥塞控制</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/02/06/linux-thread-cpu-affinity/">Linux 线程如何绑核：taskset、pthread affinity 与 cpuset</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/pthread-linux-internals/">pthread 底层：线程创建、同步与退出</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

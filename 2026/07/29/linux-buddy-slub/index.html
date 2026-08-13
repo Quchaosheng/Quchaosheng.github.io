@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>伙伴系统与 SLUB：Linux 内核怎样分配内存 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="串起页分配器、伙伴系统、SLUB、kmalloc 与 vmalloc，说明内核分配失败和碎片问题该如何观察。">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="伙伴系统与 SLUB：Linux 内核怎样分配内存 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="串起页分配器、伙伴系统、SLUB、kmalloc 与 vmalloc，说明内核分配失败和碎片问题该如何观察。">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="伙伴系统与 SLUB：Linux 内核怎样分配内存">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="伙伴系统与 SLUB：Linux 内核怎样分配内存 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="串起页分配器、伙伴系统、SLUB、kmalloc 与 vmalloc，说明内核分配失败和碎片问题该如何观察。">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"伙伴系统与 SLUB：Linux 内核怎样分配内存","description":"串起页分配器、伙伴系统、SLUB、kmalloc 与 vmalloc，说明内核分配失败和碎片问题该如何观察。","datePublished":"2026-04-07T12:00:00.000Z","dateModified":"2026-04-07T12:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / Linux内核","keywords":"伙伴系统, SLUB, 内存分配","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">伙伴系统与 SLUB：Linux 内核怎样分配内存</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-04-07&nbsp;&nbsp;20:00:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%86%85%E6%A0%B8/">Linux内核</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E4%BC%99%E4%BC%B4%E7%B3%BB%E7%BB%9F/">#伙伴系统</a>
+                            
+                                <a href="/tag/SLUB/">#SLUB</a>
+                            
+                                <a href="/tag/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D/">#内存分配</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>内核既要分配整页和连续物理页，也要频繁创建几十到几千字节的小对象。只用一种分配器很难同时兼顾碎片、速度和对象复用，因此 Linux 将问题分层：页分配器管理物理页，伙伴系统组织可合并的连续页块，SLUB 再从页块中切出固定大小的对象槽。</p>
+<h2 id="从-order-到对象槽"><a href="#从-order-到对象槽" class="headerlink" title="从 order 到对象槽"></a>从 order 到对象槽</h2><p>伙伴系统按 order 管理空闲块：order 0 是一页，order 1 是两页，依次按 2 的幂增长。申请某个 order 时，若该链表没有空闲块，可以拆分更高 order；释放时，只有地址对齐且同阶空闲的伙伴才能合并。它能快速拆分和合并，但不能保证系统运行很久后仍能满足高阶连续分配。</p>
+<p>SLUB 为同类对象建立 <code>kmem_cache</code>。每个 slab 由一组页面组成，内部保存已经分割好的对象槽。快速路径尽量从当前 CPU 的 slab 取对象，减少全局锁争用；槽不足时才向页分配器申请新的 slab。</p>
+<div class="note-flow"><span>kmem_cache_alloc</span><i>→</i><span>从当前 slab 取对象</span><i>→</i><span>slab 不足</span><i>→</i><span>伙伴系统申请页</span><i>→</i><span>切分为对象槽</span></div>
+
+<div class="note-map"><span><b>伙伴系统</b><small>管理 2 的幂次连续物理页</small></span><span><b>SLUB cache</b><small>按对象类型或大小复用 slab</small></span><span><b>kmalloc</b><small>小块内存，物理上连续</small></span><span><b>vmalloc</b><small>虚拟连续，物理页可以分散</small></span><span><b>GFP 标志</b><small>描述可否睡眠、可用区域与回收约束</small></span><span><b>memcg/NUMA</b><small>配额和节点位置也影响分配结果</small></span></div>
+
+<h2 id="kmalloc、kmem-cache-与-vmalloc"><a href="#kmalloc、kmem-cache-与-vmalloc" class="headerlink" title="kmalloc、kmem_cache 与 vmalloc"></a>kmalloc、kmem_cache 与 vmalloc</h2><ul>
+<li><code>kmalloc()</code> 适合通用的小块分配，返回物理连续、虚拟连续的内存；过大的连续申请更容易受碎片影响。</li>
+<li><code>kmem_cache_create()</code> 适合大量同构对象，可配置对齐、构造和调试能力。</li>
+<li><code>vmalloc()</code> 只保证虚拟地址连续，页表建立和 TLB 压力更高，也不适合要求物理连续的 DMA 场景。</li>
+<li>DMA 缓冲区应使用对应 DMA API，不能因为 <code>kmalloc</code> 物理连续就绕过设备地址、缓存一致性和掩码约束。</li>
+</ul>
+<h2 id="用系统接口观察"><a href="#用系统接口观察" class="headerlink" title="用系统接口观察"></a>用系统接口观察</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/buddyinfo</span><br><span class="line"><span class="built_in">head</span> -n 20 /proc/slabinfo</span><br><span class="line">grep -E <span class="string">&#x27;Slab|SReclaimable|SUnreclaim|Vmalloc&#x27;</span> /proc/meminfo</span><br><span class="line">slabtop -o</span><br></pre></td></tr></table></figure>
+
+<p><code>/proc/buddyinfo</code> 中高 order 数量很少，只能说明当前各 zone 的空闲块分布，不能单独断定已经发生不可恢复的碎片。还要结合分配 order、GFP 标志、zone、水位、回收与规整日志判断。<code>slabtop</code> 展示对象 cache 的当前统计，也不能直接证明某个 cache 泄漏；对象数量增长可能来自正常负载或缓存策略。</p>
+<h2 id="分配失败时的检查顺序"><a href="#分配失败时的检查顺序" class="headerlink" title="分配失败时的检查顺序"></a>分配失败时的检查顺序</h2><ol>
+<li>从日志确认失败的 order、GFP mask、调用栈和 NUMA&#x2F;zone 约束。</li>
+<li>区分“总内存不足”和“有空闲页但缺少满足条件的连续块”。</li>
+<li>检查调用上下文能否睡眠，是否错误使用了原子分配标志。</li>
+<li>对长期大块需求，优先在设计上避免运行期高阶分配，或评估 CMA、预留池和 scatter-gather。</li>
+</ol>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>不同内核版本、NUMA 拓扑、页大小和 SLAB 实现会改变统计字段与快速路径。本文给出的是排查框架；生产结论应保存内核版本、配置、分配栈和当时的内存状态。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/mm/physical_memory.html">Physical Memory</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/mm/slab.html">Slab Allocation</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/core-api/memory-allocation.html">Memory Allocation Guide</a> · <a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=Mzg4NDQ0OTI4Ng==&mid=2247494614&idx=1&sn=d4a6d3974c77eb269864ab6efd39ec40">不懂伙伴系统与 SLUB 分配器，别再说你懂 Linux 内核了</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/">https://quchaosheng.github.io/2026/07/29/linux-buddy-slub/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/alloc-pages-path/">
+                            <span>alloc_pages：物理页面分配如何走到伙伴系统</span>
+                            <time datetime="2026-04-03T06:00:00.000Z">2026-04-03</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/malloc-free-internals/">
+                            <span>malloc 与 free：用户态分配器如何管理堆内存</span>
+                            <time datetime="2026-02-12T06:00:00.000Z">2026-02-12</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/linux-procfs/">
+                            <span>procfs：把内核运行状态投影成文件</span>
+                            <time datetime="2026-05-08T02:00:00.000Z">2026-05-08</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E4%BC%99%E4%BC%B4%E7%B3%BB%E7%BB%9F/"># 伙伴系统</a>
+                    
+                        <a href="/tag/SLUB/"># SLUB</a>
+                    
+                        <a href="/tag/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D/"># 内存分配</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/linux-page-fault-walk/">缺页异常与页表遍历：一次内存访问的补救过程</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/linux-network-transmit-path/">Linux 网络发送链路：从 socket 到网卡描述符</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>CUDA 推理入门：Host、Device、Pinned Memory 和 Stream | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="模型 kernel 只运行 8 ms，整帧处理却用了 30 ms。剩下的时间通常藏在 CPU 到 GPU 的复制、格式转换、内存分配和同步里。要看懂 TensorRT、NITROS 和多相机优化，先把 CUDA 的 Host、Device、Pinned Memory 和 Stream 理清。 准备 Host 输入 → 复制到 Device → 在 St...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/06/22/cuda-memory-stream-basics/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA 推理入门：Host、Device、Pinned Memory 和 Stream | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="模型 kernel 只运行 8 ms，整帧处理却用了 30 ms。剩下的时间通常藏在 CPU 到 GPU 的复制、格式转换、内存分配和同步里。要看懂 TensorRT、NITROS 和多相机优化，先把 CUDA 的 Host、Device、Pinned Memory 和 Stream 理清。 准备 Host 输入 → 复制到 Device → 在 St...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/06/22/cuda-memory-stream-basics/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="CUDA 推理入门：Host、Device、Pinned Memory 和 Stream">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CUDA 推理入门：Host、Device、Pinned Memory 和 Stream | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="模型 kernel 只运行 8 ms，整帧处理却用了 30 ms。剩下的时间通常藏在 CPU 到 GPU 的复制、格式转换、内存分配和同步里。要看懂 TensorRT、NITROS 和多相机优化，先把 CUDA 的 Host、Device、Pinned Memory 和 Stream 理清。 准备 Host 输入 → 复制到 Device → 在 St...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"CUDA 推理入门：Host、Device、Pinned Memory 和 Stream","description":"模型 kernel 只运行 8 ms，整帧处理却用了 30 ms。剩下的时间通常藏在 CPU 到 GPU 的复制、格式转换、内存分配和同步里。要看懂 TensorRT、NITROS 和多相机优化，先把 CUDA 的 Host、Device、Pinned Memory 和 Stream 理清。 准备 Host 输入 → 复制到 Device → 在 St...","datePublished":"2026-06-22T01:30:00.000Z","dateModified":"2026-06-22T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/06/22/cuda-memory-stream-basics/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"TensorRT, CUDA, GPU, Pinned Memory, Stream","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">CUDA 推理入门：Host、Device、Pinned Memory 和 Stream</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-06-22&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/TensorRT/">#TensorRT</a>
+                            
+                                <a href="/tag/CUDA/">#CUDA</a>
+                            
+                                <a href="/tag/GPU/">#GPU</a>
+                            
+                                <a href="/tag/Pinned-Memory/">#Pinned Memory</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>模型 kernel 只运行 8 ms，整帧处理却用了 30 ms。剩下的时间通常藏在 CPU 到 GPU 的复制、格式转换、内存分配和同步里。要看懂 TensorRT、NITROS 和多相机优化，先把 CUDA 的 Host、Device、Pinned Memory 和 Stream 理清。</p>
+<div class="note-flow"><span>准备 Host 输入</span><i>→</i><span>复制到 Device</span><i>→</i><span>在 Stream 中执行 kernel</span><i>→</i><span>复制或消费输出</span><i>→</i><span>等待必要的同步点</span></div>
+
+<figure class="note-visual"><figcaption><span>CUDA 数据流图</span>GPU 计算只是链路中的一段，内存位置和同步方式决定能否真正重叠工作。</figcaption><div class="note-map"><span><b>Host memory</b><small>CPU 地址空间中的普通内存，驱动复制前可能需要额外暂存。</small></span><span><b>Pinned memory</b><small>页锁定 Host 内存，适合异步传输，但数量过多会压缩系统可用内存。</small></span><span><b>Device memory</b><small>GPU 可直接访问的显存或设备内存，需要明确生命周期。</small></span><span><b>Stream</b><small>按序提交 CUDA 工作，不同 stream 是否并行取决于依赖和硬件。</small></span><span><b>Event</b><small>在 GPU 时间线上标记完成点，可用于测量和跨 stream 依赖。</small></span><span><b>同步</b><small>隐式同步会让 CPU 等 GPU，或让本可重叠的阶段串行。</small></span></div></figure>
+
+<h2 id="普通内存与-Pinned-Memory"><a href="#普通内存与-Pinned-Memory" class="headerlink" title="普通内存与 Pinned Memory"></a>普通内存与 Pinned Memory</h2><p>CPU 使用 <code>malloc</code> 得到的通常是可分页内存。GPU 异步复制前，驱动可能先把数据搬到页锁定暂存区。Pinned Memory 不会被换出，可以直接参与 DMA，常用于高吞吐 Host-Device 传输。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> *host_ptr = <span class="literal">nullptr</span>;</span><br><span class="line"><span class="built_in">cudaMallocHost</span>(&amp;host_ptr, bytes);</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> *device_ptr = <span class="literal">nullptr</span>;</span><br><span class="line"><span class="built_in">cudaMalloc</span>(&amp;device_ptr, bytes);</span><br><span class="line"></span><br><span class="line"><span class="built_in">cudaFree</span>(device_ptr);</span><br><span class="line"><span class="built_in">cudaFreeHost</span>(host_ptr);</span><br></pre></td></tr></table></figure>
+
+<p>这段只展示生命周期。生产代码要检查每个返回值，并避免在每帧循环中反复分配。Pinned Memory 不是越多越好，锁住大量系统内存会影响其他进程和内核回收。</p>
+<h2 id="Stream-是顺序队列"><a href="#Stream-是顺序队列" class="headerlink" title="Stream 是顺序队列"></a>Stream 是顺序队列</h2><p>同一 stream 中的操作按提交顺序执行。不同 stream 可能重叠复制和计算，但前提是硬件支持、内存类型合适且没有隐式依赖。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cudaStream_t stream;</span><br><span class="line"><span class="built_in">cudaStreamCreate</span>(&amp;stream);</span><br><span class="line"><span class="built_in">cudaMemcpyAsync</span>(device_ptr, host_ptr, bytes, cudaMemcpyHostToDevice, stream);</span><br><span class="line">kernel&lt;&lt;&lt;grid, block, <span class="number">0</span>, stream&gt;&gt;&gt;(device_ptr);</span><br><span class="line"><span class="built_in">cudaStreamSynchronize</span>(stream);</span><br><span class="line"><span class="built_in">cudaStreamDestroy</span>(stream);</span><br></pre></td></tr></table></figure>
+
+<p>最后的同步会等待该 stream 完成。若每个阶段都立即同步，异步 API 仍会退化成串行执行。更好的做法是只在输出真正被 CPU 使用或跨组件交接时建立依赖。</p>
+<h2 id="跑一个双-Stream-对照实验"><a href="#跑一个双-Stream-对照实验" class="headerlink" title="跑一个双 Stream 对照实验"></a>跑一个双 Stream 对照实验</h2><p>下面的程序固定使用 Pinned Memory，先逐帧同步，再用两个 stream 和两组 buffer 交错提交同样的复制、kernel、复制任务。保存为 <code>cuda_stream_probe.cu</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cuda_runtime.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cstdio&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cstdlib&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CUDA_OK(call)                                                         \</span></span><br><span class="line"><span class="meta">    do &#123;                                                                      \</span></span><br><span class="line"><span class="meta">        cudaError_t <span class="keyword">error</span> = (call);                                           \</span></span><br><span class="line"><span class="meta">        <span class="keyword">if</span> (<span class="keyword">error</span> != cudaSuccess) &#123;                                           \</span></span><br><span class="line"><span class="meta">            std::fprintf(stderr, <span class="string">&quot;%s:%d: %s\n&quot;</span>, __FILE__, __LINE__,          \</span></span><br><span class="line"><span class="meta">                         cudaGetErrorString(<span class="keyword">error</span>));                           \</span></span><br><span class="line"><span class="meta">            std::exit(1);                                                     \</span></span><br><span class="line"><span class="meta">        &#125;                                                                     \</span></span><br><span class="line"><span class="meta">    &#125; while (0)</span></span><br><span class="line"></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">add_one</span><span class="params">(<span class="type">float</span>* values, std::<span class="type">size_t</span> count)</span> </span>&#123;</span><br><span class="line">    std::<span class="type">size_t</span> index = blockIdx.x * blockDim.x + threadIdx.x;</span><br><span class="line">    <span class="keyword">if</span> (index &lt; count) &#123;</span><br><span class="line">        values[index] += <span class="number">1.0f</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">constexpr</span> std::<span class="type">size_t</span> count = <span class="number">1</span> &lt;&lt; <span class="number">20</span>;</span><br><span class="line">    <span class="keyword">constexpr</span> <span class="type">int</span> iterations = <span class="number">200</span>;</span><br><span class="line">    <span class="keyword">constexpr</span> <span class="type">int</span> threads = <span class="number">256</span>;</span><br><span class="line">    <span class="type">const</span> std::<span class="type">size_t</span> bytes = count * <span class="built_in">sizeof</span>(<span class="type">float</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">float</span>* host[<span class="number">2</span>] = &#123;<span class="literal">nullptr</span>, <span class="literal">nullptr</span>&#125;;</span><br><span class="line">    <span class="type">float</span>* device[<span class="number">2</span>] = &#123;<span class="literal">nullptr</span>, <span class="literal">nullptr</span>&#125;;</span><br><span class="line">    cudaStream_t streams[<span class="number">2</span>];</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> slot = <span class="number">0</span>; slot &lt; <span class="number">2</span>; ++slot) &#123;</span><br><span class="line">        <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaMallocHost</span>(<span class="built_in">reinterpret_cast</span>&lt;<span class="type">void</span>**&gt;(&amp;host[slot]), bytes));</span><br><span class="line">        <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaMalloc</span>(<span class="built_in">reinterpret_cast</span>&lt;<span class="type">void</span>**&gt;(&amp;device[slot]), bytes));</span><br><span class="line">        <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaStreamCreate</span>(&amp;streams[slot]));</span><br><span class="line">        <span class="keyword">for</span> (std::<span class="type">size_t</span> index = <span class="number">0</span>; index &lt; count; ++index) &#123;</span><br><span class="line">            host[slot][index] = <span class="built_in">static_cast</span>&lt;<span class="type">float</span>&gt;(index &amp; <span class="number">255</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> enqueue = [&amp;](<span class="type">int</span> slot) &#123;</span><br><span class="line">        <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaMemcpyAsync</span>(device[slot], host[slot], bytes,</span><br><span class="line">                                cudaMemcpyHostToDevice, streams[slot]));</span><br><span class="line">        add_one&lt;&lt;&lt;(count + threads - <span class="number">1</span>) / threads, threads, <span class="number">0</span>, streams[slot]&gt;&gt;&gt;(</span><br><span class="line">            device[slot], count);</span><br><span class="line">        <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaGetLastError</span>());</span><br><span class="line">        <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaMemcpyAsync</span>(host[slot], device[slot], bytes,</span><br><span class="line">                                cudaMemcpyDeviceToHost, streams[slot]));</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> benchmark = [&amp;](<span class="type">bool</span> pipeline) &#123;</span><br><span class="line">        <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaDeviceSynchronize</span>());</span><br><span class="line">        <span class="keyword">auto</span> begin = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> frame = <span class="number">0</span>; frame &lt; iterations; ++frame) &#123;</span><br><span class="line">            <span class="type">int</span> slot = pipeline ? frame % <span class="number">2</span> : <span class="number">0</span>;</span><br><span class="line">            <span class="built_in">enqueue</span>(slot);</span><br><span class="line">            <span class="keyword">if</span> (!pipeline) &#123;</span><br><span class="line">                <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaStreamSynchronize</span>(streams[slot]));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaDeviceSynchronize</span>());</span><br><span class="line">        <span class="keyword">auto</span> end = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">        <span class="keyword">return</span> std::chrono::<span class="built_in">duration</span>&lt;<span class="type">double</span>, std::milli&gt;(end - begin).<span class="built_in">count</span>();</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="type">double</span> serial_ms = <span class="built_in">benchmark</span>(<span class="literal">false</span>);</span><br><span class="line">    <span class="type">double</span> pipeline_ms = <span class="built_in">benchmark</span>(<span class="literal">true</span>);</span><br><span class="line">    std::<span class="built_in">printf</span>(<span class="string">&quot;serial:   %.2f ms\n&quot;</span>, serial_ms);</span><br><span class="line">    std::<span class="built_in">printf</span>(<span class="string">&quot;2-stream: %.2f ms\n&quot;</span>, pipeline_ms);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> slot = <span class="number">0</span>; slot &lt; <span class="number">2</span>; ++slot) &#123;</span><br><span class="line">        <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaStreamDestroy</span>(streams[slot]));</span><br><span class="line">        <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaFree</span>(device[slot]));</span><br><span class="line">        <span class="built_in">CUDA_OK</span>(<span class="built_in">cudaFreeHost</span>(host[slot]));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编译运行，并用 Nsight Systems 看时间线：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nvcc -O2 -std=c++17 cuda_stream_probe.cu -o cuda_stream_probe</span><br><span class="line">./cuda_stream_probe</span><br><span class="line">nsys profile --trace=cuda --sample=none -o cuda-stream ./cuda_stream_probe</span><br></pre></td></tr></table></figure>
+
+<p>这个对照不预设加速比例。GPU 没有并发复制引擎、数据块太小、kernel 太短或总线已经饱和时，双 stream 可能没有收益。先执行 <code>deviceQuery</code> 或读取 <code>cudaDeviceProp::asyncEngineCount</code>，再在 Nsight 时间线上确认 H2D、kernel 和 D2H 是否真的重叠。程序用 CPU 墙上时间测完整提交过程，适合比较两种调度；测单个 kernel 时仍应使用 event。</p>
+<h2 id="Event-用来测-GPU-时间"><a href="#Event-用来测-GPU-时间" class="headerlink" title="Event 用来测 GPU 时间"></a>Event 用来测 GPU 时间</h2><p>CPU 墙上时间会混入线程调度和提交开销。CUDA event 在 GPU 时间线上记录位置，更适合测一段 stream 工作：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">cudaEvent_t start, stop;</span><br><span class="line"><span class="built_in">cudaEventCreate</span>(&amp;start);</span><br><span class="line"><span class="built_in">cudaEventCreate</span>(&amp;stop);</span><br><span class="line"><span class="built_in">cudaEventRecord</span>(start, stream);</span><br><span class="line">kernel&lt;&lt;&lt;grid, block, <span class="number">0</span>, stream&gt;&gt;&gt;(device_ptr);</span><br><span class="line"><span class="built_in">cudaEventRecord</span>(stop, stream);</span><br><span class="line"><span class="built_in">cudaEventSynchronize</span>(stop);</span><br><span class="line"></span><br><span class="line"><span class="type">float</span> milliseconds = <span class="number">0.0f</span>;</span><br><span class="line"><span class="built_in">cudaEventElapsedTime</span>(&amp;milliseconds, start, stop);</span><br></pre></td></tr></table></figure>
+
+<p>GPU 时间仍不等于机器人感知年龄。完整链路还要记录相机采集、预处理、排队和控制器消费时刻。</p>
+<p>如果 CUDA 时间已经稳定，机器人仍然偶发“慢一拍”，下一步应检查<a href="/2026/08/04/ai-robot-visual-servo-latency-budget/">视觉伺服的端到端延迟预算</a>和<a href="/2026/02/17/ros2-executor-callback-groups-basics/">ROS 2 Executor 的回调排队</a>。GPU profile 只能解释 GPU 时间线，解释不了相机时间戳和订阅队列。</p>
+<h2 id="TensorRT-为什么强调预分配"><a href="#TensorRT-为什么强调预分配" class="headerlink" title="TensorRT 为什么强调预分配"></a>TensorRT 为什么强调预分配</h2><p>TensorRT engine、execution context、输入输出 buffer 和 stream 通常在启动阶段创建。每帧重新 <code>cudaMalloc</code>、创建 context 或同步默认 stream，会带来额外抖动。动态 shape 还可能触发不同的内存和 tactic 路径，需要单独测量。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">启动阶段：创建 engine/context/stream，分配 buffer，预热</span><br><span class="line">稳态阶段：填充输入，异步复制，enqueue，消费输出</span><br><span class="line">退出阶段：等待任务完成，按逆序释放资源</span><br></pre></td></tr></table></figure>
+
+<h2 id="统一内存也要看访问模式"><a href="#统一内存也要看访问模式" class="headerlink" title="统一内存也要看访问模式"></a>统一内存也要看访问模式</h2><p>Unified Memory 简化地址管理，但页面迁移和首次访问可能产生不可预测开销。开发原型很方便，实时感知链路仍应记录迁移、缺页和预取行为。是否适合目标设备，要用 profile 和长时间负载验证。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">CUDA C++ Programming Guide</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/">CUDA C++ Best Practices Guide</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.nvidia.com/deeplearning/tensorrt/latest/">NVIDIA TensorRT documentation</a></li>
+<li><a target="_blank" rel="noopener" href="https://nvidia-isaac-ros.github.io/">NVIDIA Isaac ROS</a></li>
+</ul>
+<p><strong>证据边界：</strong>代码展示 CUDA 资源和 stream 的基本用法，没有针对具体 GPU、Jetson 或模型测量带宽和延迟。并发能力、统一内存行为和复制速度受硬件与驱动版本影响。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/06/22/cuda-memory-stream-basics/">https://quchaosheng.github.io/2026/06/22/cuda-memory-stream-basics/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/10/ai-robot-tensorrt-precision-regression/">
+                            <span>TensorRT FP16 和 INT8 精度回归：别只看推理时间</span>
+                            <time datetime="2026-08-10T01:30:00.000Z">2026-08-10</time>
+                        </a>
+                    
+                        <a href="/2026/07/30/tensorrt-robot-inference/">
+                            <span>TensorRT 机器人推理：从训练模型到稳定延迟</span>
+                            <time datetime="2026-07-21T06:00:00.000Z">2026-07-21</time>
+                        </a>
+                    
+                        <a href="/2026/07/30/jetson-robot-deployment/">
+                            <span>Jetson 机器人部署：功耗、算力与实时控制怎样分工</span>
+                            <time datetime="2026-07-17T06:00:00.000Z">2026-07-17</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/TensorRT/"># TensorRT</a>
+                    
+                        <a href="/tag/CUDA/"># CUDA</a>
+                    
+                        <a href="/tag/GPU/"># GPU</a>
+                    
+                        <a href="/tag/Pinned-Memory/"># Pinned Memory</a>
+                    
+                        <a href="/tag/Stream/"># Stream</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/30/realtime-memory-locking/">实时任务的内存锁定：避免缺页与回收抖动</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/30/linux-cpu-isolation/">CPU 隔离：为实时任务留出安静的核心</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

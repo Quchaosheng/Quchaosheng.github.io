@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>NAPI：Linux 如何承受高并发收包 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="如果每个数据包都触发一次硬中断，高流量时 CPU 会花大量时间在“响应中断、保存现场、再响应下一个中断”，却没有时间真正处理数据，这就是中断风暴。反过来，持续轮询所有队列在低流量时又浪费 CPU。NAPI 采用混合模型：第一个包由中断提醒，随后驱动暂时关闭该队列中断，在软中断&amp;#x2F;NAPI poll 中按预算批量取包；队列清空后再恢复中断。它是...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-napi-receive/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="NAPI：Linux 如何承受高并发收包 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="如果每个数据包都触发一次硬中断，高流量时 CPU 会花大量时间在“响应中断、保存现场、再响应下一个中断”，却没有时间真正处理数据，这就是中断风暴。反过来，持续轮询所有队列在低流量时又浪费 CPU。NAPI 采用混合模型：第一个包由中断提醒，随后驱动暂时关闭该队列中断，在软中断&amp;#x2F;NAPI poll 中按预算批量取包；队列清空后再恢复中断。它是...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-napi-receive/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="NAPI：Linux 如何承受高并发收包">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NAPI：Linux 如何承受高并发收包 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="如果每个数据包都触发一次硬中断，高流量时 CPU 会花大量时间在“响应中断、保存现场、再响应下一个中断”，却没有时间真正处理数据，这就是中断风暴。反过来，持续轮询所有队列在低流量时又浪费 CPU。NAPI 采用混合模型：第一个包由中断提醒，随后驱动暂时关闭该队列中断，在软中断&amp;#x2F;NAPI poll 中按预算批量取包；队列清空后再恢复中断。它是...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"NAPI：Linux 如何承受高并发收包","description":"如果每个数据包都触发一次硬中断，高流量时 CPU 会花大量时间在“响应中断、保存现场、再响应下一个中断”，却没有时间真正处理数据，这就是中断风暴。反过来，持续轮询所有队列在低流量时又浪费 CPU。NAPI 采用混合模型：第一个包由中断提醒，随后驱动暂时关闭该队列中断，在软中断&#x2F;NAPI poll 中按预算批量取包；队列清空后再恢复中断。它是...","datePublished":"2026-02-03T06:00:00.000Z","dateModified":"2026-02-03T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/linux-napi-receive/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / Linux网络","keywords":"NAPI, 网卡驱动, 网络性能","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">NAPI：Linux 如何承受高并发收包</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-02-03&nbsp;&nbsp;14:00:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E7%BD%91%E7%BB%9C/">Linux网络</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/NAPI/">#NAPI</a>
+                            
+                                <a href="/tag/%E7%BD%91%E5%8D%A1%E9%A9%B1%E5%8A%A8/">#网卡驱动</a>
+                            
+                                <a href="/tag/%E7%BD%91%E7%BB%9C%E6%80%A7%E8%83%BD/">#网络性能</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>如果每个数据包都触发一次硬中断，高流量时 CPU 会花大量时间在“响应中断、保存现场、再响应下一个中断”，却没有时间真正处理数据，这就是中断风暴。反过来，持续轮询所有队列在低流量时又浪费 CPU。NAPI 采用混合模型：第一个包由中断提醒，随后驱动暂时关闭该队列中断，在软中断&#x2F;NAPI poll 中按预算批量取包；队列清空后再恢复中断。它是 Linux 高吞吐收包的核心折中。</p>
+<div class="note-flow"><span>网卡产生接收中断</span><i>→</i><span>关闭队列中断</span><i>→</i><span>调度 NAPI poll</span><i>→</i><span>按 budget 批量收包</span><i>→</i><span>清空后重开中断</span></div>
+
+<h2 id="驱动与协议栈怎样配合"><a href="#驱动与协议栈怎样配合" class="headerlink" title="驱动与协议栈怎样配合"></a>驱动与协议栈怎样配合</h2><p>驱动初始化时注册 <code>napi_struct</code> 及其 poll 回调。接收中断发生后，驱动确认设备并调度 NAPI；内核在 <code>NET_RX</code> softirq 中调用 poll，驱动从 RX ring 回收已经 DMA 完成的描述符，构造&#x2F;关联 skb 后交给网络栈。poll 返回本次已完成包数；若队列已清空，驱动调用完成逻辑并重新启用中断；若仍有积压，则下一轮继续处理。</p>
+<div class="note-map"><span><b>RX ring</b><small>网卡 DMA 写入描述符指向的缓冲区，容量决定突发吸收能力</small></span><span><b>硬中断</b><small>低流量时及时唤醒 CPU；高流量时被暂时抑制</small></span><span><b>NAPI poll</b><small>在预算内批量回收包，减少每包中断成本</small></span><span><b>NET_RX softirq</b><small>驱动与协议栈的主要收包执行上下文</small></span><span><b>budget</b><small>防止一个队列长期独占 CPU，同时影响吞吐与尾延迟</small></span><span><b>ksoftirqd</b><small>软中断超过预算后接手，提示负载或分流可能失衡</small></span></div>
+
+<p>NAPI “批量”意味着天然存在吞吐与延迟取舍。较大 budget 可提高高流量效率，却可能让其他任务等待更久；过小则增加调度和中断开销。最佳值与包长、CPU、网卡队列数和应用处理能力有关，不是一个可盲目复制的常数。</p>
+<h2 id="如何从现象定位到-NAPI-层"><a href="#如何从现象定位到-NAPI-层" class="headerlink" title="如何从现象定位到 NAPI 层"></a>如何从现象定位到 NAPI 层</h2><p>先查看队列数和网卡统计，再看 softirq 是否集中在某几个 CPU。驱动暴露的计数器名称会随型号不同，但下面几项是常用起点：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ethtool -l eth0          <span class="comment"># 查看/设置硬件队列通道能力</span></span><br><span class="line">ethtool -S eth0          <span class="comment"># 查看驱动统计，如 ring 丢包/队列错误</span></span><br><span class="line"><span class="built_in">cat</span> /proc/softirqs       <span class="comment"># 观察 NET_RX 是否集中在某个 CPU</span></span><br><span class="line"><span class="built_in">cat</span> /proc/net/softnet_stat</span><br></pre></td></tr></table></figure>
+
+<p>如果 RX ring 丢包增长，说明包在驱动前已来不及接收；如果 <code>softnet_stat</code> 显示处理压力，说明协议栈&#x2F;NAPI 路径可能过载；如果 socket 队列增长，则包已进入内核但应用消费太慢。三种问题的修复方向不同，不能都靠调大 buffer。</p>
+<h2 id="在实时系统中如何使用它"><a href="#在实时系统中如何使用它" class="headerlink" title="在实时系统中如何使用它"></a>在实时系统中如何使用它</h2><p>控制包通常追求较小的数据年龄，视频&#x2F;日志流追求吞吐。可以让背景大流量队列、IRQ 和 NAPI 工作落在 housekeeping CPU，让关键流保留明确的 RX queue 与消费 CPU；但过度迁移也会增加跨核队列和 cache miss。每次调整都应记录“从网卡收到到应用消费”的时间戳，而不是只看 PPS 或带宽。</p>
+<p>NAPI 不是某个驱动私有技巧，它是硬件队列、中断、softirq、GRO 和应用队列之间的协调点。理解这条路径后，网络性能问题才有分层排查的入口。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/networking/napi.html">NAPI</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/networking/scaling.html">Linux networking scaling</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/29/linux-napi-receive/">https://quchaosheng.github.io/2026/07/29/linux-napi-receive/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/linux-xdp/">
+                            <span>XDP：在网络栈最前面处理数据包</span>
+                            <time datetime="2026-03-05T06:00:00.000Z">2026-03-05</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/udp-receive-optimization/">
+                            <span>UDP 收包瓶颈：从网卡队列到应用线程</span>
+                            <time datetime="2026-02-09T06:00:00.000Z">2026-02-09</time>
+                        </a>
+                    
+                        <a href="/2026/07/30/realtime-network-path/">
+                            <span>Linux 实时网络路径：从网卡中断到应用线程</span>
+                            <time datetime="2026-07-14T02:00:00.000Z">2026-07-14</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/NAPI/"># NAPI</a>
+                    
+                        <a href="/tag/%E7%BD%91%E5%8D%A1%E9%A9%B1%E5%8A%A8/"># 网卡驱动</a>
+                    
+                        <a href="/tag/%E7%BD%91%E7%BB%9C%E6%80%A7%E8%83%BD/"># 网络性能</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/pthread-linux-internals/">pthread 底层：线程创建、同步与退出</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/linux-sk-buff/">sk_buff：Linux 网络包在内核中的旅行容器</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>CMake 交叉编译：工具链文件决定目标环境 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="交叉编译不只是把 gcc 换成 aarch64-linux-gnu-gcc 。配置、头文件查找、库查找、try-compile 和安装路径都要按目标机来处理。CMake 的 toolchain file 会告诉它目标系统、架构、编译器、sysroot 和查找规则。文件写得不完整时，最麻烦的是它可能悄悄链接到宿主机库。 读取 toolchain.cmak...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/cmake-cross-compilation/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CMake 交叉编译：工具链文件决定目标环境 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="交叉编译不只是把 gcc 换成 aarch64-linux-gnu-gcc 。配置、头文件查找、库查找、try-compile 和安装路径都要按目标机来处理。CMake 的 toolchain file 会告诉它目标系统、架构、编译器、sysroot 和查找规则。文件写得不完整时，最麻烦的是它可能悄悄链接到宿主机库。 读取 toolchain.cmak...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/cmake-cross-compilation/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="CMake 交叉编译：工具链文件决定目标环境">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CMake 交叉编译：工具链文件决定目标环境 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="交叉编译不只是把 gcc 换成 aarch64-linux-gnu-gcc 。配置、头文件查找、库查找、try-compile 和安装路径都要按目标机来处理。CMake 的 toolchain file 会告诉它目标系统、架构、编译器、sysroot 和查找规则。文件写得不完整时，最麻烦的是它可能悄悄链接到宿主机库。 读取 toolchain.cmak...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"CMake 交叉编译：工具链文件决定目标环境","description":"交叉编译不只是把 gcc 换成 aarch64-linux-gnu-gcc 。配置、头文件查找、库查找、try-compile 和安装路径都要按目标机来处理。CMake 的 toolchain file 会告诉它目标系统、架构、编译器、sysroot 和查找规则。文件写得不完整时，最麻烦的是它可能悄悄链接到宿主机库。 读取 toolchain.cmak...","datePublished":"2026-06-08T06:00:00.000Z","dateModified":"2026-06-08T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/cmake-cross-compilation/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 工具链","keywords":"交叉编译, CMake, Toolchain","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">CMake 交叉编译：工具链文件决定目标环境</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-06-08&nbsp;&nbsp;14:00:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B7%A5%E5%85%B7%E9%93%BE/">工具链</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/">#交叉编译</a>
+                            
+                                <a href="/tag/CMake/">#CMake</a>
+                            
+                                <a href="/tag/Toolchain/">#Toolchain</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>交叉编译不只是把 <code>gcc</code> 换成 <code>aarch64-linux-gnu-gcc</code>。配置、头文件查找、库查找、try-compile 和安装路径都要按目标机来处理。CMake 的 toolchain file 会告诉它目标系统、架构、编译器、sysroot 和查找规则。文件写得不完整时，最麻烦的是它可能悄悄链接到宿主机库。</p>
+<div class="note-flow"><span>读取 toolchain.cmake</span><i>→</i><span>识别目标编译器与 sysroot</span><i>→</i><span>查找目标头文件和库</span><i>→</i><span>生成构建系统</span><i>→</i><span>编译并部署到目标板</span></div>
+
+<h2 id="Toolchain-file-必须回答哪些问题"><a href="#Toolchain-file-必须回答哪些问题" class="headerlink" title="Toolchain file 必须回答哪些问题"></a>Toolchain file 必须回答哪些问题</h2><p>目标系统是什么、CPU&#x2F;ABI 是什么、C&#x2F;C++ 编译器在哪里、sysroot 在哪里，以及 CMake 查找外部程序和目标库时各该去哪。宿主机上运行的工具（代码生成器、pkg-config wrapper）与目标机上的库是不同概念，不能混在同一个搜索路径里。</p>
+<figure class="note-visual"><figcaption><span>构建图</span>toolchain file 的任务是让 CMake 始终以目标系统的视角寻找编译器、头文件和库。</figcaption><div class="note-map"><span><b>CMAKE_SYSTEM_NAME</b><small>声明目标系统，例如 Linux，触发交叉编译模式</small></span><span><b>CMAKE_SYSTEM_PROCESSOR</b><small>目标架构/处理器信息，供项目选择架构相关代码</small></span><span><b>编译器</b><small>CMAKE_C_COMPILER/CXX_COMPILER 指向目标工具链</small></span><span><b>sysroot</b><small>目标头文件、库和动态链接器所属的根目录</small></span><span><b>find root path</b><small>限制 find_library/find_path 不误用宿主机依赖</small></span><span><b>try-compile</b><small>交叉构建时配置测试程序不能直接在宿主机执行</small></span></div></figure>
+
+<p>一个最小工具链文件可以从下面开始，再按 SDK&#x2F;Buildroot 输出调整路径：</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span>(CMAKE_SYSTEM_NAME Linux)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_SYSTEM_PROCESSOR aarch64)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_SYSROOT /opt/sdk/sysroot)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_FIND_ROOT_PATH <span class="variable">$&#123;CMAKE_SYSROOT&#125;</span>)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)</span><br></pre></td></tr></table></figure>
+
+<p>最后一行可避免一些 <code>try_compile</code> 测试在配置阶段尝试运行目标程序。它不是万能设置，使用 <code>try_run()</code> 的项目仍需要提供预置结果或交叉编译替代方案。</p>
+<h2 id="最常见的三个错误"><a href="#最常见的三个错误" class="headerlink" title="最常见的三个错误"></a>最常见的三个错误</h2><p>第一，<code>find_package()</code> 找到了 <code>/usr/lib</code> 的宿主机库，产物在目标板上无法运行或 ABI 不匹配。第二，pkg-config 没有设置 sysroot&#x2F;库目录，给出了宿主机 <code>.pc</code> 文件的路径。第三，项目把绝对 SDK 路径写进 <code>CMakeLists.txt</code>，导致其他开发机或 CI 无法复现。</p>
+<p>应把工具链路径、sysroot、第三方依赖和部署目录放进 toolchain file、CMake cache 或预设，而不是散落在源码里。构建后用 <code>file</code>、<code>readelf -d</code> 和目标机运行测试确认 ELF 架构、动态链接器和依赖库都正确。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">file my_app</span><br><span class="line">readelf -d my_app | grep NEEDED</span><br></pre></td></tr></table></figure>
+
+<h2 id="交叉编译的交付边界"><a href="#交叉编译的交付边界" class="headerlink" title="交叉编译的交付边界"></a>交叉编译的交付边界</h2><p>二进制能编过，还要检查目标 rootfs 有没有对应的 C 库和动态链接器，插件、配置、数据文件是否到了正确路径，升级 SDK 后 ABI 有没有变。把这些检查放进 CMake install、打包和 CI，交付时会少很多手工步骤。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html">CMake Cross Compiling</a> · <a target="_blank" rel="noopener" href="https://cmake.org/cmake/help/latest/variable/CMAKE_SYSROOT.html">CMAKE_SYSROOT</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/29/cmake-cross-compilation/">https://quchaosheng.github.io/2026/07/29/cmake-cross-compilation/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/buildroot-system-image/">
+                            <span>Buildroot：生成可复现的嵌入式 Linux 系统镜像</span>
+                            <time datetime="2026-05-22T06:00:00.000Z">2026-05-22</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/embedded-static-analysis/">
+                            <span>嵌入式静态分析：在运行前发现危险路径</span>
+                            <time datetime="2026-06-09T06:00:00.000Z">2026-06-09</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/"># 交叉编译</a>
+                    
+                        <a href="/tag/CMake/"># CMake</a>
+                    
+                        <a href="/tag/Toolchain/"># Toolchain</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/embedded-static-analysis/">嵌入式静态分析：在运行前发现危险路径</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/embedded-crash-dump/">嵌入式崩溃转储：复位后仍能还原现场</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

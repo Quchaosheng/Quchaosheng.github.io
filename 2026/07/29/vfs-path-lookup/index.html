@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>VFS 路径查找：目录字符串如何定位 inode | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。像 /a/b/c 这样简单的字符串，在内核里不是一次哈希查找，而是一连串带边界条件的目录遍历。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 pat...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/vfs-path-lookup/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="VFS 路径查找：目录字符串如何定位 inode | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。像 /a/b/c 这样简单的字符串，在内核里不是一次哈希查找，而是一连串带边界条件的目录遍历。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 pat...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/vfs-path-lookup/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="VFS 路径查找：目录字符串如何定位 inode">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VFS 路径查找：目录字符串如何定位 inode | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。像 /a/b/c 这样简单的字符串，在内核里不是一次哈希查找，而是一连串带边界条件的目录遍历。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 pat...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"VFS 路径查找：目录字符串如何定位 inode","description":"路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。像 /a/b/c 这样简单的字符串，在内核里不是一次哈希查找，而是一连串带边界条件的目录遍历。 选择起始目录 → 逐段解析路径 → 查询 dcache → 必要时读取文件系统元数据 → 得到最终 pat...","datePublished":"2026-04-10T02:00:00.000Z","dateModified":"2026-04-10T02:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/vfs-path-lookup/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 文件系统","keywords":"VFS, dentry, inode","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">VFS 路径查找：目录字符串如何定位 inode</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-04-10&nbsp;&nbsp;10:00:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/">文件系统</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/VFS/">#VFS</a>
+                            
+                                <a href="/tag/dentry/">#dentry</a>
+                            
+                                <a href="/tag/inode/">#inode</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>路径查找从根目录或当前目录开始逐段解析组件，优先查询 dentry cache，未命中时调用具体文件系统查找 inode，并处理挂载点、符号链接和权限。像 <code>/a/b/c</code> 这样简单的字符串，在内核里不是一次哈希查找，而是一连串带边界条件的目录遍历。</p>
+<div class="note-flow"><span>选择起始目录</span><i>→</i><span>逐段解析路径</span><i>→</i><span>查询 dcache</span><i>→</i><span>必要时读取文件系统元数据</span><i>→</i><span>得到最终 path/inode</span></div>
+
+<figure class="note-visual"><figcaption><span>路径图</span>一个路径组件会经过 dentry、inode、挂载和权限等多层检查。</figcaption><div class="note-map"><span><b>起始 path</b><small>绝对路径从根开始，相对路径从 cwd 或 `dirfd` 开始。</small></span><span><b>dentry cache</b><small>缓存“名称到 inode”的关联，也可缓存不存在的负结果。</small></span><span><b>inode</b><small>提供对象元数据和具体文件系统的 lookup 操作。</small></span><span><b>挂载点</b><small>解析途中可能切换到另一个挂载的根目录。</small></span><span><b>符号链接</b><small>会引入新的路径解析，次数和边界都需要限制。</small></span><span><b>权限检查</b><small>目录搜索权限和最终对象权限都可能让查找失败。</small></span></div></figure>
+
+<h2 id="快路径依赖缓存，慢路径才会访问文件系统"><a href="#快路径依赖缓存，慢路径才会访问文件系统" class="headerlink" title="快路径依赖缓存，慢路径才会访问文件系统"></a>快路径依赖缓存，慢路径才会访问文件系统</h2><p>常见路径的组件往往已在 dcache 中，内核可快速完成查找；缓存未命中、目录发生变化或遇到需要引用计数保护的情况时，会走更重的路径并调用文件系统操作。负 dentry 缓存“不存在”也很重要，否则频繁探测缺失文件会反复触发底层查找。</p>
+<p>遇到路径性能问题时，要区分是大量组件解析、符号链接、挂载穿越、权限检查，还是缓存频繁失效。盲目增加缓存或把路径拼得更短，都不一定解决真正的 I&#x2F;O 或锁竞争。</p>
+<h2 id="路径约束是服务安全边界"><a href="#路径约束是服务安全边界" class="headerlink" title="路径约束是服务安全边界"></a>路径约束是服务安全边界</h2><p>当服务代表用户访问文件时，<code>../</code> 过滤远远不够，符号链接和目录替换仍可能越出预期目录。<code>openat2</code> 提供解析约束，能限制链接、挂载穿越等行为；无论使用何种接口，都应从受控目录 fd 出发，并明确哪些路径操作被允许。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://www.kerneltravel.net/blog/2020/checkpath_cpc/">Linux 路径名查找过程</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/29/vfs-path-lookup/">https://quchaosheng.github.io/2026/07/29/vfs-path-lookup/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/open-system-call/">
+                            <span>open 系统调用：路径怎样变成文件描述符</span>
+                            <time datetime="2026-04-06T06:00:00.000Z">2026-04-06</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/bcachefs-overview/">
+                            <span>bcachefs：写时复制文件系统的核心设计</span>
+                            <time datetime="2026-03-30T06:00:00.000Z">2026-03-30</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/VFS/"># VFS</a>
+                    
+                        <a href="/tag/dentry/"># dentry</a>
+                    
+                        <a href="/tag/inode/"># inode</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/gdb-crash-debugging/">GDB 崩溃调试：从信号到调用栈</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/linux-rcu/">RCU：读多写少场景下的并发设计</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

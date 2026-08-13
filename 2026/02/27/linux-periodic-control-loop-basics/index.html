@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>Linux 周期控制循环入门：绝对唤醒、内存锁定和 deadline miss | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="一个“每 1 ms 执行一次”的线程，如果每次都用 sleep(1ms) ，运行一段时间后通常会逐渐漂移。它还可能在第一次访问大数组时触发缺页，在日志输出时阻塞，在等待锁时超过周期。要学习实时控制，先写一个能测出这些问题的小循环，比直接上完整机器人更容易。 下面这篇是基础教程：用稳态时钟做绝对唤醒，锁定进程内存，设置线程亲和性和优先级，然后统计 dea...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/02/27/linux-periodic-control-loop-basics/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 周期控制循环入门：绝对唤醒、内存锁定和 deadline miss | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="一个“每 1 ms 执行一次”的线程，如果每次都用 sleep(1ms) ，运行一段时间后通常会逐渐漂移。它还可能在第一次访问大数组时触发缺页，在日志输出时阻塞，在等待锁时超过周期。要学习实时控制，先写一个能测出这些问题的小循环，比直接上完整机器人更容易。 下面这篇是基础教程：用稳态时钟做绝对唤醒，锁定进程内存，设置线程亲和性和优先级，然后统计 dea...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/02/27/linux-periodic-control-loop-basics/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 周期控制循环入门：绝对唤醒、内存锁定和 deadline miss">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 周期控制循环入门：绝对唤醒、内存锁定和 deadline miss | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="一个“每 1 ms 执行一次”的线程，如果每次都用 sleep(1ms) ，运行一段时间后通常会逐渐漂移。它还可能在第一次访问大数组时触发缺页，在日志输出时阻塞，在等待锁时超过周期。要学习实时控制，先写一个能测出这些问题的小循环，比直接上完整机器人更容易。 下面这篇是基础教程：用稳态时钟做绝对唤醒，锁定进程内存，设置线程亲和性和优先级，然后统计 dea...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Linux 周期控制循环入门：绝对唤醒、内存锁定和 deadline miss","description":"一个“每 1 ms 执行一次”的线程，如果每次都用 sleep(1ms) ，运行一段时间后通常会逐渐漂移。它还可能在第一次访问大数组时触发缺页，在日志输出时阻塞，在等待锁时超过周期。要学习实时控制，先写一个能测出这些问题的小循环，比直接上完整机器人更容易。 下面这篇是基础教程：用稳态时钟做绝对唤醒，锁定进程内存，设置线程亲和性和优先级，然后统计 dea...","datePublished":"2026-02-27T01:30:00.000Z","dateModified":"2026-02-27T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/02/27/linux-periodic-control-loop-basics/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / Linux实时","keywords":"实时Linux, 控制循环, clock_nanosleep, mlockall, deadline","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Linux 周期控制循环入门：绝对唤醒、内存锁定和 deadline miss</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-02-27&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">Linux实时</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E5%AE%9E%E6%97%B6Linux/">#实时Linux</a>
+                            
+                                <a href="/tag/%E6%8E%A7%E5%88%B6%E5%BE%AA%E7%8E%AF/">#控制循环</a>
+                            
+                                <a href="/tag/clock-nanosleep/">#clock_nanosleep</a>
+                            
+                                <a href="/tag/mlockall/">#mlockall</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>一个“每 1 ms 执行一次”的线程，如果每次都用 <code>sleep(1ms)</code>，运行一段时间后通常会逐渐漂移。它还可能在第一次访问大数组时触发缺页，在日志输出时阻塞，在等待锁时超过周期。要学习实时控制，先写一个能测出这些问题的小循环，比直接上完整机器人更容易。</p>
+<p>下面这篇是基础教程：用稳态时钟做绝对唤醒，锁定进程内存，设置线程亲和性和优先级，然后统计 deadline miss。它不替代 PREEMPT_RT，也不等于真机控制器的安全实现。</p>
+<div class="note-flow"><span>选择稳态时钟和周期</span><i>→</i><span>绝对时间唤醒</span><i>→</i><span>锁定内存并预热</span><i>→</i><span>运行固定工作量</span><i>→</i><span>统计周期和 deadline miss</span></div>
+
+<figure class="note-visual"><figcaption><span>周期循环图</span>控制循环要把唤醒、计算、输出和下一次 deadline 分开测量。</figcaption><div class="note-map"><span><b>CLOCK_MONOTONIC</b><small>不受墙上时间校正影响，适合测量间隔和截止期。</small></span><span><b>绝对唤醒</b><small>每次按下一个目标时刻睡眠，避免相对 sleep 累积漂移。</small></span><span><b>mlockall</b><small>减少运行期缺页，但不能替代预触页和检查栈增长。</small></span><span><b>固定工作量</b><small>先用可控计算量测试，避免把 I/O 和动态分配混进基线。</small></span><span><b>deadline</b><small>区分迟到、超时和跳过周期，不能只看平均周期。</small></span><span><b>外部干扰</b><small>IRQ、调度、温度和固件事件需要单独记录和复测。</small></span></div></figure>
+
+<h2 id="为什么相对-sleep-会漂移"><a href="#为什么相对-sleep-会漂移" class="headerlink" title="为什么相对 sleep 会漂移"></a>为什么相对 sleep 会漂移</h2><p>如果循环每次都执行“工作耗时 + sleep(1ms)”，下一次唤醒时间就会把工作耗时累加进去。绝对唤醒则先计算第 <code>k</code> 次目标时刻：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">next_deadline = start + (k + 1) * period</span><br><span class="line">clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, next_deadline)</span><br></pre></td></tr></table></figure>
+
+<p>当某一周期迟到时，下一周期仍然参考原来的时间表。这样可以明确看到一次 deadline miss，而不是让整个循环悄悄向后漂。</p>
+<h2 id="一个最小可运行循环"><a href="#一个最小可运行循环" class="headerlink" title="一个最小可运行循环"></a>一个最小可运行循环</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;math.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sched.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">long</span> <span class="type">long</span> <span class="title function_">ns</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> timespec *t)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> (<span class="type">long</span> <span class="type">long</span>)t-&gt;tv_sec * <span class="number">1000000000LL</span> + t-&gt;tv_nsec;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="type">const</span> <span class="type">long</span> <span class="type">long</span> period = <span class="number">1000000LL</span>; <span class="comment">/* 1 ms */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timespec</span> <span class="title">next</span>;</span></span><br><span class="line">    clock_gettime(CLOCK_MONOTONIC, &amp;next);</span><br><span class="line">    mlockall(MCL_CURRENT | MCL_FUTURE);</span><br><span class="line"></span><br><span class="line">    <span class="type">long</span> <span class="type">long</span> misses = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">long</span> <span class="type">long</span> k = <span class="number">0</span>; k &lt; <span class="number">100000</span>; ++k) &#123;</span><br><span class="line">        next.tv_nsec += (<span class="type">long</span>)(period % <span class="number">1000000000LL</span>);</span><br><span class="line">        next.tv_sec += period / <span class="number">1000000000LL</span>;</span><br><span class="line">        <span class="keyword">if</span> (next.tv_nsec &gt;= <span class="number">1000000000L</span>) &#123;</span><br><span class="line">            next.tv_nsec -= <span class="number">1000000000L</span>;</span><br><span class="line">            next.tv_sec++;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* 这里放固定工作量，不做文件 I/O 或 malloc。 */</span></span><br><span class="line">        <span class="keyword">volatile</span> <span class="type">double</span> x = <span class="number">0.0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; ++i) x += <span class="built_in">sin</span>((<span class="type">double</span>)i);</span><br><span class="line"></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">timespec</span> <span class="title">now</span>;</span></span><br><span class="line">        clock_gettime(CLOCK_MONOTONIC, &amp;now);</span><br><span class="line">        <span class="keyword">if</span> (ns(&amp;now) &gt; ns(&amp;next)) misses++;</span><br><span class="line">        <span class="keyword">while</span> (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &amp;next, <span class="literal">NULL</span>) == EINTR) &#123;&#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;deadline_miss=%lld\n&quot;</span>, misses);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编译：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -O2 -Wall -Wextra loop.c -o loop -lm</span><br><span class="line">./loop</span><br></pre></td></tr></table></figure>
+
+<p>这是学习用基线。它没有检查 <code>mlockall</code> 是否成功，没有设置实时调度，也没有连接执行器。真实程序要处理权限、信号、异常退出和输出链路。</p>
+<h2 id="内存锁定不是魔法开关"><a href="#内存锁定不是魔法开关" class="headerlink" title="内存锁定不是魔法开关"></a>内存锁定不是魔法开关</h2><p><code>mlockall(MCL_CURRENT | MCL_FUTURE)</code> 可以减少运行期换页，但锁定内存需要权限和 <code>RLIMIT_MEMLOCK</code> 配置。堆、栈、线程栈和共享库的访问仍应在启动阶段预热。动态增长、文件映射、设备 DMA 和内核回收路径可能引入别的等待。</p>
+<p>可以先查看限制：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ulimit</span> -l</span><br><span class="line">grep -E <span class="string">&#x27;VmLck|VmRSS|Threads&#x27;</span> /proc/&lt;PID&gt;/status</span><br></pre></td></tr></table></figure>
+
+<p>如果 <code>mlockall</code> 失败却继续把结果当实时基线，报告应该明确标记失败原因。</p>
+<h2 id="再加调度和绑核"><a href="#再加调度和绑核" class="headerlink" title="再加调度和绑核"></a>再加调度和绑核</h2><p>周期循环可以配合 <code>pthread_setschedparam</code> 和线程 affinity，但顺序要慎重：先让循环可运行、可测量，再逐步加入调度策略、绑核、IRQ 隔离和内存预触碰。任何一步都要保存前后的延迟直方图。</p>
+<p>线程级 affinity 的代码、<code>taskset</code> 和 IRQ 检查方法见<a href="/2026/02/06/linux-thread-cpu-affinity/">Linux 线程绑核</a>。如果周期循环运行在 ROS 2 节点里，还要把内核唤醒和<a href="/2026/02/17/ros2-executor-callback-groups-basics/">Executor 回调等待</a>分开记时间。</p>
+<p><code>SCHED_FIFO</code> 线程如果不阻塞、不让出 CPU，可能压住普通任务；实时运行时预算、看门狗和退出路径必须先设计好。不要把提高优先级当作修复周期超时的唯一手段。</p>
+<h2 id="用-deadline-miss-说清楚结果"><a href="#用-deadline-miss-说清楚结果" class="headerlink" title="用 deadline miss 说清楚结果"></a>用 deadline miss 说清楚结果</h2><p>至少记录周期、唤醒延迟、工作时间、输出时间和 deadline miss 次数。再用 <code>cyclictest</code> 或 <code>rtla timerlat</code> 对照系统基线，区分应用自己的问题和内核&#x2F;固件干扰。测试时固定 CPU、功耗模式、负载、运行时长和温度条件。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/clock_nanosleep.2.html">clock_nanosleep(2)</a></li>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/mlockall.2.html">mlockall(2)</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.kernel.org/locking/rt-mutex.html">Linux rt-mutex documentation</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.kernel.org/locking/locktypes.html">PREEMPT_RT documentation</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.kernel.org/tools/rtla/rtla-timerlat.html">rtla timerlat</a></li>
+</ul>
+<p><strong>证据边界：</strong>示例只用于学习周期唤醒、内存锁定和 deadline 统计，不代表控制器具备实时或安全认证。具体延迟取决于内核、硬件、IRQ、功耗和负载；发布前应在目标平台上做完整证据包。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/02/27/linux-periodic-control-loop-basics/">https://quchaosheng.github.io/2026/02/27/linux-periodic-control-loop-basics/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/30/realtime-numa-cache-jitter/">
+                            <span>NUMA 与共享缓存：实时线程为何会被别的 CPU 干扰</span>
+                            <time datetime="2026-07-10T06:00:00.000Z">2026-07-10</time>
+                        </a>
+                    
+                        <a href="/2026/07/30/realtime-linux-checklist/">
+                            <span>Linux 实时系统落地检查清单</span>
+                            <time datetime="2026-06-29T12:00:00.000Z">2026-06-29</time>
+                        </a>
+                    
+                        <a href="/2026/07/30/realtime-memory-locking/">
+                            <span>实时任务的内存锁定：避免缺页与回收抖动</span>
+                            <time datetime="2026-06-23T06:00:00.000Z">2026-06-23</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E5%AE%9E%E6%97%B6Linux/"># 实时Linux</a>
+                    
+                        <a href="/tag/%E6%8E%A7%E5%88%B6%E5%BE%AA%E7%8E%AF/"># 控制循环</a>
+                    
+                        <a href="/tag/clock-nanosleep/"># clock_nanosleep</a>
+                    
+                        <a href="/tag/mlockall/"># mlockall</a>
+                    
+                        <a href="/tag/deadline/"># deadline</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/linux-kernel-boot/">Linux 内核启动：从固件到第一个用户进程</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/linux-context-switch/">上下文切换：CPU 如何从一个任务切到另一个</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

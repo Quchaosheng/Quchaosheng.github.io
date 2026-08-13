@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="机械臂夹住一个物体后，力传感器的曲线偶尔会突然归零，下一周期又跳回去。另一个常见现象是：传感器显示力已经超过阈值，夹爪却没有停。排查时不要先把锅甩给滤波器。消息是否带了正确时间，读数是否排队，阈值触发是否走了独立的安全通道，这些问题更常见。 触觉和力信号有两个用途。一个是给策略或模型提供“接触发生了”的观测，允许稍微延迟；另一个是保护人和设备，必须在可...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="机械臂夹住一个物体后，力传感器的曲线偶尔会突然归零，下一周期又跳回去。另一个常见现象是：传感器显示力已经超过阈值，夹爪却没有停。排查时不要先把锅甩给滤波器。消息是否带了正确时间，读数是否排队，阈值触发是否走了独立的安全通道，这些问题更常见。 触觉和力信号有两个用途。一个是给策略或模型提供“接触发生了”的观测，允许稍微延迟；另一个是保护人和设备，必须在可...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="机械臂夹住一个物体后，力传感器的曲线偶尔会突然归零，下一周期又跳回去。另一个常见现象是：传感器显示力已经超过阈值，夹爪却没有停。排查时不要先把锅甩给滤波器。消息是否带了正确时间，读数是否排队，阈值触发是否走了独立的安全通道，这些问题更常见。 触觉和力信号有两个用途。一个是给策略或模型提供“接触发生了”的观测，允许稍微延迟；另一个是保护人和设备，必须在可...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器","description":"机械臂夹住一个物体后，力传感器的曲线偶尔会突然归零，下一周期又跳回去。另一个常见现象是：传感器显示力已经超过阈值，夹爪却没有停。排查时不要先把锅甩给滤波器。消息是否带了正确时间，读数是否排队，阈值触发是否走了独立的安全通道，这些问题更常见。 触觉和力信号有两个用途。一个是给策略或模型提供“接触发生了”的观测，允许稍微延迟；另一个是保护人和设备，必须在可...","datePublished":"2026-08-06T01:30:00.000Z","dateModified":"2026-08-06T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"触觉, 力传感器, ROS 2, 安全控制","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-08-06&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E8%A7%A6%E8%A7%89/">#触觉</a>
+                            
+                                <a href="/tag/%E5%8A%9B%E4%BC%A0%E6%84%9F%E5%99%A8/">#力传感器</a>
+                            
+                                <a href="/tag/ROS-2/">#ROS 2</a>
+                            
+                                <a href="/tag/%E5%AE%89%E5%85%A8%E6%8E%A7%E5%88%B6/">#安全控制</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>机械臂夹住一个物体后，力传感器的曲线偶尔会突然归零，下一周期又跳回去。另一个常见现象是：传感器显示力已经超过阈值，夹爪却没有停。排查时不要先把锅甩给滤波器。消息是否带了正确时间，读数是否排队，阈值触发是否走了独立的安全通道，这些问题更常见。</p>
+<p>触觉和力信号有两个用途。一个是给策略或模型提供“接触发生了”的观测，允许稍微延迟；另一个是保护人和设备，必须在可预期的时间内触发。把两者共用一个 ROS 2 话题和同一套队列，后面很难证明急停真的可靠。</p>
+<div class="note-flow"><span>确认传感器时间戳和单位</span><i>→</i><span>记录原始数据与消息年龄</span><i>→</i><span>做零点和滤波基线</span><i>→</i><span>分别设计控制阈值与急停通道</span><i>→</i><span>注入断线、过期和饱和故障</span></div>
+
+<figure class="note-visual"><figcaption><span>接触链路图</span>模型可以等待处理后的力值，安全路径必须能识别过期和缺失数据。</figcaption><div class="note-map"><span><b>原始采样</b><small>记录单位、量程、采样率和传感器内部滤波，不能只看显示值。</small></span><span><b>时间戳</b><small>优先保留传感器采样时间，同时记录 ROS 节点收到消息的时间。</small></span><span><b>滤波器</b><small>滤波降低噪声，也会引入相位延迟；参数要和控制周期一起验收。</small></span><span><b>接触判断</b><small>阈值应区分上升沿、持续时间和恢复条件，避免单点毛刺触发。</small></span><span><b>安全通道</b><small>断线、过期、超量程和自检失败都应能让控制器进入安全状态。</small></span><span><b>回放证据</b><small>用 rosbag2 保存原始信号、命令和状态，故障后才能重现当时的判断。</small></span></div></figure>
+
+<h2 id="先搞清楚消息里的数值是什么"><a href="#先搞清楚消息里的数值是什么" class="headerlink" title="先搞清楚消息里的数值是什么"></a>先搞清楚消息里的数值是什么</h2><p>ROS 2 常见的力消息是 <code>geometry_msgs/msg/WrenchStamped</code>，包含力和力矩以及一个 <code>Header</code>。<code>Header.stamp</code> 的含义要由驱动说明确定。它可能是采样时刻，也可能是驱动把数据交给 ROS 的时刻。两者差别在低速演示里不明显，在快速接触时会直接影响阈值触发。</p>
+<p>先把接口和实际话题检查一遍：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ros2 interface show geometry_msgs/msg/WrenchStamped</span><br><span class="line">ros2 topic info /wrench --verbose</span><br><span class="line">ros2 topic hz /wrench</span><br><span class="line">ros2 topic <span class="built_in">echo</span> --once /wrench</span><br></pre></td></tr></table></figure>
+
+<p>还要确认力的坐标系和单位。一个以工具坐标系发布的 <code>force.x</code>，不能直接和基座坐标系里的阈值比较。传感器的满量程、零点漂移、安装预紧力和是否经过厂商滤波，都应该写入驱动参数或实验记录。只在 RViz 里看箭头，无法证明数值的物理意义。</p>
+<h2 id="滤波器会帮忙，也会让动作迟到"><a href="#滤波器会帮忙，也会让动作迟到" class="headerlink" title="滤波器会帮忙，也会让动作迟到"></a>滤波器会帮忙，也会让动作迟到</h2><p>移动平均很容易写，却会把最近几次采样混在一起。若窗口是 <code>N</code>，采样周期是 <code>Ts</code>，仅从窗口就可能增加接近 <code>(N - 1) * Ts / 2</code> 的平均延迟。低通滤波还会产生相位延迟，截止频率越低，曲线越平滑，接触事件越晚。</p>
+<p>接触判断可以把上升沿和持续时间分开：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">if sample_age &gt; max_age or sensor_status != OK:</span><br><span class="line">    enter_safe_stop(&quot;invalid_force_sample&quot;)</span><br><span class="line">elif abs(force_filtered) &gt; contact_threshold:</span><br><span class="line">    contact_timer += control_period</span><br><span class="line">    if contact_timer &gt;= required_duration:</span><br><span class="line">        request_compliant_motion()</span><br><span class="line">else:</span><br><span class="line">    contact_timer = 0</span><br></pre></td></tr></table></figure>
+
+<p>这是控制逻辑的示意，不是某个控制器包的可直接编译代码。<code>max_age</code>、<code>contact_threshold</code> 和 <code>required_duration</code> 必须由目标速度、传感器噪声和机构惯量共同确定。安全停止还要有独立的硬件或驱动层实现，不能只依赖一个 Python 订阅回调。</p>
+<h2 id="两条路径，两种验收标准"><a href="#两条路径，两种验收标准" class="headerlink" title="两条路径，两种验收标准"></a>两条路径，两种验收标准</h2><p>给策略网络的触觉观测可以容忍少量缺帧，甚至可以在时间窗口里做特征堆叠。给安全逻辑的信号则需要明确的超时、断线和恢复规则。实际系统可以保留一条原始话题和一条处理后话题，安全监控订阅原始状态或驱动层的硬件故障标志。</p>
+<p>建议做一个小的故障矩阵：</p>
+<table>
+<thead>
+<tr>
+<th>故障</th>
+<th>控制观测</th>
+<th>安全动作</th>
+<th>需要留存的证据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>消息过期</td>
+<td>拒绝本次接触判断</td>
+<td>减速或停机</td>
+<td><code>source_stamp</code>、检测时间</td>
+</tr>
+<tr>
+<td>传感器断线</td>
+<td>不更新策略输入</td>
+<td>进入安全状态</td>
+<td>驱动错误码、断线时刻</td>
+</tr>
+<tr>
+<td>数值饱和</td>
+<td>标记为无效</td>
+<td>停止施力</td>
+<td>原始值、量程和状态位</td>
+</tr>
+<tr>
+<td>零点漂移</td>
+<td>触发重新标定提示</td>
+<td>限制动作</td>
+<td>空载基线和温度</td>
+</tr>
+<tr>
+<td>单点毛刺</td>
+<td>不改变接触状态</td>
+<td>不直接急停</td>
+<td>原始与滤波曲线</td>
+</tr>
+</tbody></table>
+<p>表里的动作不是通用配置。比如夹爪和协作机械臂的安全要求不同，必须结合风险分析和驱动器说明书验收。</p>
+<h2 id="让故障可以被回放"><a href="#让故障可以被回放" class="headerlink" title="让故障可以被回放"></a>让故障可以被回放</h2><p>触觉问题很适合用 <code>rosbag2</code> 做回放。记录原始力、滤波后的力、控制命令、关节状态、诊断状态以及系统时钟：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ros2 bag record /wrench /wrench_filtered /joint_states /cmd_vel /diagnostics</span><br><span class="line">ros2 bag info &lt;bag_directory&gt;</span><br><span class="line">ros2 bag play &lt;bag_directory&gt; --clock</span><br></pre></td></tr></table></figure>
+
+<p>回放时要确认节点使用仿真时间，并把“这次结果为什么被拒绝”作为一条结构化日志写下来。只有曲线没有判定原因，过几天仍然只能靠猜。</p>
+<p>完整的录制范围、仿真时钟和逐变量回放方法见<a href="/2026/08/24/ai-robot-rosbag2-failure-replay/">rosbag2 故障回放</a>。力阈值事件需要和关节状态、命令以及驱动错误码使用同一个事件 ID。</p>
+<h2 id="阈值要和动作后果绑定"><a href="#阈值要和动作后果绑定" class="headerlink" title="阈值要和动作后果绑定"></a>阈值要和动作后果绑定</h2><p>“超过 10 N 就停”看起来很明确，实际上还缺少方向、持续时间、当前速度和接触对象。拉力、扭矩和法向力的含义不同；同一个阈值在慢速贴合和高速碰撞中也不等价。更稳妥的接口会同时输出测量值、年龄、有效标志和触发原因，控制器只消费这个完整状态。</p>
+<p>最终验收应覆盖空载、正常接触、传感器拔插、时间戳冻结、消息延迟、量程饱和和电源重启。没有做过这些故障注入，就不能把“仿真里能停”写成真机安全结论。</p>
+<p>若安全监控依赖 Linux 周期线程，还要用<a href="/2026/02/27/linux-periodic-control-loop-basics/">周期控制循环的 deadline miss</a>验证唤醒和工作时间。ROS 2 消息按时到达，不代表底层监控线程一定按期运行。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/p/geometry_msgs/msg/WrenchStamped.html">ROS 2 WrenchStamped message</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/p/sensor_msgs/msg/JointState.html">ROS 2 sensor_msgs&#x2F;JointState</a></li>
+<li><a target="_blank" rel="noopener" href="https://design.ros2.org/articles/clock_and_time.html">ROS 2 Clock and Time Design</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Tutorials/Advanced/Recording-A-Bag-From-Your-Own-Node-Py.html">rosbag2 recording and playback</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/p/diagnostic_msgs/">ROS 2 diagnostics</a></li>
+</ul>
+<p><strong>证据边界：</strong>文中的滤波延迟关系和故障矩阵用于设计与排查，不是某款力传感器的安全认证。本文没有给出具体阈值、急停时间或碰撞力结果。真机发布前必须补上目标传感器量程、驱动状态位、控制周期和硬件安全链路。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/">https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/04/ai-robot-visual-servo-latency-budget/">
+                            <span>视觉伺服的端到端延迟预算：目标为什么总是慢半拍</span>
+                            <time datetime="2026-08-04T01:30:00.000Z">2026-08-04</time>
+                        </a>
+                    
+                        <a href="/2026/07/30/nvidia-physical-ai-stack/">
+                            <span>NVIDIA Physical AI 技术栈：机器人从模型到执行器要经过什么</span>
+                            <time datetime="2026-07-16T06:00:00.000Z">2026-07-16</time>
+                        </a>
+                    
+                        <a href="/2026/05/21/ros2-tf2-frame-time-basics/">
+                            <span>ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合</span>
+                            <time datetime="2026-05-21T01:30:00.000Z">2026-05-21</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E8%A7%A6%E8%A7%89/"># 触觉</a>
+                    
+                        <a href="/tag/%E5%8A%9B%E4%BC%A0%E6%84%9F%E5%99%A8/"># 力传感器</a>
+                    
+                        <a href="/tag/ROS-2/"># ROS 2</a>
+                    
+                        <a href="/tag/%E5%AE%89%E5%85%A8%E6%8E%A7%E5%88%B6/"># 安全控制</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/08/07/parent-child-timeout-budget-error-code/">父子超时预算错配：一次 113 覆盖 204 的排障记录</a>
+            
+            
+            <a class="next" rel="next" href="/2026/08/05/ai-robot-rolling-shutter-motion-blur/">Rolling Shutter、曝光与运动模糊：为什么移动机器人会错一拍</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

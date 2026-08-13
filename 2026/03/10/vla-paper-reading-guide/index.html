@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>VLA 论文怎么读：从 RT-1 到 OpenVLA，先看数据和动作接口 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="论文里写“泛化能力提升”，工程师最容易问错一个问题：这个提升能不能直接搬到我的机械臂上？通常不能。论文里的机器人、相机、任务集合、数据分布和评测协议都是结论的一部分。换了硬件和输入，模型名字还在，结论的适用范围已经变了。 读 VLA 论文时，我会先把问题拆成五个格子：模型看到了什么，动作怎样表示，训练数据来自哪里，推理时如何产生一段动作，以及失败后谁有...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/03/10/vla-paper-reading-guide/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="VLA 论文怎么读：从 RT-1 到 OpenVLA，先看数据和动作接口 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="论文里写“泛化能力提升”，工程师最容易问错一个问题：这个提升能不能直接搬到我的机械臂上？通常不能。论文里的机器人、相机、任务集合、数据分布和评测协议都是结论的一部分。换了硬件和输入，模型名字还在，结论的适用范围已经变了。 读 VLA 论文时，我会先把问题拆成五个格子：模型看到了什么，动作怎样表示，训练数据来自哪里，推理时如何产生一段动作，以及失败后谁有...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/03/10/vla-paper-reading-guide/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="VLA 论文怎么读：从 RT-1 到 OpenVLA，先看数据和动作接口">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VLA 论文怎么读：从 RT-1 到 OpenVLA，先看数据和动作接口 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="论文里写“泛化能力提升”，工程师最容易问错一个问题：这个提升能不能直接搬到我的机械臂上？通常不能。论文里的机器人、相机、任务集合、数据分布和评测协议都是结论的一部分。换了硬件和输入，模型名字还在，结论的适用范围已经变了。 读 VLA 论文时，我会先把问题拆成五个格子：模型看到了什么，动作怎样表示，训练数据来自哪里，推理时如何产生一段动作，以及失败后谁有...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"VLA 论文怎么读：从 RT-1 到 OpenVLA，先看数据和动作接口","description":"论文里写“泛化能力提升”，工程师最容易问错一个问题：这个提升能不能直接搬到我的机械臂上？通常不能。论文里的机器人、相机、任务集合、数据分布和评测协议都是结论的一部分。换了硬件和输入，模型名字还在，结论的适用范围已经变了。 读 VLA 论文时，我会先把问题拆成五个格子：模型看到了什么，动作怎样表示，训练数据来自哪里，推理时如何产生一段动作，以及失败后谁有...","datePublished":"2026-03-10T01:30:00.000Z","dateModified":"2026-03-10T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/03/10/vla-paper-reading-guide/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"VLA, GR00T, 论文导读, RT-1, RT-2, Diffusion Policy, OpenVLA","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">VLA 论文怎么读：从 RT-1 到 OpenVLA，先看数据和动作接口</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-03-10&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/VLA/">#VLA</a>
+                            
+                                <a href="/tag/GR00T/">#GR00T</a>
+                            
+                                <a href="/tag/%E8%AE%BA%E6%96%87%E5%AF%BC%E8%AF%BB/">#论文导读</a>
+                            
+                                <a href="/tag/RT-1/">#RT-1</a>
+                            
+                                
+                            
+                                
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>论文里写“泛化能力提升”，工程师最容易问错一个问题：这个提升能不能直接搬到我的机械臂上？通常不能。论文里的机器人、相机、任务集合、数据分布和评测协议都是结论的一部分。换了硬件和输入，模型名字还在，结论的适用范围已经变了。</p>
+<p>读 VLA 论文时，我会先把问题拆成五个格子：模型看到了什么，动作怎样表示，训练数据来自哪里，推理时如何产生一段动作，以及失败后谁有权停止。这样读，RT-1、RT-2、Diffusion Policy、Octo、OpenVLA 和 GR00T N1 不再是一串产品名，而是几种不同的系统取舍。</p>
+<div class="note-flow"><span>确认论文任务和硬件</span><i>→</i><span>拆出观测与动作表示</span><i>→</i><span>检查数据和评测协议</span><i>→</i><span>把方法映射到机器人接口</span><i>→</i><span>写出不能迁移的结论</span></div>
+
+<figure class="note-visual"><figcaption><span>论文阅读地图</span>同一个“VLA”标签下，数据规模、动作头、推理方式和安全边界可能完全不同。</figcaption><div class="note-map"><span><b>观测</b><small>图像、语言、关节状态、力觉和目标图像的组合。</small></span><span><b>动作表示</b><small>离散 token、连续动作 chunk、扩散轨迹或分层技能。</small></span><span><b>数据</b><small>真实轨迹、互联网视觉语言数据、人类视频和合成数据。</small></span><span><b>推理</b><small>一次动作、滚动预测、扩散去噪或双系统协同。</small></span><span><b>适配</b><small>零样本、少量微调、新传感器和新动作空间的代价不同。</small></span><span><b>运行时</b><small>时间戳、约束、取消、人工接管和控制器拒绝仍在模型之外。</small></span></div></figure>
+
+<h2 id="先读-RT-1：规模化首先改变的是数据问题"><a href="#先读-RT-1：规模化首先改变的是数据问题" class="headerlink" title="先读 RT-1：规模化首先改变的是数据问题"></a>先读 RT-1：规模化首先改变的是数据问题</h2><p>RT-1（Robotics Transformer）把多任务机器人轨迹放进一个可扩展的策略模型里，研究模型规模、数据量和数据多样性如何影响泛化。它给出的工程启发很朴素：想让策略处理更多任务，不能只把同一个任务的数据采得更密，还要让训练数据覆盖不同物体、位置、动作和失败情况。</p>
+<p>RT-1 的价值不在于“Transformer 能控制机械臂”这句结论，而在于它把数据接口变成了研究对象。对自己的项目，可以先问：任务 ID、目标对象、相机视角和动作标签是否有稳定格式？不同操作者的轨迹是否真的表达同一个动作？如果这些基础问题没有解决，换更大的模型通常只会把偏差学得更快。</p>
+<h2 id="RT-2-让语言模型参与动作表达"><a href="#RT-2-让语言模型参与动作表达" class="headerlink" title="RT-2 让语言模型参与动作表达"></a>RT-2 让语言模型参与动作表达</h2><p>RT-2 的做法是把机器人动作表示成文本 token，与视觉语言任务一起进行 co-fine-tuning。论文报告了在新物体、未见过的命令和简单语义推理上的泛化，并在 6,000 次评测试验中观察这些能力。这里真正值得借鉴的是接口设计：动作不再是模型外面另接一个完全不同的头，而是和语言、视觉共享了一种序列化方式。</p>
+<p>但动作 token 化也带来新的限制。离散化会引入分辨率和范围约束，输出序列的时间长度会影响延迟，语言推理的置信度也不等于位姿或力矩的安全性。把 RT-2 的结论搬到自己的机器人上时，至少要重新检查动作量化误差、输入图像年龄、规划器拒绝率和取消时间。</p>
+<h2 id="Diffusion-Policy-解决的是多峰动作分布"><a href="#Diffusion-Policy-解决的是多峰动作分布" class="headerlink" title="Diffusion Policy 解决的是多峰动作分布"></a>Diffusion Policy 解决的是多峰动作分布</h2><p>Diffusion Policy 将视觉运动策略建模为条件扩散过程，通过多步去噪生成动作序列，并结合 receding-horizon control。它适合“同一个目标有多种合理轨迹”的任务，例如从不同方向绕开障碍物抓取。论文在 12 个任务、4 个操作基准上报告了平均提升，但这个数字只属于论文的任务、数据和对比实现，不能当作通用收益。</p>
+<p>工程上更重要的代价是推理过程。扩散步骤越多，动作生成时间越长；每次只执行一小段动作可以降低旧计划的风险，却会增加重新规划次数。部署时应把去噪步数、动作 horizon、控制周期、结果年龄和超时动作放在同一张预算表里。</p>
+<h2 id="Octo-把“换机器人”当作接口问题"><a href="#Octo-把“换机器人”当作接口问题" class="headerlink" title="Octo 把“换机器人”当作接口问题"></a>Octo 把“换机器人”当作接口问题</h2><p>Octo 以 Open X-Embodiment 的 800k 条轨迹训练通用策略，论文强调语言命令、目标图像、新传感器和新动作空间的适配，并在 9 种机器人平台上做了实验。不要把 800k 读成最低数据量。更值得借鉴的是可扩展的 observation&#x2F;action space，否则换一个相机或机械臂就要重写整个策略。</p>
+<p>对项目而言，应该把相机内参、图像布局、关节顺序、动作单位和终止条件写进 schema。新设备接入时，先做适配层和少量校准，再比较策略效果。若输入字段在不同设备上含义不一致，微调数据越多，问题越难追。</p>
+<h2 id="OpenVLA-的开放性有实际工程价值"><a href="#OpenVLA-的开放性有实际工程价值" class="headerlink" title="OpenVLA 的开放性有实际工程价值"></a>OpenVLA 的开放性有实际工程价值</h2><p>OpenVLA 是 7B 参数的开源 VLA，使用 Llama 2、DINOv2 和 SigLIP 的组合，并在 970k 条真实机器人演示上训练。论文报告它在 29 个任务和多个机器人形态上超过 RT-2-X，并展示了低秩微调和量化部署路径。这里的开放内容包括模型权重、数据处理、微调和推理代码，复现时仍要核对数据许可与目标硬件。</p>
+<p>论文同时报告了相对 Diffusion Policy 的提升，但这不是说 VLA 在所有低层控制任务都更好。OpenVLA 的优势更接近多任务语义和跨任务初始化，Diffusion Policy 在一个收敛良好的单任务上可能更简单、更容易调。选择时要看任务是否需要语言泛化、是否有足够的微调数据、推理延迟能否进入控制预算，以及出现错误时能否安全拒绝。</p>
+<h2 id="GR00T-N1：双系统结构把语义和动作分开"><a href="#GR00T-N1：双系统结构把语义和动作分开" class="headerlink" title="GR00T N1：双系统结构把语义和动作分开"></a>GR00T N1：双系统结构把语义和动作分开</h2><p>GR00T N1 的论文描述了一个双系统架构：视觉语言模块负责解释环境和指令，扩散 Transformer 负责生成连续运动。训练数据混合真实机器人轨迹、人类视频和合成数据，并在 humanoid 机器人上做了语言条件的双臂操作实验。</p>
+<p>这个结构和工程分层很接近。语义模块可以慢一点，动作模块需要更稳定的时间预算，但两者之间的接口必须包含状态、时间戳、动作有效期和取消语义。论文展示的“能生成动作”不等于你的控制器愿意接受动作；工作空间、碰撞、力限制和急停仍应由确定性层负责。</p>
+<h2 id="用一张表把论文结论落地"><a href="#用一张表把论文结论落地" class="headerlink" title="用一张表把论文结论落地"></a>用一张表把论文结论落地</h2><table>
+<thead>
+<tr>
+<th>工作</th>
+<th>主要变化</th>
+<th>可以借鉴</th>
+<th>不能直接搬运</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>RT-1</td>
+<td>多任务轨迹与可扩展策略</td>
+<td>统一数据和动作 schema</td>
+<td>论文任务集合的泛化率</td>
+</tr>
+<tr>
+<td>RT-2</td>
+<td>VLM 与机器人动作共同训练</td>
+<td>语义输入与动作接口设计</td>
+<td>互联网知识带来的安全能力</td>
+</tr>
+<tr>
+<td>Diffusion Policy</td>
+<td>扩散生成动作序列</td>
+<td>多峰轨迹、滚动控制</td>
+<td>固定去噪步数和平均提升</td>
+</tr>
+<tr>
+<td>Octo</td>
+<td>多平台、可适配的通用策略</td>
+<td>observation&#x2F;action 适配层</td>
+<td>800k 数据的普遍必要性</td>
+</tr>
+<tr>
+<td>OpenVLA</td>
+<td>开放模型与高效微调</td>
+<td>可复现的微调和量化路径</td>
+<td>7B 模型在本机的延迟</td>
+</tr>
+<tr>
+<td>GR00T N1</td>
+<td>语义系统和动作系统分工</td>
+<td>分层运行时接口</td>
+<td>humanoid 真机结果的迁移</td>
+</tr>
+</tbody></table>
+<p>可以用一个很小的实验记录文件把“论文结论”和“自己的证据”分开：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;paper_claim&quot;</span><span class="punctuation">:</span> <span class="string">&quot;动作条件和多任务数据有助于泛化&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;local_test&quot;</span><span class="punctuation">:</span> <span class="string">&quot;同一相机下的三类物体抓取&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;environment&quot;</span><span class="punctuation">:</span> <span class="string">&quot;台架 / Jetson / model_version&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;metric&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;success_rate&quot;</span><span class="punctuation">,</span> <span class="string">&quot;p99_age_ms&quot;</span><span class="punctuation">,</span> <span class="string">&quot;reject_count&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;evidence_boundary&quot;</span><span class="punctuation">:</span> <span class="string">&quot;未覆盖新相机、遮挡和长时间热稳定&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;.paper_claim, .local_test, .metric, .evidence_boundary&#x27;</span> paper-to-robot.json</span><br></pre></td></tr></table></figure>
+
+<p>这份记录不负责给论文重新打分。它只防一件事：写报告时把“论文说过”误写成“本机已经验证”。</p>
+<h2 id="Sim-to-Real-论文提醒我们先量误差"><a href="#Sim-to-Real-论文提醒我们先量误差" class="headerlink" title="Sim-to-Real 论文提醒我们先量误差"></a>Sim-to-Real 论文提醒我们先量误差</h2><p>Domain Randomization 的经典工作用随机纹理和渲染变化训练模拟器里的目标检测器，再转到真实环境。它的工程意义在于：随机化范围不是越大越好，应该覆盖真实世界里会影响任务的差异。相机曝光、运动模糊、材质反光和执行器延迟都比随意换一套背景更值得测量。</p>
+<p>仿真论文和 VLA 论文要放在同一条证据链里看：仿真可以扩大数据覆盖，VLA 可以扩大任务语义，但两者都不能替代目标设备上的时间戳、动作约束和安全停止测试。</p>
+<p>想把动作分块单独读透，可以继续看<a href="/2026/07/01/aloha-act-paper-reading/">ALOHA 与 ACT 的工程拆解</a>；准备把论文模型接到 ROS 2 时，再对照<a href="/2026/08/13/ai-robot-vla-human-intervention-state-machine/">动作候选、人工接管和可取消状态机</a>。前一篇追论文中的数据与模型，后一篇只处理模型外的运行时边界。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2212.06817">RT-1: Robotics Transformer</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2307.15818">RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2303.04137">Diffusion Policy</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2405.12213">Octo: An Open-Source Generalist Robot Policy</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2406.09246">OpenVLA</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2503.14734">GR00T N1</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1703.06907">Domain Randomization for Transferring Deep Neural Networks from Simulation to the Real World</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Basic/About-Actions.html">ROS 2 Actions</a></li>
+</ul>
+<p><strong>证据边界：</strong>表格中的方法概括和论文结果来自原始论文的公开摘要与正文入口。论文报告的任务、机器人、样本量和提升幅度不代表本网站或用户设备的实测结果。本文没有复现任何论文 benchmark，发布前仍应以目标模型、硬件和数据分布做独立验证。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/03/10/vla-paper-reading-guide/">https://quchaosheng.github.io/2026/03/10/vla-paper-reading-guide/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/30/nvidia-groot-robot-foundation-model/">
+                            <span>NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层</span>
+                            <time datetime="2026-07-28T06:00:00.000Z">2026-07-28</time>
+                        </a>
+                    
+                        <a href="/2026/08/13/ai-robot-vla-human-intervention-state-machine/">
+                            <span>VLA 规划接入机器人：动作候选、人工接管和可取消状态机</span>
+                            <time datetime="2026-08-13T01:30:00.000Z">2026-08-13</time>
+                        </a>
+                    
+                        <a href="/2026/08/11/ai-robot-voxel-memory-budget/">
+                            <span>三维场景记忆的显存预算：体素地图为什么越跑越大</span>
+                            <time datetime="2026-08-11T01:30:00.000Z">2026-08-11</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/VLA/"># VLA</a>
+                    
+                        <a href="/tag/GR00T/"># GR00T</a>
+                    
+                        <a href="/tag/%E8%AE%BA%E6%96%87%E5%AF%BC%E8%AF%BB/"># 论文导读</a>
+                    
+                        <a href="/tag/RT-1/"># RT-1</a>
+                    
+                        <a href="/tag/RT-2/"># RT-2</a>
+                    
+                        <a href="/tag/Diffusion-Policy/"># Diffusion Policy</a>
+                    
+                        <a href="/tag/OpenVLA/"># OpenVLA</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/linux-rtla-timerlat/">rtla timerlat：定位实时系统的唤醒延迟</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/device-tree-overlay/">设备树 Overlay：运行时修改硬件描述</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>lwIP 数据路径：小内存设备如何运行 TCP/IP | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="lwIP 用 pbuf 描述报文，通过网卡 netif 输入 IP 层，再分发到 UDP&amp;#x2F;TCP 与应用接口；发送方向则反向封装并交给驱动输出。它能在小内存系统运行 TCP&amp;#x2F;IP，但内存池大小、pbuf 生命周期、线程模型和驱动缓冲区所有权都要明确，否则吞吐一上来就会变成难复现的丢包或内存损坏。 驱动收到帧 → 构造 pbuf →...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/lwip-packet-path/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="lwIP 数据路径：小内存设备如何运行 TCP/IP | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="lwIP 用 pbuf 描述报文，通过网卡 netif 输入 IP 层，再分发到 UDP&amp;#x2F;TCP 与应用接口；发送方向则反向封装并交给驱动输出。它能在小内存系统运行 TCP&amp;#x2F;IP，但内存池大小、pbuf 生命周期、线程模型和驱动缓冲区所有权都要明确，否则吞吐一上来就会变成难复现的丢包或内存损坏。 驱动收到帧 → 构造 pbuf →...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/lwip-packet-path/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="lwIP 数据路径：小内存设备如何运行 TCP/IP">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="lwIP 数据路径：小内存设备如何运行 TCP/IP | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="lwIP 用 pbuf 描述报文，通过网卡 netif 输入 IP 层，再分发到 UDP&amp;#x2F;TCP 与应用接口；发送方向则反向封装并交给驱动输出。它能在小内存系统运行 TCP&amp;#x2F;IP，但内存池大小、pbuf 生命周期、线程模型和驱动缓冲区所有权都要明确，否则吞吐一上来就会变成难复现的丢包或内存损坏。 驱动收到帧 → 构造 pbuf →...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"lwIP 数据路径：小内存设备如何运行 TCP/IP","description":"lwIP 用 pbuf 描述报文，通过网卡 netif 输入 IP 层，再分发到 UDP&#x2F;TCP 与应用接口；发送方向则反向封装并交给驱动输出。它能在小内存系统运行 TCP&#x2F;IP，但内存池大小、pbuf 生命周期、线程模型和驱动缓冲区所有权都要明确，否则吞吐一上来就会变成难复现的丢包或内存损坏。 驱动收到帧 → 构造 pbuf →...","datePublished":"2026-05-08T06:00:00.000Z","dateModified":"2026-05-08T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/lwip-packet-path/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式网络","keywords":"lwIP, TCP-IP, pbuf","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">lwIP 数据路径：小内存设备如何运行 TCP/IP</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-05-08&nbsp;&nbsp;14:00:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F%E7%BD%91%E7%BB%9C/">嵌入式网络</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/lwIP/">#lwIP</a>
+                            
+                                <a href="/tag/TCP-IP/">#TCP-IP</a>
+                            
+                                <a href="/tag/pbuf/">#pbuf</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>lwIP 用 <code>pbuf</code> 描述报文，通过网卡 <code>netif</code> 输入 IP 层，再分发到 UDP&#x2F;TCP 与应用接口；发送方向则反向封装并交给驱动输出。它能在小内存系统运行 TCP&#x2F;IP，但内存池大小、pbuf 生命周期、线程模型和驱动缓冲区所有权都要明确，否则吞吐一上来就会变成难复现的丢包或内存损坏。</p>
+<div class="note-flow"><span>驱动收到帧</span><i>→</i><span>构造 pbuf</span><i>→</i><span>ethernet_input/IP</span><i>→</i><span>TCP/UDP PCB</span><i>→</i><span>应用回调或 socket</span></div>
+
+<figure class="note-visual"><figcaption><span>缓冲图</span>`pbuf` 可以串联，引用计数和释放时机必须覆盖驱动到应用的整条路径。</figcaption><div class="note-map"><span><b>RX 描述符</b><small>网卡 DMA 写入缓冲区，驱动决定何时可重新交给硬件。</small></span><span><b>pbuf</b><small>描述数据段和链表关系，未必等于一次 malloc 的连续内存。</small></span><span><b>netif 输入</b><small>处理以太网头、ARP 和 IP，再交给协议控制块。</small></span><span><b>TCP/UDP PCB</b><small>保存连接、窗口、重传和回调状态。</small></span><span><b>线程模型</b><small>RAW API、tcpip_thread 和 socket API 对并发调用有不同要求。</small></span><span><b>释放路径</b><small>应用、协议栈和驱动谁减少引用必须可追踪。</small></span></div></figure>
+
+<h2 id="零拷贝前先画所有权"><a href="#零拷贝前先画所有权" class="headerlink" title="零拷贝前先画所有权"></a>零拷贝前先画所有权</h2><p>让 pbuf 直接引用 DMA 缓冲区可以减少复制，但驱动不能在协议栈或应用仍持有它时把同一缓冲区重新交给网卡。需要定义引用计数、缓存一致性和回收回调；若这些规则不清楚，一次看似成功的 zero-copy 优化会变成偶发的数据错乱。</p>
+<h2 id="内存池和-TCP-窗口要随负载一起配置"><a href="#内存池和-TCP-窗口要随负载一起配置" class="headerlink" title="内存池和 TCP 窗口要随负载一起配置"></a>内存池和 TCP 窗口要随负载一起配置</h2><p>PBUF 池过小会在突发流量下耗尽，TCP 窗口和发送缓冲过小会限制吞吐，过大又会挤占其他实时任务的 RAM。用真实包长、并发连接数和峰值流量估算，再通过统计 pbuf 耗尽、重传、丢包和任务栈余量调参。不要只根据一条 ping 或单连接测速决定配置。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://www.nongnu.org/lwip/">lwIP</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/29/lwip-packet-path/">https://quchaosheng.github.io/2026/07/29/lwip-packet-path/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/mbedtls-handshake/">
+                            <span>mbedTLS：嵌入式 TLS 握手与证书校验</span>
+                            <time datetime="2026-05-26T06:00:00.000Z">2026-05-26</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/embedded-mqtt-client/">
+                            <span>嵌入式 MQTT：连接、会话、QoS 与离线恢复</span>
+                            <time datetime="2026-05-12T02:00:00.000Z">2026-05-12</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/lwIP/"># lwIP</a>
+                    
+                        <a href="/tag/TCP-IP/"># TCP-IP</a>
+                    
+                        <a href="/tag/pbuf/"># pbuf</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/quic-overview/">QUIC：在 UDP 之上重建可靠传输</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/linux-procfs/">procfs：把内核运行状态投影成文件</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

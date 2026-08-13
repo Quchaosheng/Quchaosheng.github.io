@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>Linux 线程如何绑核：taskset、pthread affinity 与 cpuset | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="控制线程偶尔跑到另一颗 CPU 后，延迟突然多出一截。先别急着把 isolcpus 加进内核启动参数。Linux 里至少有三件事容易混在一起：进程的 CPU 亲和性、某个线程的亲和性，以及中断和内核后台工作的落点。只绑住其中一个，其他工作仍然可能在同一颗 CPU 上打断它。 这篇先把“用户线程绑核”讲完整，再说明怎样验证绑核真的生效。代码和命令都可以在...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/02/06/linux-thread-cpu-affinity/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 线程如何绑核：taskset、pthread affinity 与 cpuset | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="控制线程偶尔跑到另一颗 CPU 后，延迟突然多出一截。先别急着把 isolcpus 加进内核启动参数。Linux 里至少有三件事容易混在一起：进程的 CPU 亲和性、某个线程的亲和性，以及中断和内核后台工作的落点。只绑住其中一个，其他工作仍然可能在同一颗 CPU 上打断它。 这篇先把“用户线程绑核”讲完整，再说明怎样验证绑核真的生效。代码和命令都可以在...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/02/06/linux-thread-cpu-affinity/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux 线程如何绑核：taskset、pthread affinity 与 cpuset">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux 线程如何绑核：taskset、pthread affinity 与 cpuset | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="控制线程偶尔跑到另一颗 CPU 后，延迟突然多出一截。先别急着把 isolcpus 加进内核启动参数。Linux 里至少有三件事容易混在一起：进程的 CPU 亲和性、某个线程的亲和性，以及中断和内核后台工作的落点。只绑住其中一个，其他工作仍然可能在同一颗 CPU 上打断它。 这篇先把“用户线程绑核”讲完整，再说明怎样验证绑核真的生效。代码和命令都可以在...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Linux 线程如何绑核：taskset、pthread affinity 与 cpuset","description":"控制线程偶尔跑到另一颗 CPU 后，延迟突然多出一截。先别急着把 isolcpus 加进内核启动参数。Linux 里至少有三件事容易混在一起：进程的 CPU 亲和性、某个线程的亲和性，以及中断和内核后台工作的落点。只绑住其中一个，其他工作仍然可能在同一颗 CPU 上打断它。 这篇先把“用户线程绑核”讲完整，再说明怎样验证绑核真的生效。代码和命令都可以在...","datePublished":"2026-02-06T01:30:00.000Z","dateModified":"2026-02-06T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/02/06/linux-thread-cpu-affinity/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / Linux实时","keywords":"线程, CPU亲和性, taskset, pthread, cpuset","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Linux 线程如何绑核：taskset、pthread affinity 与 cpuset</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-02-06&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">Linux实时</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E7%BA%BF%E7%A8%8B/">#线程</a>
+                            
+                                <a href="/tag/CPU%E4%BA%B2%E5%92%8C%E6%80%A7/">#CPU亲和性</a>
+                            
+                                <a href="/tag/taskset/">#taskset</a>
+                            
+                                <a href="/tag/pthread/">#pthread</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>控制线程偶尔跑到另一颗 CPU 后，延迟突然多出一截。先别急着把 <code>isolcpus</code> 加进内核启动参数。Linux 里至少有三件事容易混在一起：进程的 CPU 亲和性、某个线程的亲和性，以及中断和内核后台工作的落点。只绑住其中一个，其他工作仍然可能在同一颗 CPU 上打断它。</p>
+<p>这篇先把“用户线程绑核”讲完整，再说明怎样验证绑核真的生效。代码和命令都可以在普通 Linux 主机上练习，实时控制的结论仍需要目标内核和负载下的测量。</p>
+<div class="note-flow"><span>确认进程和线程 ID</span><i>→</i><span>读取当前 CPU 亲和性</span><i>→</i><span>设置线程级 affinity</span><i>→</i><span>检查 IRQ、cgroup 和 NUMA</span><i>→</i><span>在同一负载下比较延迟</span></div>
+
+<figure class="note-visual"><figcaption><span>绑核关系图</span>线程只决定自己允许在哪些 CPU 上运行，不能替其他任务清空这颗 CPU。</figcaption><div class="note-map"><span><b>PID</b><small>进程 ID 是资源容器，进程内可以有多个独立调度的线程。</small></span><span><b>TID</b><small>线程 ID 才是调度器实际运行和设置 affinity 的对象。</small></span><span><b>CPU mask</b><small>允许集合不是“当前所在 CPU”，线程仍会在集合内迁移。</small></span><span><b>IRQ</b><small>设备中断落在同一 CPU 时，用户线程仍会被打断。</small></span><span><b>cpuset</b><small>cgroup 可以限制一组任务可用的 CPU，比单个进程更适合部署约束。</small></span><span><b>NUMA 内存</b><small>线程绑到远端 CPU 后，数据页的位置也会影响访问延迟。</small></span></div></figure>
+
+<h2 id="先分清-PID、TID-和当前-CPU"><a href="#先分清-PID、TID-和当前-CPU" class="headerlink" title="先分清 PID、TID 和当前 CPU"></a>先分清 PID、TID 和当前 CPU</h2><p><code>ps</code> 显示一个进程时，默认只给出进程级信息。真正执行控制循环的是线程。可以先列出线程和它最近运行过的 CPU：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ps -eLo pid,tid,psr,cls,rtprio,pri,<span class="built_in">comm</span> --<span class="built_in">sort</span>=tid</span><br><span class="line">taskset -pc &lt;PID&gt;</span><br><span class="line">grep -E <span class="string">&#x27;^(Cpus_allowed_list|Mems_allowed_list):&#x27;</span> /proc/&lt;PID&gt;/status</span><br></pre></td></tr></table></figure>
+
+<p><code>psr</code> 是最近一次运行的 CPU，不是允许集合。<code>taskset -pc</code> 读到的是进程的 affinity mask；如果进程已经创建了多个线程，后续仍应逐个检查 <code>/proc/&lt;PID&gt;/task/&lt;TID&gt;/status</code>。</p>
+<h2 id="用-taskset-做第一次实验"><a href="#用-taskset-做第一次实验" class="headerlink" title="用 taskset 做第一次实验"></a>用 taskset 做第一次实验</h2><p>对一个已经运行的进程，可以先把它限制到 CPU 2 和 3：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">taskset -<span class="built_in">cp</span> 2,3 &lt;PID&gt;</span><br><span class="line">taskset -pc &lt;PID&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这条命令修改的是进程里已有线程的允许集合。新线程是否继承该集合、程序是否随后自己修改，都要实际确认。权限不足时，普通用户只能调整自己拥有的任务；跨用户或实时优先级操作可能需要相应的权限和 cgroup 配置。</p>
+<p>绑核不是把线程“钉死”在一颗 CPU 上。<code>2,3</code> 代表它仍可在两颗 CPU 之间迁移。若要减少迁移，可以指定单个 CPU，但这会把该 CPU 的算力和中断余量一起压缩，必须看负载而不是只看延迟最好的一次结果。</p>
+<h2 id="代码里设置单个线程"><a href="#代码里设置单个线程" class="headerlink" title="代码里设置单个线程"></a>代码里设置单个线程</h2><p>Linux 提供 <code>pthread_setaffinity_np()</code> 设置指定线程的 CPU 集合。下面的例子创建一个工作线程，把它限制在 CPU 2，然后打印线程看到的集合：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sched.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> *<span class="title function_">worker</span><span class="params">(<span class="type">void</span> *arg)</span> &#123;</span><br><span class="line">    <span class="type">cpu_set_t</span> <span class="built_in">set</span>;</span><br><span class="line">    CPU_ZERO(&amp;<span class="built_in">set</span>);</span><br><span class="line">    CPU_SET(<span class="number">2</span>, &amp;<span class="built_in">set</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> rc = pthread_setaffinity_np(pthread_self(), <span class="keyword">sizeof</span>(<span class="built_in">set</span>), &amp;<span class="built_in">set</span>);</span><br><span class="line">    <span class="keyword">if</span> (rc != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;pthread_setaffinity_np failed: %d\n&quot;</span>, rc);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    CPU_ZERO(&amp;<span class="built_in">set</span>);</span><br><span class="line">    pthread_getaffinity_np(pthread_self(), <span class="keyword">sizeof</span>(<span class="built_in">set</span>), &amp;<span class="built_in">set</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;allowed cpu 2: %s\n&quot;</span>, CPU_ISSET(<span class="number">2</span>, &amp;<span class="built_in">set</span>) ? <span class="string">&quot;yes&quot;</span> : <span class="string">&quot;no&quot;</span>);</span><br><span class="line">    <span class="keyword">for</span> (;;) pause();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="type">pthread_t</span> thread;</span><br><span class="line">    pthread_create(&amp;thread, <span class="literal">NULL</span>, worker, <span class="literal">NULL</span>);</span><br><span class="line">    pthread_join(thread, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编译和运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -O2 -Wall -Wextra -pthread affinity_demo.c -o affinity_demo</span><br><span class="line">./affinity_demo</span><br></pre></td></tr></table></figure>
+
+<p>生产代码还要处理 CPU 编号不存在、容器 cpuset 不允许 CPU 2、线程创建失败和退出顺序。<code>pthread_setaffinity_np</code> 的 <code>np</code> 表示它不是 POSIX 可移植接口，跨平台程序应把这段能力包在平台适配层里。</p>
+<h2 id="为什么绑核后延迟仍然会抖"><a href="#为什么绑核后延迟仍然会抖" class="headerlink" title="为什么绑核后延迟仍然会抖"></a>为什么绑核后延迟仍然会抖</h2><p>线程 affinity 只限制调度范围。网卡 IRQ、线程化中断、softirq、workqueue、日志线程和同一 cgroup 的其他任务仍可能使用这颗 CPU。可以对照查看：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/interrupts</span><br><span class="line">grep -R . /proc/irq/*/smp_affinity_list 2&gt;/dev/null | <span class="built_in">head</span></span><br><span class="line"><span class="built_in">cat</span> /sys/fs/cgroup/cpuset.cpus.effective 2&gt;/dev/null</span><br></pre></td></tr></table></figure>
+
+<p>如果控制线程固定在 CPU 2，而网卡多队列也集中到 CPU 2，绑核只会让冲突更稳定。实时部署通常需要一起规划 housekeeping CPU、IRQ affinity、线程 affinity 和 cgroup，而不是单独执行一条 <code>taskset</code>。</p>
+<h2 id="NUMA-机器还要看内存在哪"><a href="#NUMA-机器还要看内存在哪" class="headerlink" title="NUMA 机器还要看内存在哪"></a>NUMA 机器还要看内存在哪</h2><p>双路或多 NUMA 节点机器上，线程跑在哪个 CPU 和数据页落在哪个节点是两回事。线程启动时在 CPU 0 上分配并触碰大缓冲区，后面迁到另一个节点后，访问可能变成跨节点。可以先查看 CPU 和内存节点：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">lscpu -e=CPU,NODE,ONLINE</span><br><span class="line">numactl --hardware</span><br><span class="line">numastat -p &lt;PID&gt;</span><br></pre></td></tr></table></figure>
+
+<p>绑核、内存预触碰和 NUMA policy 应作为一个实验变量组处理。单独看到 cache miss 增加，不能马上断言是调度迁移造成的。</p>
+<h2 id="验证要看迁移和尾延迟"><a href="#验证要看迁移和尾延迟" class="headerlink" title="验证要看迁移和尾延迟"></a>验证要看迁移和尾延迟</h2><p>绑核前后使用同一负载、同一运行时长和同一测量工具。记录线程实际运行 CPU、迁移次数、IRQ 活跃度、P95&#x2F;P99 延迟和 deadline miss。只看 <code>top</code> 里的平均 CPU 使用率，看不出一个 200 微秒的尾部尖峰。</p>
+<p>一个合格的结论应写清楚：线程允许哪些 CPU、哪些 IRQ 在这些 CPU 上、内存策略是什么、测试负载是什么，以及测量没有覆盖哪些固件或硬件干扰。</p>
+<p>需要把 <code>PID</code>、<code>TID</code> 和 <code>/proc/&lt;PID&gt;/task</code> 再拆开时，可以看<a href="/2026/03/19/linux-process-thread-task-basics/">Linux 进程、线程与 task</a>；绑核前后的延迟比较则适合放进<a href="/2026/02/27/linux-periodic-control-loop-basics/">绝对唤醒周期循环</a>里，避免用普通业务负载得到一组无法复现的数字。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html">sched_setaffinity(2)</a></li>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man3/pthread_setaffinity_np.3.html">pthread_setaffinity_np(3)</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.kernel.org/admin-guide/kernel-parameters.html">Linux CPU isolation</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.kernel.org/core-api/irq/irq-affinity.html">Linux IRQ affinity</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.kernel.org/admin-guide/cgroup-v1/cpusets.html">Linux cpuset controller</a></li>
+</ul>
+<p><strong>证据边界：</strong>示例只证明如何设置和检查用户线程的 CPU 允许集合，不代表绑核后一定得到更低延迟。IRQ、cgroup、NUMA、固件和热管理都可能改变结果；发布前应在目标内核、设备和负载上复测。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/02/06/linux-thread-cpu-affinity/">https://quchaosheng.github.io/2026/02/06/linux-thread-cpu-affinity/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/pthread-linux-internals/">
+                            <span>pthread 底层：线程创建、同步与退出</span>
+                            <time datetime="2026-02-04T06:00:00.000Z">2026-02-04</time>
+                        </a>
+                    
+                        <a href="/2026/03/19/linux-process-thread-task-basics/">
+                            <span>Linux 进程与线程入门：PID、TID、task 和共享资源</span>
+                            <time datetime="2026-03-19T01:30:00.000Z">2026-03-19</time>
+                        </a>
+                    
+                        <a href="/2026/07/30/realtime-regression-baseline/">
+                            <span>实时回归测试：把一次调优变成可持续的延迟基线</span>
+                            <time datetime="2026-07-15T12:00:00.000Z">2026-07-15</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E7%BA%BF%E7%A8%8B/"># 线程</a>
+                    
+                        <a href="/tag/CPU%E4%BA%B2%E5%92%8C%E6%80%A7/"># CPU亲和性</a>
+                    
+                        <a href="/tag/taskset/"># taskset</a>
+                    
+                        <a href="/tag/pthread/"># pthread</a>
+                    
+                        <a href="/tag/cpuset/"># cpuset</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/udp-receive-optimization/">UDP 收包瓶颈：从网卡队列到应用线程</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/tcp-retransmission/">TCP 重传：可靠传输如何发现并修复丢包</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

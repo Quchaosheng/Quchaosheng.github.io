@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>学习路径 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="怎么读 不知道先看哪篇时，从这里开始。每条路径按实际做事的顺序排：先弄清问题，再动手测，最后再把方案放进系统里。 路径一 · Linux 实时性 先把延迟测明白 不要先忙着调优先级。先弄清高优先级线程会被什么卡住，再测最长延迟，最后处理干扰源。 看抢占限制 → 安排 CPU → 测最长延迟 → 找干扰源 → 重复测试 PREEMPT_RT：Linux...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/paths/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="website">
+<meta property="og:title" content="学习路径 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="怎么读 不知道先看哪篇时，从这里开始。每条路径按实际做事的顺序排：先弄清问题，再动手测，最后再把方案放进系统里。 路径一 · Linux 实时性 先把延迟测明白 不要先忙着调优先级。先弄清高优先级线程会被什么卡住，再测最长延迟，最后处理干扰源。 看抢占限制 → 安排 CPU → 测最长延迟 → 找干扰源 → 重复测试 PREEMPT_RT：Linux...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/paths/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="学习路径">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="学习路径 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="怎么读 不知道先看哪篇时，从这里开始。每条路径按实际做事的顺序排：先弄清问题，再动手测，最后再把方案放进系统里。 路径一 · Linux 实时性 先把延迟测明白 不要先忙着调优先级。先弄清高优先级线程会被什么卡住，再测最长延迟，最后处理干扰源。 看抢占限制 → 安排 CPU → 测最长延迟 → 找干扰源 → 重复测试 PREEMPT_RT：Linux...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    <article class="post-wrap page">
+        
+        <h1 class="post-title">学习路径</h1>
+        
+        <section class="post-content">
+            <div class="page-lead">
+  <p class="section-kicker">怎么读</p>
+  <p>不知道先看哪篇时，从这里开始。每条路径按实际做事的顺序排：先弄清问题，再动手测，最后再把方案放进系统里。</p>
+</div>
+
+<section class="learning-path"><p class="section-kicker">路径一 · Linux 实时性</p><h2>先把延迟测明白</h2><p class="path-summary">不要先忙着调优先级。先弄清高优先级线程会被什么卡住，再测最长延迟，最后处理干扰源。</p><div class="note-flow"><span>看抢占限制</span><i>→</i><span>安排 CPU</span><i>→</i><span>测最长延迟</span><i>→</i><span>找干扰源</span><i>→</i><span>重复测试</span></div><ol class="path-steps"><li><a href="/2026/07/30/linux-preempt-rt/">PREEMPT_RT：Linux 怎样变成可抢占的实时内核</a><span>先看哪些内核路径仍会挡住高优先级线程。</span></li><li><a href="/2026/07/30/linux-cpu-isolation/">CPU 隔离：为实时任务留出安静的核心</a><span>把 housekeeping、IRQ、RCU 和关键线程分开安排。</span></li><li><a href="/2026/07/30/cyclictest-latency/">cyclictest：怎样测量 Linux 实时调度延迟</a><span>记录最大值和直方图，不只看平均值。</span></li><li><a href="/2026/07/30/linux-osnoise-tracer/">osnoise tracer：把实时抖动拆成可解释的噪声</a><span>检查 IRQ、softirq、调度或固件带来的干扰。</span></li><li><a href="/2026/07/30/realtime-regression-baseline/">实时回归测试：把一次调优变成可持续的延迟基线</a><span>保存环境和原始数据，方便下次比较。</span></li></ol></section>
+
+<section class="learning-path"><p class="section-kicker">路径二 · ROS 2 与机器人</p><h2>让感知结果能安全地用起来</h2><p class="path-summary">视觉、推理、定位和控制会互相影响。这里先讲数据怎么走，再讲怎样避免把过期或不可靠的结果送到控制侧。</p><div class="note-flow"><span>安排平台资源</span><i>→</i><span>少拷贝图像</span><i>→</i><span>定位与建图</span><i>→</i><span>测推理延迟</span><i>→</i><span>排查问题</span></div><ol class="path-steps"><li><a href="/2026/07/30/jetson-robot-deployment/">Jetson 机器人部署：功耗、算力与实时控制怎样分工</a><span>先分开 GPU 推理和 MCU / RT 控制的职责。</span></li><li><a href="/2026/07/30/isaac-ros-nitros-zero-copy/">Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU</a><span>看图像在哪儿复制、在哪儿排队。</span></li><li><a href="/2026/07/30/isaac-ros-vslam-nvblox/">Isaac ROS Visual SLAM 与 nvblox：机器人怎样定位并理解空间</a><span>分清姿态、地图和规划输入分别做什么。</span></li><li><a href="/2026/07/30/tensorrt-robot-inference/">TensorRT 机器人推理：从训练模型到稳定延迟</a><span>测量结果从相机到控制侧到底用了多久。</span></li><li><a href="/projects/robotraceopt/">RoboTraceOpt：ROS 2 跨层运行时诊断与优化</a><span>把应用事件、trace、调度和 ACK 放在一起看。</span></li></ol></section>
+
+<section class="learning-path"><p class="section-kicker">路径三 · 嵌入式交付</p><h2>把程序变成能上板的系统</h2><p class="path-summary">从交叉编译到系统镜像，再到通信和故障恢复。每一步都要能在另一台机器、另一块板子上重复。</p><div class="note-flow"><span>写工具链文件</span><i>→</i><span>生成系统镜像</span><i>→</i><span>选任务模型</span><i>→</i><span>定总线协议</span><i>→</i><span>处理故障</span></div><ol class="path-steps"><li><a href="/2026/07/29/cmake-cross-compilation/">CMake 交叉编译：工具链文件决定目标环境</a><span>防止配置时误用宿主机库。</span></li><li><a href="/2026/07/29/buildroot-system-image/">Buildroot：生成可复现的嵌入式 Linux 系统镜像</a><span>把工具链、内核、rootfs 和服务一起做成镜像。</span></li><li><a href="/2026/07/29/embedded-rtos-selection/">嵌入式 RTOS 选型：不要只比较功能列表</a><span>按实时性、内存、调试和团队条件来选。</span></li><li><a href="/2026/07/29/embedded-can/">CAN 总线：仲裁、错误处理与可靠通信</a><span>先理解优先级、错误状态和总线恢复。</span></li><li><a href="/2026/07/29/embedded-watchdog/">看门狗：让系统从不可恢复故障中自动重启</a><span>由健康检查决定是否复位。</span></li></ol></section>
+
+<p>想直接看十篇重点文章，去<a href="/guides/">核心文章</a>；想找外部文档，去<a href="/reading/">精选阅读</a>；按主题翻找时可以回到<a href="/technology/">技术地图</a>。</p>
+
+        </section>
+    </article>
+</main>
+
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

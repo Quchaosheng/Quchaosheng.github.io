@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>Linux SPI 驱动：控制器、设备与传输 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="SPI 是时钟同步、全双工的串行总线，但它不定义统一的寄存器协议、设备发现方式或数据帧格式。Linux SPI 子系统因此将两类职责拆开：控制器驱动管理 SoC 的时钟、FIFO、DMA、片选和中断；协议驱动理解某颗传感器、Flash 或 ADC 的命令、寄存器和数据格式。设备树或其他固件描述负责告诉内核“哪条总线上挂着哪颗设备”。 设备树描述外设 →...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/07/29/linux-spi-driver/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux SPI 驱动：控制器、设备与传输 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="SPI 是时钟同步、全双工的串行总线，但它不定义统一的寄存器协议、设备发现方式或数据帧格式。Linux SPI 子系统因此将两类职责拆开：控制器驱动管理 SoC 的时钟、FIFO、DMA、片选和中断；协议驱动理解某颗传感器、Flash 或 ADC 的命令、寄存器和数据格式。设备树或其他固件描述负责告诉内核“哪条总线上挂着哪颗设备”。 设备树描述外设 →...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/07/29/linux-spi-driver/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Linux SPI 驱动：控制器、设备与传输">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux SPI 驱动：控制器、设备与传输 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="SPI 是时钟同步、全双工的串行总线，但它不定义统一的寄存器协议、设备发现方式或数据帧格式。Linux SPI 子系统因此将两类职责拆开：控制器驱动管理 SoC 的时钟、FIFO、DMA、片选和中断；协议驱动理解某颗传感器、Flash 或 ADC 的命令、寄存器和数据格式。设备树或其他固件描述负责告诉内核“哪条总线上挂着哪颗设备”。 设备树描述外设 →...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Linux SPI 驱动：控制器、设备与传输","description":"SPI 是时钟同步、全双工的串行总线，但它不定义统一的寄存器协议、设备发现方式或数据帧格式。Linux SPI 子系统因此将两类职责拆开：控制器驱动管理 SoC 的时钟、FIFO、DMA、片选和中断；协议驱动理解某颗传感器、Flash 或 ADC 的命令、寄存器和数据格式。设备树或其他固件描述负责告诉内核“哪条总线上挂着哪颗设备”。 设备树描述外设 →...","datePublished":"2026-02-10T06:00:00.000Z","dateModified":"2026-02-10T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/linux-spi-driver/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式Linux","keywords":"设备树, 设备驱动, SPI","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Linux SPI 驱动：控制器、设备与传输</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-02-10&nbsp;&nbsp;14:00:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8FLinux/">嵌入式Linux</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E8%AE%BE%E5%A4%87%E6%A0%91/">#设备树</a>
+                            
+                                <a href="/tag/%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8/">#设备驱动</a>
+                            
+                                <a href="/tag/SPI/">#SPI</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>SPI 是时钟同步、全双工的串行总线，但它不定义统一的寄存器协议、设备发现方式或数据帧格式。Linux SPI 子系统因此将两类职责拆开：控制器驱动管理 SoC 的时钟、FIFO、DMA、片选和中断；协议驱动理解某颗传感器、Flash 或 ADC 的命令、寄存器和数据格式。设备树或其他固件描述负责告诉内核“哪条总线上挂着哪颗设备”。</p>
+<div class="note-flow"><span>设备树描述外设</span><i>→</i><span>总线匹配并 probe</span><i>→</i><span>构造 transfer/message</span><i>→</i><span>控制器驱动执行</span><i>→</i><span>中断或 DMA 完成</span></div>
+
+<h2 id="三层对象如何配合"><a href="#三层对象如何配合" class="headerlink" title="三层对象如何配合"></a>三层对象如何配合</h2><p><code>spi_controller</code> 对应硬件控制器；设备树节点创建 <code>spi_device</code>，其中包含 chip select、mode、最大频率等板级信息；<code>spi_driver</code> 通过 <code>of_match_table</code> 匹配并在 probe 中初始化具体器件。协议驱动将一个或多个 <code>spi_transfer</code> 组合为 <code>spi_message</code>，同步提交或异步提交给 controller。</p>
+<div class="note-map"><span><b>spi_controller</b><small>SoC 硬件驱动，负责 FIFO、DMA、时钟、CS 与传输完成</small></span><span><b>spi_device</b><small>总线上的具体外设，来自 DT/ACPI/board info</small></span><span><b>spi_driver</b><small>理解器件命令和寄存器协议，负责 probe/状态机</small></span><span><b>spi_transfer</b><small>一次全双工数据段，包含 tx/rx buffer、长度、速度等</small></span><span><b>spi_message</b><small>多个 transfer 组成一个原子事务，可控制片选保持</small></span><span><b>完成方式</b><small>同步调用便于简单路径；异步调用适合不阻塞上下文</small></span></div>
+
+<h2 id="SPI-mode-和片选边界不能靠猜"><a href="#SPI-mode-和片选边界不能靠猜" class="headerlink" title="SPI mode 和片选边界不能靠猜"></a>SPI mode 和片选边界不能靠猜</h2><p>CPOL&#x2F;CPHA 决定时钟空闲电平与采样边沿，设备树 <code>spi-cpol</code>、<code>spi-cpha</code>&#x2F;mode 配错时，逻辑分析仪上可能“有波形”却数据全错。频率、bits-per-word、bit order、CS 极性和 transfer 间 CS 是否保持，也都由器件 datasheet 决定。多段读寄存器事务常要求“命令和数据之间 CS 不能释放”。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">spi_transfer</span> <span class="title">xfers</span>[] =</span> &#123;</span><br><span class="line">    &#123; .tx_buf = &amp;cmd, .len = <span class="number">1</span> &#125;,</span><br><span class="line">    &#123; .rx_buf = data, .len = data_len &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">/* 将 xfers 加入同一 spi_message 后提交，维持设备事务边界 */</span></span><br></pre></td></tr></table></figure>
+
+<p>控制器是否能在相邻 transfer 间保持 CS、是否改用 DMA、最小&#x2F;最大传输长度，都应查 controller capability 和实际硬件波形。</p>
+<h2 id="驱动调试从外到内"><a href="#驱动调试从外到内" class="headerlink" title="驱动调试从外到内"></a>驱动调试从外到内</h2><p>先确认运行时设备树节点、<code>compatible</code>、chip select、频率和 pinctrl；再确认 controller 已 probe、时钟&#x2F;复位&#x2F;供电资源可用；随后在 protocol driver probe 中读取一个稳定的识别寄存器；最后用逻辑分析仪检查 CS、SCLK、MOSI&#x2F;MISO、mode 和帧长度。不要一开始就怀疑“SPI 子系统有 bug”。</p>
+<p><code>spidev</code> 很适合 bring-up 和产测工具，但不是绕开正式协议驱动的长期替代品。内核需要知道设备的电源管理、并发、错误恢复和系统 suspend&#x2F;resume 语义，才能让硬件稳定地融入系统。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://docs.kernel.org/spi/spi-summary.html">SPI subsystem</a> · <a target="_blank" rel="noopener" href="https://docs.kernel.org/spi/spidev.html">SPI userspace API</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/07/29/linux-spi-driver/">https://quchaosheng.github.io/2026/07/29/linux-spi-driver/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/uboot-boot-flow/">
+                            <span>U-Boot 启动流程：从上电到跳入 Linux</span>
+                            <time datetime="2026-05-25T06:00:00.000Z">2026-05-25</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/device-tree-overlay/">
+                            <span>设备树 Overlay：运行时修改硬件描述</span>
+                            <time datetime="2026-03-09T06:00:00.000Z">2026-03-09</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/linux-dma/">
+                            <span>DMA：设备怎样绕过 CPU 搬运大块数据</span>
+                            <time datetime="2026-03-03T06:00:00.000Z">2026-03-03</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E8%AE%BE%E5%A4%87%E6%A0%91/"># 设备树</a>
+                    
+                        <a href="/tag/%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8/"># 设备驱动</a>
+                    
+                        <a href="/tag/SPI/"># SPI</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/07/29/device-tree-debugging/">设备树调试：从 compatible 到驱动 probe</a>
+            
+            
+            <a class="next" rel="next" href="/2026/07/29/udp-receive-optimization/">UDP 收包瓶颈：从网卡队列到应用线程</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

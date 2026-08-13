@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Robot Systems · Linux Runtime · Embedded & RISC-V">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems,Robot Systems,Linux Real-Time,RISC-V">
+
+
+<title>Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="Quchaosheng 的机器人系统、Linux 实时性、嵌入式与 RISC-V 工程笔记和项目记录">
+
+<link rel="canonical" href="https://quchaosheng.github.io/page/8/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="Quchaosheng 的机器人系统、Linux 实时性、嵌入式与 RISC-V 工程笔记和项目记录">
+
+<meta property="og:url" content="https://quchaosheng.github.io/page/8/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="Quchaosheng&#39;s Notes">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="Quchaosheng 的机器人系统、Linux 实时性、嵌入式与 RISC-V 工程笔记和项目记录">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                
+    <main class="container profile-container">
+  <h1 class="visually-hidden">Quchaosheng 的技术笔记与项目记录</h1>
+  <div class="profile-hero">
+    <div class="intro">
+        <div class="avatar">
+            <a href="/archives"><img src="/image/1.jpeg" alt="Quchaosheng"></a>
+        </div>
+        <div class="nickname">Quchaosheng</div>
+        <div class="description"><p>Robot Systems · Linux Runtime · Embedded &amp; RISC-V</p>
+</div>
+        <div class="links">
+            
+                
+                    <a class="link-item" title="Blog" href="/archives">
+                        
+                        
+                            <i class="iconfont icon-blog"></i>
+                        
+                    </a>
+                
+                    <a class="link-item" title="Github" target="_blank" rel="noopener" href="https://github.com/Quchaosheng">
+                        
+                        
+                            <i class="iconfont icon-github"></i>
+                        
+                    </a>
+                
+            
+        </div>
+        <a class="profile-archive-link" href="/archives">浏览全部笔记 <span aria-hidden="true">→</span></a>
+        <section class="now-card" aria-labelledby="now-title">
+            <div class="section-kicker">NOW</div>
+            <h2 id="now-title">正在推进</h2>
+            <p><strong>RoboTraceOpt</strong> 的项目档案，以及原生 Linux / X5 的真实环境验证准备。</p>
+            <div class="now-links"><a href="/projects/robotraceopt/">项目档案 →</a><a href="/category/">文章分类 →</a></div>
+        </section>
+    </div>
+
+    <section class="topic-hub" aria-labelledby="topic-hub-title">
+        <div class="topic-hub-heading">
+            <div>
+                <div class="section-kicker">START BY TOPIC</div>
+                <h2 id="topic-hub-title">从一个具体方向开始</h2>
+            </div>
+            <a href="/paths/">查看学习路径 <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="topic-grid">
+            <a class="topic-link" href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%AE%9E%E6%97%B6/">
+                <span>01 · REAL-TIME</span>
+                <strong>Linux 实时</strong>
+                <small>绑核、抢占、IRQ、延迟测量与回归基线</small>
+            </a>
+            <a class="topic-link" href="/category/%E6%8A%80%E6%9C%AF/Linux%E5%86%85%E6%A0%B8/">
+                <span>02 · KERNEL</span>
+                <strong>Linux 内核</strong>
+                <small>调度、内存、驱动、文件系统与网络路径</small>
+            </a>
+            <a class="topic-link" href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8F/">
+                <span>03 · EMBEDDED</span>
+                <strong>嵌入式系统</strong>
+                <small>启动、总线、可靠性、工具链与设备软件</small>
+            </a>
+            <a class="topic-link" href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">
+                <span>04 · ROBOTICS</span>
+                <strong>AI 机器人</strong>
+                <small>ROS 2、部署、VLA、仿真和安全执行边界</small>
+            </a>
+        </div>
+    </section>
+
+    <section class="recent-notes" aria-labelledby="recent-notes-title">
+        <div class="section-kicker">LATEST NOTES</div>
+        <h2 id="recent-notes-title">最近更新</h2>
+        
+            <article class="recent-note">
+                <a href="/2026/08/13/ai-robot-vla-human-intervention-state-machine/">
+                    <span class="recent-note-title">VLA 规划接入机器人：动作候选、人工接管和可取消状态机</span>
+                    <time datetime="2026-08-13T01:30:00.000Z">2026-08-13</time>
+                </a>
+            </article>
+        
+            <article class="recent-note">
+                <a href="/2026/08/12/stop-ack-command-id-namespace/">
+                    <span class="recent-note-title">STOP 的 ACK 为什么不能和业务命令的 ACK 混在一起</span>
+                    <time datetime="2026-08-12T01:30:00.000Z">2026-08-12</time>
+                </a>
+            </article>
+        
+            <article class="recent-note">
+                <a href="/2026/08/11/ai-robot-voxel-memory-budget/">
+                    <span class="recent-note-title">三维场景记忆的显存预算：体素地图为什么越跑越大</span>
+                    <time datetime="2026-08-11T01:30:00.000Z">2026-08-11</time>
+                </a>
+            </article>
+        
+            <article class="recent-note">
+                <a href="/2026/08/10/gazebo-headless-camera-ci/">
+                    <span class="recent-note-title">Gazebo 无显示 CI 为何偶发超时：从相机 0 帧到 QoS 启动竞态</span>
+                    <time datetime="2026-08-10T14:45:00.000Z">2026-08-10</time>
+                </a>
+            </article>
+        
+            <article class="recent-note">
+                <a href="/2026/08/10/robot-task-completion-needs-evidence/">
+                    <span class="recent-note-title">函数返回 OK，为什么机器人任务仍然可能失败</span>
+                    <time datetime="2026-08-10T14:30:00.000Z">2026-08-10</time>
+                </a>
+            </article>
+        
+    </section>
+
+    <section class="engineering-stack" aria-labelledby="engineering-stack-title">
+        <div class="stack-heading">
+            <div>
+                <div class="section-kicker">ENGINEERING STACK</div>
+                <h2 id="engineering-stack-title">面向机器人系统的工程能力栈</h2>
+            </div>
+            <p>从任务语义到内核与设备，把可观测、可取消、可复现的系统链路做完整。</p>
+        </div>
+
+        <div class="stack-list">
+            <article class="stack-row">
+                <div class="stack-index" aria-hidden="true">01</div>
+                <div class="stack-focus">
+                    <span>ROBOT RUNTIME</span>
+                    <h3>机器人任务运行时</h3>
+                    <p>任务契约、截止期与取消语义，连接固定工作流、ROS 2 Action、设备桥、ACK 和 safe-stop。</p>
+                </div>
+                <ul class="stack-tools" aria-label="机器人任务运行时技术">
+                    <li>Modern C++</li><li>ROS 2</li><li>rclcpp</li><li>Actions</li><li>BehaviorTree.CPP</li><li>ros2_control</li>
+                </ul>
+                <a class="stack-proof" href="/projects/embodied-agent-runtime/">查看项目 <span aria-hidden="true">→</span></a>
+            </article>
+
+            <article class="stack-row">
+                <div class="stack-index" aria-hidden="true">02</div>
+                <div class="stack-focus">
+                    <span>OBSERVABILITY</span>
+                    <h3>跨层观测与实时诊断</h3>
+                    <p>关联应用事件、ROS 2、中间件、调度与 CAN 证据，用测量和配对验证定位延迟与异常。</p>
+                </div>
+                <ul class="stack-tools" aria-label="跨层观测与实时诊断技术">
+                    <li>ros2_tracing</li><li>eBPF</li><li>ftrace</li><li>PREEMPT_RT</li><li>cyclictest</li><li>rtla / osnoise</li>
+                </ul>
+                <a class="stack-proof" href="/projects/robotraceopt/">查看项目 <span aria-hidden="true">→</span></a>
+            </article>
+
+            <article class="stack-row">
+                <div class="stack-index" aria-hidden="true">03</div>
+                <div class="stack-focus">
+                    <span>EMBEDDED &amp; I/O</span>
+                    <h3>嵌入式 Linux 与设备通信</h3>
+                    <p>覆盖启动、驱动、总线协议与故障恢复，在虚拟总线和实体 I/O 环境中明确验证边界。</p>
+                </div>
+                <ul class="stack-tools" aria-label="嵌入式 Linux 与设备通信技术">
+                    <li>C / C++</li><li>Linux Driver</li><li>Device Tree</li><li>SocketCAN</li><li>I2C / SPI</li><li>UART</li>
+                </ul>
+                <a class="stack-proof" href="/projects/ros2-control-vcan/">查看项目 <span aria-hidden="true">→</span></a>
+            </article>
+
+            <article class="stack-row">
+                <div class="stack-index" aria-hidden="true">04</div>
+                <div class="stack-focus">
+                    <span>PLATFORM &amp; EDGE AI</span>
+                    <h3>RISC-V 与边缘机器人</h3>
+                    <p>从多核启动与隔离，到感知、导航和边缘推理，使用可复现环境验证完整软件路径。</p>
+                </div>
+                <ul class="stack-tools" aria-label="RISC-V 与边缘机器人技术">
+                    <li>RISC-V</li><li>OpenSBI / PMP</li><li>QEMU</li><li>Gazebo / Nav2</li><li>OpenCV</li><li>TensorRT</li>
+                </ul>
+                <a class="stack-proof" href="/projects/quard-star-riscv64/">查看项目 <span aria-hidden="true">→</span></a>
+            </article>
+        </div>
+    </section>
+
+    <section class="project-showcase" aria-labelledby="projects-title">
+        <div class="section-kicker">SELECTED PROJECTS</div>
+        <h2 id="projects-title">机器人运行时与系统工程</h2>
+        <p class="project-intro">所有演示均标明验证环境，不将仿真、vcan 或 QEMU 结果描述为物理硬件能力。</p>
+        <div class="project-grid">
+            <article class="project-item project-item--featured">
+  <a class="project-media project-media--runtime" href="/projects/robotraceopt/" aria-label="查看 RoboTraceOpt 项目详情">
+    <span class="runtime-visual-kicker">CROSS-LAYER RUNTIME</span>
+    <span class="runtime-visual-steps" aria-hidden="true"><span><b>应用事件</b><small>RuntimeEvent</small></span><span><b>跨层追踪</b><small>ROS 2 · eBPF</small></span><span><b>证据图</b><small>关联与诊断</small></span><span><b>受约束验证</b><small>优化与回滚</small></span></span>
+    <span class="runtime-visual-note">Trace · Scheduler · CAN ACK</span>
+  </a>
+  <div class="project-body"><span class="project-status">开发 / 预检范围</span><h3>RoboTraceOpt</h3><p>面向 ROS 2 的跨层运行时追踪、关联图诊断与受约束配置优化，连接 RuntimeEvent、ros2_tracing、eBPF 和 SocketCAN/vcan 适配器。</p><div class="project-links"><a href="/projects/robotraceopt/">项目详情 →</a><a href="https://github.com/Quchaosheng/RoboTraceOpt" target="_blank" rel="noopener">源码 ↗</a></div></div>
+</article>
+<article class="project-item">
+  <a class="project-media" href="/projects/embodied-agent-runtime/"><img src="/image/projects/embodied-runtime.jpg" alt="X5 摄像头识别 ArUco 标记"></a>
+  <div class="project-body"><span class="project-status">X5 实体 I/O</span><h3>Embodied Agent Runtime</h3><p>受安全契约约束的 AI 到 ROS 2 Action、SocketCAN 任务链路。已验证 X5、UVC、ArUco 与双 CANable 台架。</p><div class="project-links"><a href="/projects/embodied-agent-runtime/">项目详情 →</a><a href="https://github.com/Quchaosheng/embodied-agent-runtime" target="_blank" rel="noopener">源码 ↗</a></div></div>
+</article>
+<article class="project-item">
+  <a class="project-media" href="/projects/ros2-control-vcan/"><img src="/image/projects/vcan-diffbot.png" alt="ros2_control vcan 双虚拟电机演示"></a>
+  <div class="project-body"><span class="project-status">vcan 软件闭环</span><h3>ros2_control vcan Motor Demo</h3><p>双虚拟电机反馈、watchdog、ACK 超时、bus-off 与 safe-stop，不声明真实电机负载。</p><div class="project-links"><a href="/projects/ros2-control-vcan/">项目详情 →</a><a href="https://github.com/Quchaosheng/ros2-control-vcan-motor-demo" target="_blank" rel="noopener">源码 ↗</a></div></div>
+</article>
+<article class="project-item">
+  <a class="project-media" href="/projects/apriltag-docking/"><img src="/image/projects/apriltag-docking.png" alt="Gazebo AprilTag 视觉停靠演示"></a>
+  <div class="project-body"><span class="project-status">Gazebo 仿真</span><h3>AprilTag Docking Demo</h3><p>AprilTag 观测、任务 Guard、Nav2 Docking 与取消路径的可复现仿真，不冒充真实机器人停靠。</p><div class="project-links"><a href="/projects/apriltag-docking/">项目详情 →</a><a href="https://github.com/Quchaosheng/ros2-apriltag-docking-demo" target="_blank" rel="noopener">源码 ↗</a></div></div>
+</article>
+<article class="project-item">
+  <a class="project-media" href="/projects/quard-star-riscv64/"><img src="/image/projects/quard-qemu.png" alt="Quard Star RISC-V64 QEMU 验收演示"></a>
+  <div class="project-body"><span class="project-status">QEMU / TAP</span><h3>Quard Star RISC-V64</h3><p>七核 SMP 内核与独立 FreeRTOS hart，覆盖 VirtIO、TCP/IP、存储及 PMP 双向隔离验证。</p><div class="project-links"><a href="/projects/quard-star-riscv64/">项目详情 →</a><a href="https://github.com/Quchaosheng/quard-star-riscv64-net" target="_blank" rel="noopener">源码 ↗</a></div></div>
+</article>
+
+        </div>
+        <a class="projects-more" href="/projects/">查看全部项目与验证范围 →</a>
+    </section>
+  </div>
+</main>
+
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>
