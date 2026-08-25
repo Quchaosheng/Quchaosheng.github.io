@@ -42,7 +42,7 @@
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"提交方超时了，执行方还在跑：一个请求槽的回收竞态","description":"net_exec_submit() 把回调提交给网络线程，并允许提交方等待完成。正常路径很简单，难点在超时：提交方准备返回时，请求可能仍在队列里，也可能已经进入回调。 如果提交方一超时就清空槽位，下一个请求可能立即复用同一份 proc 、 arg 和完成信号量，而工作线程仍持有旧请求的指针。这会把一次普通超时变成槽位复用竞态。反过来，如果超时后谁都不回...","datePublished":"2026-08-09T01:30:00.000Z","dateModified":"2026-08-09T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/09/net-exec-timeout-abandoned-slot/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 系统编程","keywords":"并发, 信号量, 超时, C, RISC-V","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"提交方超时了，执行方还在跑：一个请求槽的回收竞态","description":"net_exec_submit() 把回调提交给网络线程，并允许提交方等待完成。正常路径很简单，难点在超时：提交方准备返回时，请求可能仍在队列里，也可能已经进入回调。 如果提交方一超时就清空槽位，下一个请求可能立即复用同一份 proc 、 arg 和完成信号量，而工作线程仍持有旧请求的指针。这会把一次普通超时变成槽位复用竞态。反过来，如果超时后谁都不回...","datePublished":"2026-08-09T01:30:00.000Z","dateModified":"2026-08-09T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/09/net-exec-timeout-abandoned-slot/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 系统编程","keywords":"超时, 信号量, 并发, C, RISC-V","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -269,11 +269,11 @@
                         <span class="post-topics">
                             主题：
                             
-                                <a href="/tag/%E5%B9%B6%E5%8F%91/">#并发</a>
+                                <a href="/tag/%E8%B6%85%E6%97%B6/">#超时</a>
                             
                                 <a href="/tag/%E4%BF%A1%E5%8F%B7%E9%87%8F/">#信号量</a>
                             
-                                <a href="/tag/%E8%B6%85%E6%97%B6/">#超时</a>
+                                <a href="/tag/%E5%B9%B6%E5%8F%91/">#并发</a>
                             
                                 <a href="/tag/C/">#C</a>
                             
@@ -340,19 +340,19 @@
                 <h2 id="related-posts-title">同主题继续阅读</h2>
                 <div class="related-post-list">
                     
+                        <a href="/2026/08/24/qemu-riscv-boundary-validation/">
+                            <span>在 QEMU 里做 RISC-V 系统验证：配置声明与访问证据要分开</span>
+                            <time datetime="2026-08-24T12:30:00.000Z">2026-08-24</time>
+                        </a>
+                    
+                        <a href="/2026/08/16/ack-is-not-completion/">
+                            <span>ACK 不等于完成：设备命令为什么要分三阶段</span>
+                            <time datetime="2026-08-16T12:30:00.000Z">2026-08-16</time>
+                        </a>
+                    
                         <a href="/2026/08/13/riscv-heterogeneous-smp-boot/">
                             <span>RISC-V 多核启动：7+1 hart 异构 SMP 架构</span>
                             <time datetime="2026-08-13T09:37:00.000Z">2026-08-13</time>
-                        </a>
-                    
-                        <a href="/2026/08/08/pmp-valid-pte-probe/">
-                            <span>为什么我给 PMP 探针配了一个合法的页表映射</span>
-                            <time datetime="2026-08-08T01:30:00.000Z">2026-08-08</time>
-                        </a>
-                    
-                        <a href="/2026/08/07/parent-child-timeout-budget-error-code/">
-                            <span>父子超时预算错配：一次 113 覆盖 204 的排障记录</span>
-                            <time datetime="2026-08-07T01:30:00.000Z">2026-08-07</time>
                         </a>
                     
                 </div>
@@ -364,11 +364,11 @@
                 <span class="tag">
                     
                     
-                        <a href="/tag/%E5%B9%B6%E5%8F%91/"># 并发</a>
+                        <a href="/tag/%E8%B6%85%E6%97%B6/"># 超时</a>
                     
                         <a href="/tag/%E4%BF%A1%E5%8F%B7%E9%87%8F/"># 信号量</a>
                     
-                        <a href="/tag/%E8%B6%85%E6%97%B6/"># 超时</a>
+                        <a href="/tag/%E5%B9%B6%E5%8F%91/"># 并发</a>
                     
                         <a href="/tag/C/"># C</a>
                     

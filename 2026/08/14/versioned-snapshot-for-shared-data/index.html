@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>共享数据不是“能读到”就够了：版本化快照的设计思路 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="在一类高频状态采集项目里，我遇到的核心问题并不是“怎样把数据放进共享内存”，而是读者怎样判断自己拿到的是 布局兼容、内容完整、仍然新鲜 的一份数据。共享内存只解决地址空间之间的数据通路，不会自动提供消息边界、一致快照或生产者生命周期。 本文只讨论可复用的设计思路。具体字段、采样频率、设备标识、内存布局和业务协议均不展开。 验证布局版本 → 读取版本号...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/08/14/versioned-snapshot-for-shared-data/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="共享数据不是“能读到”就够了：版本化快照的设计思路 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="在一类高频状态采集项目里，我遇到的核心问题并不是“怎样把数据放进共享内存”，而是读者怎样判断自己拿到的是 布局兼容、内容完整、仍然新鲜 的一份数据。共享内存只解决地址空间之间的数据通路，不会自动提供消息边界、一致快照或生产者生命周期。 本文只讨论可复用的设计思路。具体字段、采样频率、设备标识、内存布局和业务协议均不展开。 验证布局版本 → 读取版本号...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/08/14/versioned-snapshot-for-shared-data/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="共享数据不是“能读到”就够了：版本化快照的设计思路">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="共享数据不是“能读到”就够了：版本化快照的设计思路 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="在一类高频状态采集项目里，我遇到的核心问题并不是“怎样把数据放进共享内存”，而是读者怎样判断自己拿到的是 布局兼容、内容完整、仍然新鲜 的一份数据。共享内存只解决地址空间之间的数据通路，不会自动提供消息边界、一致快照或生产者生命周期。 本文只讨论可复用的设计思路。具体字段、采样频率、设备标识、内存布局和业务协议均不展开。 验证布局版本 → 读取版本号...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"共享数据不是“能读到”就够了：版本化快照的设计思路","description":"在一类高频状态采集项目里，我遇到的核心问题并不是“怎样把数据放进共享内存”，而是读者怎样判断自己拿到的是 布局兼容、内容完整、仍然新鲜 的一份数据。共享内存只解决地址空间之间的数据通路，不会自动提供消息边界、一致快照或生产者生命周期。 本文只讨论可复用的设计思路。具体字段、采样频率、设备标识、内存布局和业务协议均不展开。 验证布局版本 → 读取版本号...","datePublished":"2026-08-14T12:30:00.000Z","dateModified":"2026-08-14T12:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/14/versioned-snapshot-for-shared-data/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 项目方法","keywords":"可观测性, 共享内存, 数据一致性, 版本协议","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">共享数据不是“能读到”就够了：版本化快照的设计思路</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-08-14&nbsp;&nbsp;20:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E9%A1%B9%E7%9B%AE%E6%96%B9%E6%B3%95/">项目方法</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/">#可观测性</a>
+                            
+                                <a href="/tag/%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98/">#共享内存</a>
+                            
+                                <a href="/tag/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/">#数据一致性</a>
+                            
+                                <a href="/tag/%E7%89%88%E6%9C%AC%E5%8D%8F%E8%AE%AE/">#版本协议</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>在一类高频状态采集项目里，我遇到的核心问题并不是“怎样把数据放进共享内存”，而是读者怎样判断自己拿到的是<strong>布局兼容、内容完整、仍然新鲜</strong>的一份数据。共享内存只解决地址空间之间的数据通路，不会自动提供消息边界、一致快照或生产者生命周期。</p>
+<p>本文只讨论可复用的设计思路。具体字段、采样频率、设备标识、内存布局和业务协议均不展开。</p>
+<div class="note-flow"><span>验证布局版本</span><i>→</i><span>读取版本号</span><i>→</i><span>复制快照</span><i>→</i><span>重读版本号</span><i>→</i><span>判断是否接受</span></div>
+
+<div class="note-map"><span><b>版本头</b><small>拒绝不兼容布局</small></span><span><b>快照协议</b><small>识别并发写入</small></span><span><b>活性字段</b><small>区分进程和业务状态</small></span></div>
+
+<h2 id="先把三个问题分开"><a href="#先把三个问题分开" class="headerlink" title="先把三个问题分开"></a>先把三个问题分开</h2><p>第一是<strong>兼容性</strong>。读写双方可能来自不同版本，必须用 magic、schema version 和总长度先拒绝不认识的布局。第二是<strong>一致性</strong>。写者更新多个字段时，读者不能把前半段旧数据和后半段新数据拼在一起。第三是<strong>活性</strong>。即使快照内部一致，它也可能来自已经卡死的进程。</p>
+<p>这三个问题需要不同机制：版本头处理兼容，版本号重读或双缓冲处理一致性，心跳与业务序号分别描述进程是否活着、数据是否继续推进。把它们压成一个布尔状态，排障时就很难知道到底坏在哪一层。</p>
+<h2 id="读者应当有权丢弃"><a href="#读者应当有权丢弃" class="headerlink" title="读者应当有权丢弃"></a>读者应当有权丢弃</h2><p>一种简单协议是：写者更新前把版本标为“写入中”，完成后发布新版本；读者复制前后各读取一次版本，只有两次相同且状态有效才接受。若版本变化，读者丢弃本次结果并按预算重试。</p>
+<p>关键点不是模仿某个内核原语的名字，而是把用户态实现的内存模型、原子访问和对象生命周期说清楚。普通字段存在并发读写时，不能只靠经验认为“机器上看起来没撕裂”。需要选择原子字段、双缓冲或经过验证的库实现，并针对目标架构测试。</p>
+<h2 id="验证比流程图更重要"><a href="#验证比流程图更重要" class="headerlink" title="验证比流程图更重要"></a>验证比流程图更重要</h2><p>我会主动构造布局版本不匹配、写到一半退出、生产者存活但业务序号停止、读者过慢和进程重启等场景。观测项至少包括被丢弃的快照数、最后有效时间、生产者实例和数据新鲜度。</p>
+<p>最终的经验是：共享内存优化的是复制与调用路径，版本化快照维护的是数据合同。两者必须分别设计，也必须分别验证。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://pubs.opengroup.org/onlinepubs/9799919799/functions/shm_open.html">POSIX shared memory</a></li>
+<li><a target="_blank" rel="noopener" href="https://en.cppreference.com/w/cpp/language/multithread.html">C++ memory model</a></li>
+</ul>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文是对通用数据一致性方法的总结，不代表任何特定产品的实现，也不披露内部结构、性能数字或生产环境结论。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/08/14/versioned-snapshot-for-shared-data/">https://quchaosheng.github.io/2026/08/14/versioned-snapshot-for-shared-data/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/linux-procfs/">
+                            <span>procfs：把内核运行状态投影成文件</span>
+                            <time datetime="2026-05-08T02:00:00.000Z">2026-05-08</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/embedded-logging/">
+                            <span>嵌入式日志系统：在可观测性与实时性之间取舍</span>
+                            <time datetime="2026-04-29T06:00:00.000Z">2026-04-29</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/linux-shared-memory/">
+                            <span>Linux 共享内存：少复制不等于零成本</span>
+                            <time datetime="2026-04-16T02:00:00.000Z">2026-04-16</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/"># 可观测性</a>
+                    
+                        <a href="/tag/%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98/"># 共享内存</a>
+                    
+                        <a href="/tag/%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7/"># 数据一致性</a>
+                    
+                        <a href="/tag/%E7%89%88%E6%9C%AC%E5%8D%8F%E8%AE%AE/"># 版本协议</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/08/15/cross-layer-latency-segmentation/">跨层时延怎么定位：先把一次超时拆成三段</a>
+            
+            
+            <a class="next" rel="next" href="/2026/08/14/ai-robot-edge-model-ota-rollback/">边缘模型升级与回滚：签名、兼容性和灰度发布怎样接起来</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

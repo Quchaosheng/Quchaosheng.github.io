@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>跨层时延怎么定位：先把一次超时拆成三段 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="一次控制回调超时，表面上只有一个总耗时。直接看 CPU 利用率或某一行日志，往往会把排队、调度和执行混在一起。我的做法是先建立统一事件时间线，再把一次请求拆成三个可验证区间。 进入业务队列 → 线程变为 runnable → 线程获得 CPU → 回调执行完成 业务事件 标记请求与阶段 调度事件 观察 wakeup 和 switch 证据质量 记录时钟...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/08/15/cross-layer-latency-segmentation/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="跨层时延怎么定位：先把一次超时拆成三段 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="一次控制回调超时，表面上只有一个总耗时。直接看 CPU 利用率或某一行日志，往往会把排队、调度和执行混在一起。我的做法是先建立统一事件时间线，再把一次请求拆成三个可验证区间。 进入业务队列 → 线程变为 runnable → 线程获得 CPU → 回调执行完成 业务事件 标记请求与阶段 调度事件 观察 wakeup 和 switch 证据质量 记录时钟...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/08/15/cross-layer-latency-segmentation/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="跨层时延怎么定位：先把一次超时拆成三段">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="跨层时延怎么定位：先把一次超时拆成三段 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="一次控制回调超时，表面上只有一个总耗时。直接看 CPU 利用率或某一行日志，往往会把排队、调度和执行混在一起。我的做法是先建立统一事件时间线，再把一次请求拆成三个可验证区间。 进入业务队列 → 线程变为 runnable → 线程获得 CPU → 回调执行完成 业务事件 标记请求与阶段 调度事件 观察 wakeup 和 switch 证据质量 记录时钟...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"跨层时延怎么定位：先把一次超时拆成三段","description":"一次控制回调超时，表面上只有一个总耗时。直接看 CPU 利用率或某一行日志，往往会把排队、调度和执行混在一起。我的做法是先建立统一事件时间线，再把一次请求拆成三个可验证区间。 进入业务队列 → 线程变为 runnable → 线程获得 CPU → 回调执行完成 业务事件 标记请求与阶段 调度事件 观察 wakeup 和 switch 证据质量 记录时钟...","datePublished":"2026-08-15T12:30:00.000Z","dateModified":"2026-08-15T12:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/15/cross-layer-latency-segmentation/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 项目方法","keywords":"ROS 2, tracing, Linux, 调度","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">跨层时延怎么定位：先把一次超时拆成三段</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-08-15&nbsp;&nbsp;20:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E9%A1%B9%E7%9B%AE%E6%96%B9%E6%B3%95/">项目方法</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/ROS-2/">#ROS 2</a>
+                            
+                                <a href="/tag/tracing/">#tracing</a>
+                            
+                                <a href="/tag/Linux/">#Linux</a>
+                            
+                                <a href="/tag/%E8%B0%83%E5%BA%A6/">#调度</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>一次控制回调超时，表面上只有一个总耗时。直接看 CPU 利用率或某一行日志，往往会把排队、调度和执行混在一起。我的做法是先建立统一事件时间线，再把一次请求拆成三个可验证区间。</p>
+<div class="note-flow"><span>进入业务队列</span><i>→</i><span>线程变为 runnable</span><i>→</i><span>线程获得 CPU</span><i>→</i><span>回调执行完成</span></div>
+
+<div class="note-map"><span><b>业务事件</b><small>标记请求与阶段</small></span><span><b>调度事件</b><small>观察 wakeup 和 switch</small></span><span><b>证据质量</b><small>记录时钟与丢失</small></span></div>
+
+<h2 id="三段分别回答什么"><a href="#三段分别回答什么" class="headerlink" title="三段分别回答什么"></a>三段分别回答什么</h2><p><strong>队列等待</strong>回答执行器或任务系统有没有积压；<strong>runnable-to-running</strong> 回答线程已经可运行却为何迟迟没有获得 CPU；<strong>回调执行</strong>回答函数本身、锁、I&#x2F;O 或下游调用是否变慢。三段相加接近业务端观测到的总耗时，才说明事件关联大体闭合。</p>
+<p>业务埋点负责标记请求身份和阶段，调度事件提供 wakeup 与 switch，必要时再加入 IRQ、系统调用或网络事件。关联键不能只用 TID：线程 ID 会复用，长时间记录还需要进程实例、生命周期、单调时钟和合理时间窗。</p>
+<h2 id="“看到相关”不等于“找到根因”"><a href="#“看到相关”不等于“找到根因”" class="headerlink" title="“看到相关”不等于“找到根因”"></a>“看到相关”不等于“找到根因”</h2><p>wakeup 到 switch-in 很长，只能说明调度等待变长。它可能来自优先级、抢占、中断、迁核、单核热点或竞争线程。下一步应针对候选原因做反证，例如固定亲和性、制造可控 CPU 竞争、调整任务负载，并观察对应区间是否按预期变化。</p>
+<p>同样，平均 CPU 利用率不高也不能排除短时热点。控制系统关心的是窗口内的尾部延迟，而不是几秒钟平均值。</p>
+<h2 id="证据质量必须成为输出"><a href="#证据质量必须成为输出" class="headerlink" title="证据质量必须成为输出"></a>证据质量必须成为输出</h2><p>跨源追踪要记录时钟域、事件丢失、探针开销和版本。关键事件缺失时，结果应降级为“候选方向”或“证据不足”，而不是补出一条完整故事。能够拒绝假结论，是诊断系统的重要能力。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.kernel.org/doc/html/latest/trace/tracepoints.html">Linux scheduler tracepoints</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/rolling/Concepts/Intermediate/About-Logging-and-Logger-Configuration.html#ros-2-tracing">ROS 2 tracing</a></li>
+</ul>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文只描述时延分段与证据关联方法，不包含具体设备、线程名称、调度参数、现场日志或性能数字。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/08/15/cross-layer-latency-segmentation/">https://quchaosheng.github.io/2026/08/15/cross-layer-latency-segmentation/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/24/ai-robot-rosbag2-failure-replay/">
+                            <span>rosbag2 故障回放：怎样把一次机器人超时变成可重复实验</span>
+                            <time datetime="2026-08-24T01:30:00.000Z">2026-08-24</time>
+                        </a>
+                    
+                        <a href="/2026/08/23/vision-admission-guards/">
+                            <span>视觉结果能看见还不够：任务准入需要持续 Guard</span>
+                            <time datetime="2026-08-23T12:30:00.000Z">2026-08-23</time>
+                        </a>
+                    
+                        <a href="/2026/08/20/ros2-deadline-cancel-budget/">
+                            <span>ROS 2 长任务的 deadline 与 cancel：预算要逐层传递</span>
+                            <time datetime="2026-08-20T12:30:00.000Z">2026-08-20</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/ROS-2/"># ROS 2</a>
+                    
+                        <a href="/tag/tracing/"># tracing</a>
+                    
+                        <a href="/tag/Linux/"># Linux</a>
+                    
+                        <a href="/tag/%E8%B0%83%E5%BA%A6/"># 调度</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/08/16/ack-is-not-completion/">ACK 不等于完成：设备命令为什么要分三阶段</a>
+            
+            
+            <a class="next" rel="next" href="/2026/08/14/versioned-snapshot-for-shared-data/">共享数据不是“能读到”就够了：版本化快照的设计思路</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

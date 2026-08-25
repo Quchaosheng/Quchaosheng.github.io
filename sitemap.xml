@@ -656,6 +656,66 @@
     <lastmod>2026-08-13</lastmod>
   </url>
   <url>
+    <loc>https://quchaosheng.github.io/2026/08/14/ai-robot-edge-model-ota-rollback/</loc>
+    <lastmod>2026-08-14</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/14/versioned-snapshot-for-shared-data/</loc>
+    <lastmod>2026-08-14</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/15/cross-layer-latency-segmentation/</loc>
+    <lastmod>2026-08-15</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/16/ack-is-not-completion/</loc>
+    <lastmod>2026-08-16</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/17/modular-multisource-data-pipeline/</loc>
+    <lastmod>2026-08-17</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/18/bsp-bringup-evidence-order/</loc>
+    <lastmod>2026-08-18</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/19/driver-remove-lifecycle-order/</loc>
+    <lastmod>2026-08-19</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/20/ros2-deadline-cancel-budget/</loc>
+    <lastmod>2026-08-20</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/21/schema-and-deterministic-replay/</loc>
+    <lastmod>2026-08-21</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/22/socketcan-fault-injection-boundaries/</loc>
+    <lastmod>2026-08-22</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/23/vision-admission-guards/</loc>
+    <lastmod>2026-08-23</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/24/ai-robot-rosbag2-failure-replay/</loc>
+    <lastmod>2026-08-24</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/24/qemu-riscv-boundary-validation/</loc>
+    <lastmod>2026-08-24</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/25/ai-robot-acceptance-evidence/</loc>
+    <lastmod>2026-08-25</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/08/25/project-evidence-chain-retrospective/</loc>
+    <lastmod>2026-08-25</lastmod>
+  </url>
+  <url>
     <loc>https://quchaosheng.github.io/404.html</loc>
     <lastmod>2026-07-29</lastmod>
   </url>
@@ -669,7 +729,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/category/%E6%84%9F%E6%82%9F/</loc>
-    <lastmod>2026-08-13</lastmod>
+    <lastmod>2026-08-25</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/guides/</loc>
@@ -717,7 +777,7 @@
   </url>
   <url>
     <loc>https://quchaosheng.github.io/technology/</loc>
-    <lastmod>2026-08-13</lastmod>
+    <lastmod>2026-08-25</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/updates/</loc>

@@ -42,7 +42,7 @@
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"父子超时预算错配：一次 113 覆盖 204 的排障记录","description":"我在一轮取消链路回归里遇到过一个很像调度抖动的问题。同一个故障注入场景，有时返回父层的 SAFE_STOP/113 ，有时返回设备层的 SAFE_STOP/204 。设备层明明已经进入 STOP 流程，最终错误码却不稳定。 当时父任务的取消确认预算和子任务的 STOP ACK 等待预算都配置为 500ms 。两个计时器几乎同时起跑，谁先到期，谁就更可能...","datePublished":"2026-08-07T01:30:00.000Z","dateModified":"2026-08-07T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 机器人系统","keywords":"ROS 2, CAN, 超时, Action, 排障","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"父子超时预算错配：一次 113 覆盖 204 的排障记录","description":"我在一轮取消链路回归里遇到过一个很像调度抖动的问题。同一个故障注入场景，有时返回父层的 SAFE_STOP/113 ，有时返回设备层的 SAFE_STOP/204 。设备层明明已经进入 STOP 流程，最终错误码却不稳定。 当时父任务的取消确认预算和子任务的 STOP ACK 等待预算都配置为 500ms 。两个计时器几乎同时起跑，谁先到期，谁就更可能...","datePublished":"2026-08-07T01:30:00.000Z","dateModified":"2026-08-07T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 机器人系统","keywords":"超时, ROS 2, CAN, Action, 排障","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -269,11 +269,11 @@
                         <span class="post-topics">
                             主题：
                             
+                                <a href="/tag/%E8%B6%85%E6%97%B6/">#超时</a>
+                            
                                 <a href="/tag/ROS-2/">#ROS 2</a>
                             
                                 <a href="/tag/CAN/">#CAN</a>
-                            
-                                <a href="/tag/%E8%B6%85%E6%97%B6/">#超时</a>
                             
                                 <a href="/tag/Action/">#Action</a>
                             
@@ -346,14 +346,14 @@
                             <time datetime="2026-08-12T01:30:00.000Z">2026-08-12</time>
                         </a>
                     
+                        <a href="/2026/08/20/ros2-deadline-cancel-budget/">
+                            <span>ROS 2 长任务的 deadline 与 cancel：预算要逐层传递</span>
+                            <time datetime="2026-08-20T12:30:00.000Z">2026-08-20</time>
+                        </a>
+                    
                         <a href="/2026/03/31/ros2-communication-basics/">
                             <span>ROS 2 通信入门：Topic、Service、Action 和 Parameter 怎么选</span>
                             <time datetime="2026-03-31T01:30:00.000Z">2026-03-31</time>
-                        </a>
-                    
-                        <a href="/2026/08/13/ros2-realtime-latency-optimization/">
-                            <span>ROS 2 实时性优化：从毫秒级抖动到亚毫秒调度</span>
-                            <time datetime="2026-08-13T09:38:00.000Z">2026-08-13</time>
                         </a>
                     
                 </div>
@@ -365,11 +365,11 @@
                 <span class="tag">
                     
                     
+                        <a href="/tag/%E8%B6%85%E6%97%B6/"># 超时</a>
+                    
                         <a href="/tag/ROS-2/"># ROS 2</a>
                     
                         <a href="/tag/CAN/"># CAN</a>
-                    
-                        <a href="/tag/%E8%B6%85%E6%97%B6/"># 超时</a>
                     
                         <a href="/tag/Action/"># Action</a>
                     

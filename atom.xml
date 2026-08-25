@@ -4,8 +4,128 @@
   <id>https://quchaosheng.github.io/atom.xml</id>
   <link href="https://quchaosheng.github.io/"/>
   <link href="https://quchaosheng.github.io/atom.xml" rel="self"/>
-  <updated>2026-08-13T09:40:00.000Z</updated>
+  <updated>2026-08-25T01:30:00.000Z</updated>
   <author><name>Quchaosheng</name></author>
+  <entry>
+    <title>从实验室到现场：AI 机器人验收报告怎样区分证据</title>
+    <id>https://quchaosheng.github.io/2026/08/25/ai-robot-acceptance-evidence/</id>
+    <link href="https://quchaosheng.github.io/2026/08/25/ai-robot-acceptance-evidence/"/>
+    <published>2026-08-25T01:30:00.000Z</published>
+    <updated>2026-08-25T01:30:00.000Z</updated>
+    <summary type="html">演示视频里机器人连续抓取了五次，现场验收却没有通过。评审问的是环境温度、模型版本、失败时怎么停、结果年龄是多少，报告里只有一张成功率截图。问题不一定是系统变差，而是报告把仿真、台架和真机证据混在了一起，读者无法知道每个结论到底由什么支持。 AI 机器人验收不该只写一个总分。感知、规划、控制和安全链路需要不同证据；成功率、P99 延迟、人工接管率和安全事件也不能互相替代。报告的任务是让别人知道“在哪些条件下观察到了什么”，以及“哪些地方还没有证据”。 定义任务和失败条件 → 固定代码、模型和设备指纹 → 分别收集仿真、台架、真机证据 → 记录成功、拒...</summary>
+  </entry>
+  <entry>
+    <title>把项目经验写成可公开文章：保留方法，删除秘密</title>
+    <id>https://quchaosheng.github.io/2026/08/25/project-evidence-chain-retrospective/</id>
+    <link href="https://quchaosheng.github.io/2026/08/25/project-evidence-chain-retrospective/"/>
+    <published>2026-08-25T01:30:00.000Z</published>
+    <updated>2026-08-25T01:30:00.000Z</updated>
+    <summary type="html">从 8 月 14 日到今天，这组札记依次整理了共享数据、跨层时延、设备确认、采集架构、BSP、驱动生命周期、任务取消、确定性回放、CAN 故障验证、视觉 Guard 和 RISC-V 边界。它们来自实际工程中反复遇到的问题，但文章刻意只留下可迁移的方法。 我如何判断一段经验能不能公开 首先删除能够识别业务和现场的信息：公司与客户名称、未公开项目名、设备序列、网络拓扑、接口地址、协议字段、日志原文和数据样本。其次删除可能暴露能力边界的参数：频率、阈值、超时、资源规模、故障统计和未公开性能结果。 最后检查结论是否越过证据。仿真结果只写仿真，软件注入只写...</summary>
+  </entry>
+  <entry>
+    <title>在 QEMU 里做 RISC-V 系统验证：配置声明与访问证据要分开</title>
+    <id>https://quchaosheng.github.io/2026/08/24/qemu-riscv-boundary-validation/</id>
+    <link href="https://quchaosheng.github.io/2026/08/24/qemu-riscv-boundary-validation/"/>
+    <published>2026-08-24T12:30:00.000Z</published>
+    <updated>2026-08-24T12:30:00.000Z</updated>
+    <summary type="html">在 RISC-V 多执行域实验中，仅仅写出一份资源配置并成功启动，不足以证明隔离成立。配置声明描述“希望怎样划分”，异常探针才回答“越界访问是否真的被拒绝”。 声明资源边界 → 完成多域启动 → 正向功能验证 → 双向越界探针 → 保存异常证据 声明 资源与执行域配置 探针 正向对照和负向访问 边界 区分 hart、DMA 与硬件 启动与隔离是两个验收项 系统能进入各自运行环境，只说明启动链、内存映射和基本调度大体可用。隔离需要从两个方向主动访问对方受保护区域，并记录异常类型、地址和发起上下文。只测一个方向，可能漏掉配置不对称。 探针自身也要合法。...</summary>
+  </entry>
+  <entry>
+    <title>rosbag2 故障回放：怎样把一次机器人超时变成可重复实验</title>
+    <id>https://quchaosheng.github.io/2026/08/24/ai-robot-rosbag2-failure-replay/</id>
+    <link href="https://quchaosheng.github.io/2026/08/24/ai-robot-rosbag2-failure-replay/"/>
+    <published>2026-08-24T01:30:00.000Z</published>
+    <updated>2026-08-24T01:30:00.000Z</updated>
+    <summary type="html">机器人在现场偶尔导航超时，回到实验室却怎么也复现不了。开发者通常会加几条日志，再跑一次任务。等真正需要分析时才发现，录包里没有相机时间戳、TF、诊断状态或控制命令，留下的只有一行“action timeout”。 rosbag2 能保存一次运行中的消息，但它不会自动让实验变得确定。要复现故障，必须提前定义录哪些话题、使用哪种 QoS、回放时是否使用仿真时间，以及哪些硬件输入需要替换成回放数据。回放的目标是重建当时的输入和状态，不是把视频重新播放一遍。 定义故障假设和截止期 → 按时间与 QoS 录制闭环输入 → 检查包内容和版本指纹 → 用仿真时间...</summary>
+  </entry>
+  <entry>
+    <title>视觉结果能看见还不够：任务准入需要持续 Guard</title>
+    <id>https://quchaosheng.github.io/2026/08/23/vision-admission-guards/</id>
+    <link href="https://quchaosheng.github.io/2026/08/23/vision-admission-guards/"/>
+    <published>2026-08-23T12:30:00.000Z</published>
+    <updated>2026-08-23T12:30:00.000Z</updated>
+    <summary type="html">视觉检测输出一个 ID 和位姿，并不意味着机器人任务可以立即执行。检测质量、时间新鲜度、坐标变换和连续性任何一项不满足，单帧结果都可能把偶然噪声变成控制动作。 我会把这些条件写成显式 Guard，并在任务运行期间持续检查，而不是只在启动瞬间检查一次。 检测候选 → 质量与身份 → 新鲜度与 TF → 连续性 → 任务准入或取消 检测 身份与质量 时空 新鲜度与坐标变换 任务 持续准入与取消 Guard 应回答可审计问题 身份是否属于允许集合？检测质量是否达到当前场景要求？消息是否足够新？目标位姿能否变换到约定坐标系？相邻观测是否出现不合理跳变？这些...</summary>
+  </entry>
+  <entry>
+    <title>SocketCAN 故障注入怎么做：先说明模拟了哪一层</title>
+    <id>https://quchaosheng.github.io/2026/08/22/socketcan-fault-injection-boundaries/</id>
+    <link href="https://quchaosheng.github.io/2026/08/22/socketcan-fault-injection-boundaries/"/>
+    <published>2026-08-22T12:30:00.000Z</published>
+    <updated>2026-08-22T12:30:00.000Z</updated>
+    <summary type="html">CAN 控制链的异常处理不能只靠拔线测试，但软件故障注入也容易被过度解读。vcan、SocketCAN 错误消息和真实控制器状态属于不同层，测试报告必须说清楚注入点和能够证明的范围。 选择故障层级 → 注入可识别事件 → 观察状态机 → 验证恢复与发送上界 → 声明边界 应用层 ACK、反馈与 watchdog SocketCAN 错误消息接口 物理总线 控制器与电气状态 软件层适合验证什么 可复现注入适合覆盖 ACK 丢失、迟到、重复、反馈停滞、watchdog 超时、解码错误和应用可见的错误消息。它能验证上层是否进入预期状态、停止继续发送业务命...</summary>
+  </entry>
+  <entry>
+    <title>多模块协作怎样少靠口头约定：Schema 与确定性回放</title>
+    <id>https://quchaosheng.github.io/2026/08/21/schema-and-deterministic-replay/</id>
+    <link href="https://quchaosheng.github.io/2026/08/21/schema-and-deterministic-replay/"/>
+    <published>2026-08-21T12:30:00.000Z</published>
+    <updated>2026-08-21T12:30:00.000Z</updated>
+    <summary type="html">多人并行开发机器人系统时，最常见的摩擦不是代码写不出来，而是模块对字段、版本、启动顺序和失败语义的理解逐渐漂移。接口文档如果只靠自然语言，很难及时发现“双方都能运行，但理解不同”。 我的做法是把跨模块消息变成可检查的 schema，并把关键状态变化写成追加式事件，以固定输入进行确定性回放。 Schema 校验输入 → 模块处理 → 追加事件 → 固定 seed 回放 → 比较状态与顺序 合同 约束结构与版本 事件 保存身份与因果 回放 隔离输出并复核判定 Schema 是边界合同 Schema 应约束必填字段、枚举、范围、版本和条件关系，并为未知版...</summary>
+  </entry>
+  <entry>
+    <title>ROS 2 长任务的 deadline 与 cancel：预算要逐层传递</title>
+    <id>https://quchaosheng.github.io/2026/08/20/ros2-deadline-cancel-budget/</id>
+    <link href="https://quchaosheng.github.io/2026/08/20/ros2-deadline-cancel-budget/"/>
+    <published>2026-08-20T12:30:00.000Z</published>
+    <updated>2026-08-20T12:30:00.000Z</updated>
+    <summary type="html">机器人任务通常不是一次函数调用，而是由规划、控制、设备通信和状态确认组成的长链路。每一层如果都有自己的超时，却不知道父任务还剩多少预算，最终就会出现上层已经放弃、下层仍在执行的“幽灵任务”。 父任务建立 deadline → 子步骤读取剩余预算 → 超时触发取消 → 停止并确认终态 父任务 维护绝对 deadline 子任务 消费剩余预算 设备层 停止并确认状态 deadline 比多个 timeout 更清楚 父层记录一个基于单调时钟的绝对 deadline。每个子 Action、设备请求和重试只使用剩余时间，不重新获得完整预算。这样可以保证嵌套...</summary>
+  </entry>
+  <entry>
+    <title>驱动卸载偶发卡死：生命周期问题要按所有权逆序处理</title>
+    <id>https://quchaosheng.github.io/2026/08/19/driver-remove-lifecycle-order/</id>
+    <link href="https://quchaosheng.github.io/2026/08/19/driver-remove-lifecycle-order/"/>
+    <published>2026-08-19T12:30:00.000Z</published>
+    <updated>2026-08-19T12:30:00.000Z</updated>
+    <summary type="html">驱动 remove 路径很容易在“正常运行”测试中被忽略。真正麻烦的是卸载时仍有中断、work、timer、DMA completion 或用户调用在路上：一边释放资源，另一边又重新入队，偶发卡死就出现了。 处理这类问题时，我会先画出谁产生事件、谁持有对象、谁可能睡眠，再按所有权逆序关闭。 拒绝新入口 → 关闭硬件事件源 → 同步在途回调 → 取消延后工作 → 释放资源 生产者 IRQ、timer 与用户入口 在途工作 同步回调与引用 所有权 逆序释放资源 先停生产者，再清消费者 如果先 cancel work，却没有屏蔽能再次安排 work 的 ...</summary>
+  </entry>
+  <entry>
+    <title>BSP Bring-up 的排障顺序：从原理图走到真实读写</title>
+    <id>https://quchaosheng.github.io/2026/08/18/bsp-bringup-evidence-order/</id>
+    <link href="https://quchaosheng.github.io/2026/08/18/bsp-bringup-evidence-order/"/>
+    <published>2026-08-18T12:30:00.000Z</published>
+    <updated>2026-08-18T12:30:00.000Z</updated>
+    <summary type="html">板级适配最耗时间的地方，往往不是某个 API 不会用，而是硬件描述、运行镜像和驱动日志之间没有建立固定检查顺序。我的经验是先把原理图事实整理成资源表，再把每个事实映射到设备树和运行证据。 原理图资源 → DTS 描述 → 运行 DTB → 驱动匹配 → 真实功能 硬件事实 供电、时钟、复位与总线 软件描述 DTB 与驱动匹配 运行证据 日志、波形与真实读写 编译成功只是起点 资源表至少包括供电、时钟、复位、引脚、总线地址和中断。DTS 能编译，不代表板子运行了这份 DTB；节点存在，也不代表 regulator、clock、reset 和 pinc...</summary>
+  </entry>
+  <entry>
+    <title>多源采集平台怎么拆：按故障边界，而不是按文件夹</title>
+    <id>https://quchaosheng.github.io/2026/08/17/modular-multisource-data-pipeline/</id>
+    <link href="https://quchaosheng.github.io/2026/08/17/modular-multisource-data-pipeline/"/>
+    <published>2026-08-17T12:30:00.000Z</published>
+    <updated>2026-08-17T12:30:00.000Z</updated>
+    <summary type="html">机器人采集系统会同时面对相机、传感器、控制状态和存储。它们的频率、数据量、时间戳和失败方式都不同。把所有逻辑放进一个进程，开始时简单，后期却很难隔离慢设备、编码抖动和磁盘压力。 我更倾向按职责和故障边界拆成四类角色：设备接入负责生命周期与原始数据，编码器负责格式转换，组装器按时间与任务语义形成一个 Episode，存储端负责有界落盘与结果清单。 设备接入 → 编码转换 → Episode 组装 → 存储与清单 接入 保留设备差异 队列 容量与背压可见 清单 记录完整性与版本 插件接口不能抹平设备差异 统一接口适合约束启动、停止、状态和错误传播，但不...</summary>
+  </entry>
+  <entry>
+    <title>ACK 不等于完成：设备命令为什么要分三阶段</title>
+    <id>https://quchaosheng.github.io/2026/08/16/ack-is-not-completion/</id>
+    <link href="https://quchaosheng.github.io/2026/08/16/ack-is-not-completion/"/>
+    <published>2026-08-16T12:30:00.000Z</published>
+    <updated>2026-08-16T12:30:00.000Z</updated>
+    <summary type="html">设备控制接口最容易产生的一类误判，是把“发送成功”“收到 ACK”和“设备达到目标状态”当成同一件事。它们属于不同边界，失败模式也不同。 请求已发送 → 收到匹配 ACK → 回读设备终态 → 业务判定完成 request_id 绑定请求生命周期 ACK 只证明协议确认 终态 由新鲜反馈确认 三个阶段各自证明什么 发送成功通常只表示数据进入本地协议栈或驱动队列。应用层 ACK 表示对端识别了某个请求，但可能尚未执行。终态反馈才回答设备是否到达目标位置、模式或清障状态。即使三者都成功，也不自动等同于物理安全认证。 因此，请求需要可匹配的标识。迟到 A...</summary>
+  </entry>
+  <entry>
+    <title>跨层时延怎么定位：先把一次超时拆成三段</title>
+    <id>https://quchaosheng.github.io/2026/08/15/cross-layer-latency-segmentation/</id>
+    <link href="https://quchaosheng.github.io/2026/08/15/cross-layer-latency-segmentation/"/>
+    <published>2026-08-15T12:30:00.000Z</published>
+    <updated>2026-08-15T12:30:00.000Z</updated>
+    <summary type="html">一次控制回调超时，表面上只有一个总耗时。直接看 CPU 利用率或某一行日志，往往会把排队、调度和执行混在一起。我的做法是先建立统一事件时间线，再把一次请求拆成三个可验证区间。 进入业务队列 → 线程变为 runnable → 线程获得 CPU → 回调执行完成 业务事件 标记请求与阶段 调度事件 观察 wakeup 和 switch 证据质量 记录时钟与丢失 三段分别回答什么 队列等待 回答执行器或任务系统有没有积压； runnable-to-running 回答线程已经可运行却为何迟迟没有获得 CPU； 回调执行 回答函数本身、锁、I&amp;#x2F;...</summary>
+  </entry>
+  <entry>
+    <title>共享数据不是“能读到”就够了：版本化快照的设计思路</title>
+    <id>https://quchaosheng.github.io/2026/08/14/versioned-snapshot-for-shared-data/</id>
+    <link href="https://quchaosheng.github.io/2026/08/14/versioned-snapshot-for-shared-data/"/>
+    <published>2026-08-14T12:30:00.000Z</published>
+    <updated>2026-08-14T12:30:00.000Z</updated>
+    <summary type="html">在一类高频状态采集项目里，我遇到的核心问题并不是“怎样把数据放进共享内存”，而是读者怎样判断自己拿到的是 布局兼容、内容完整、仍然新鲜 的一份数据。共享内存只解决地址空间之间的数据通路，不会自动提供消息边界、一致快照或生产者生命周期。 本文只讨论可复用的设计思路。具体字段、采样频率、设备标识、内存布局和业务协议均不展开。 验证布局版本 → 读取版本号 → 复制快照 → 重读版本号 → 判断是否接受 版本头 拒绝不兼容布局 快照协议 识别并发写入 活性字段 区分进程和业务状态 先把三个问题分开 第一是 兼容性 。读写双方可能来自不同版本，必须用 ma...</summary>
+  </entry>
+  <entry>
+    <title>边缘模型升级与回滚：签名、兼容性和灰度发布怎样接起来</title>
+    <id>https://quchaosheng.github.io/2026/08/14/ai-robot-edge-model-ota-rollback/</id>
+    <link href="https://quchaosheng.github.io/2026/08/14/ai-robot-edge-model-ota-rollback/"/>
+    <published>2026-08-14T01:30:00.000Z</published>
+    <updated>2026-08-14T01:30:00.000Z</updated>
+    <summary type="html">模型更新后，设备能启动，推理进程却在加载 engine 时退出。更麻烦的是，部分设备已经换成新模型，另一部分还在旧版本，现场日志看起来像两个不同的产品。模型文件未必损坏，发布单元却散了：模型、TensorRT、GPU 架构、预处理和配置各走各的版本。 机器人上的模型升级要有回滚路径。签名只能证明文件来自某个发布者，不能证明它适合这台设备；兼容性检查只能筛掉明显不匹配，不能替代小流量运行和任务指标验收。发布系统需要把身份、版本、健康检查和回滚状态连起来。 生成带清单的模型包 → 验证签名和设备兼容性 → 写入备用分区 → 小流量启动并观察健康指标 →...</summary>
+  </entry>
   <entry>
     <title>生产事故复盘：七轴机械臂 DDS-RPC 偶发超时的定位与修复</title>
     <id>https://quchaosheng.github.io/2026/08/13/dds-rpc-timeout-debugging/</id>
@@ -45,125 +165,5 @@
     <published>2026-08-13T09:36:00.000Z</published>
     <updated>2026-08-13T09:36:00.000Z</updated>
     <summary type="html">证据边界 公开项目当前主要提供 vcan 与故障注入层面的验证，不等同于真实七轴机械臂、物理 CAN 总线或量产环境。本文中的示波器记录、故障频率和修复后数字没有随公开仓库提供原始数据，应作为排查案例而非公开可复现结论。 复现偶发卡顿 → 检查物理层 → 分析错误帧与计数器 → 检查 SocketCAN 接收路径 → 核对业务响应时序 物理层 终端电阻、线长、波形和总线速率。 协议层 ACK bit、仲裁、错误帧、error-passive 与 bus-off。 内核层 控制器 FIFO、NAPI/offload 队列、socket 缓冲和驱动统计...</summary>
-  </entry>
-  <entry>
-    <title>事件溯源在机器人系统中的可审计性设计</title>
-    <id>https://quchaosheng.github.io/2026/08/13/robot-event-sourcing-auditability/</id>
-    <link href="https://quchaosheng.github.io/2026/08/13/robot-event-sourcing-auditability/"/>
-    <published>2026-08-13T09:35:00.000Z</published>
-    <updated>2026-08-13T09:35:00.000Z</updated>
-    <summary type="html">证据边界 公开项目 workbench-world-model 展示了事件存储、投影和故障注入方向；本文中的数据库规模、ISO 适用表述和性能数字仍需结合具体部署、测试记录与合规评估验证。 命令进入系统 → 追加不可变事件 → 更新投影 → 周期生成快照 → 按事件回放故障 Event Store 按顺序追加事实，不原地覆盖历史。 Projection 把事件流转换为面向查询的当前状态。 Snapshot 缩短重放时间，但不能替代原始事件。 Version 乐观并发控制防止并行写入互相覆盖。 Replay 从相同事件恢复状态并定位因果链。 审计 记...</summary>
-  </entry>
-  <entry>
-    <title>VLA 规划接入机器人：动作候选、人工接管和可取消状态机</title>
-    <id>https://quchaosheng.github.io/2026/08/13/ai-robot-vla-human-intervention-state-machine/</id>
-    <link href="https://quchaosheng.github.io/2026/08/13/ai-robot-vla-human-intervention-state-machine/"/>
-    <published>2026-08-13T01:30:00.000Z</published>
-    <updated>2026-08-13T01:30:00.000Z</updated>
-    <summary type="html">把视觉语言模型接到机械臂上，演示往往很顺：给一句“把红杯子放到托盘”，模型返回一串动作，机械臂开始执行。真正接近现场后，问题变成了另一种形式。目标被遮住了，动作执行到一半有人走进来，模型给了一个格式正确但不可达的位姿，或者网络断了却没有取消正在运行的任务。 VLA 的输出不应该直接变成关节命令。中间至少需要一个任务接口，负责约束、校验、取消、人工接管和审计。ROS 2 Action 的反馈、取消和结果语义适合承载这层接口，但它本身不会替你做安全判断。 读 RT-2、Diffusion Policy、Octo 或 OpenVLA 时，可以把它们看成几...</summary>
-  </entry>
-  <entry>
-    <title>STOP 的 ACK 为什么不能和业务命令的 ACK 混在一起</title>
-    <id>https://quchaosheng.github.io/2026/08/12/stop-ack-command-id-namespace/</id>
-    <link href="https://quchaosheng.github.io/2026/08/12/stop-ack-command-id-namespace/"/>
-    <published>2026-08-12T01:30:00.000Z</published>
-    <updated>2026-08-12T01:30:00.000Z</updated>
-    <summary type="html">我排查取消后的偶发 ACK 异常时，最危险的假设是“收到一条格式正确的响应，就可以结束当前等待”。STOP 也是 CAN 命令，也会产生 ACK。如果 STOP 与业务命令复用 command-id，迟到的 STOP ACK 可能进入下一次业务等待窗口，被解释成“设备确认执行业务”。 这类错误不会总是表现为超时。它可能让任务更快成功，因此比明显失败更难发现。 发送业务命令 → 触发安全停车 → 分配 0x8000+ ID → 按 expected ID 过滤 两套相关性约束 命名空间避免合法 ID 重叠，等待上下文避免迟到帧污染当前请求。 业务 1...</summary>
-  </entry>
-  <entry>
-    <title>三维场景记忆的显存预算：体素地图为什么越跑越大</title>
-    <id>https://quchaosheng.github.io/2026/08/11/ai-robot-voxel-memory-budget/</id>
-    <link href="https://quchaosheng.github.io/2026/08/11/ai-robot-voxel-memory-budget/"/>
-    <published>2026-08-11T01:30:00.000Z</published>
-    <updated>2026-08-11T01:30:00.000Z</updated>
-    <summary type="html">机器人刚启动时避障正常，跑了十几分钟后 GPU 内存不断上涨，最后要么丢帧，要么地图更新直接停住。另一个看似相反的现象是，内存没有上涨，旧障碍却一直留在地图里。两种问题都和“三维记忆”有关，但一个是空间没有回收，一个是清除策略没有生效。 体素地图不是一张静态图片。相机每次观测都会更新一批体素块，位姿、分辨率、最大观测距离、动态障碍物清除和 ESDF 计算都会影响存储量。把地图当成无限大的缓存，最终一定会遇到显存或尾延迟问题。 固定体素尺寸和观测范围 → 记录活跃体素块与显存 → 验证障碍物清除规则 → 限制地图窗口和更新频率 → 在长时间运行中复测...</summary>
-  </entry>
-  <entry>
-    <title>Gazebo 无显示 CI 为何偶发超时：从相机 0 帧到 QoS 启动竞态</title>
-    <id>https://quchaosheng.github.io/2026/08/10/gazebo-headless-camera-ci/</id>
-    <link href="https://quchaosheng.github.io/2026/08/10/gazebo-headless-camera-ci/"/>
-    <published>2026-08-10T14:45:00.000Z</published>
-    <updated>2026-08-10T14:45:00.000Z</updated>
-    <summary type="html">Gazebo 在 CI 里正常启动， /camera/camera_info 也收到了一条消息，但图像计数始终是 0。修完渲染路径后，同一套测试又出现“有时 16 秒通过，有时等满 180 秒”的现象。它们不是同一个问题：前者发生在 Gazebo 相机与 ROS 2 bridge 之间，后者是测试错过了一条 transient-local 状态消息。 这个问题来自 ros2-apriltag-docking-demo 的真实 CI 排障。最初使用 server-only 参数后，测试记录为 Image messages received: 0 ，而...</summary>
-  </entry>
-  <entry>
-    <title>函数返回 OK，为什么机器人任务仍然可能失败</title>
-    <id>https://quchaosheng.github.io/2026/08/10/robot-task-completion-needs-evidence/</id>
-    <link href="https://quchaosheng.github.io/2026/08/10/robot-task-completion-needs-evidence/"/>
-    <published>2026-08-10T14:30:00.000Z</published>
-    <updated>2026-08-10T14:30:00.000Z</updated>
-    <summary type="html">工具函数返回 OK ，并不等于机器人已经完成了任务。它最多说明某一层接受了请求，或者一次调用没有在本地抛出错误。命令可能还在队列里，执行器可能没有动作，传感器也可能只看到了一个过期状态。把“调用成功”直接翻译成“任务完成”，会让一个接口层事实越过设备、环境和时间边界。 我在整理 workbench-desk-robot 的任务契约时，把完成判定拆成了请求、执行和验证三个阶段。当前仓库用 11 个 schema 约束输入输出，以 12 个冻结场景和 24 个扩展场景覆盖关键状态，再用五类共 50 个 golden task 检查任务语义；26 个危险...</summary>
-  </entry>
-  <entry>
-    <title>TensorRT FP16 和 INT8 精度回归：别只看推理时间</title>
-    <id>https://quchaosheng.github.io/2026/08/10/ai-robot-tensorrt-precision-regression/</id>
-    <link href="https://quchaosheng.github.io/2026/08/10/ai-robot-tensorrt-precision-regression/"/>
-    <published>2026-08-10T01:30:00.000Z</published>
-    <updated>2026-08-10T01:30:00.000Z</updated>
-    <summary type="html">模型换成 TensorRT 以后，FPS 上去了，机器人却更容易把相似物体认错。很多团队到这一步才开始比较几张输出图，结果很难定位：问题可能来自 FP16 的累积误差、INT8 校准集、动态 shape、算子替换，也可能只是预处理的颜色顺序变了。 精度回归应该和性能回归分开测。先固定输入和预处理，把原始框架输出当作参考；再逐层比较 TensorRT 输出；最后把差异放进真正的任务指标，例如抓取目标是否选对、深度排序是否改变、控制器拒绝率是否上升。单独报告“平均误差很小”不够。 锁定输入和预处理 → 保存 FP32 参考输出 → 逐层定位差异 → 重...</summary>
-  </entry>
-  <entry>
-    <title>提交方超时了，执行方还在跑：一个请求槽的回收竞态</title>
-    <id>https://quchaosheng.github.io/2026/08/09/net-exec-timeout-abandoned-slot/</id>
-    <link href="https://quchaosheng.github.io/2026/08/09/net-exec-timeout-abandoned-slot/"/>
-    <published>2026-08-09T01:30:00.000Z</published>
-    <updated>2026-08-09T01:30:00.000Z</updated>
-    <summary type="html">net_exec_submit() 把回调提交给网络线程，并允许提交方等待完成。正常路径很简单，难点在超时：提交方准备返回时，请求可能仍在队列里，也可能已经进入回调。 如果提交方一超时就清空槽位，下一个请求可能立即复用同一份 proc 、 arg 和完成信号量，而工作线程仍持有旧请求的指针。这会把一次普通超时变成槽位复用竞态。反过来，如果超时后谁都不回收，固定的八个请求槽很快会耗尽。 提交请求 → 等待完成 → 超时标记 abandoned → 执行方回收槽位 谁拥有回收权 工作线程最终确认请求不再使用后，才清空可复用槽位。 queued 队列仍持...</summary>
-  </entry>
-  <entry>
-    <title>为什么我给 PMP 探针配了一个合法的页表映射</title>
-    <id>https://quchaosheng.github.io/2026/08/08/pmp-valid-pte-probe/</id>
-    <link href="https://quchaosheng.github.io/2026/08/08/pmp-valid-pte-probe/"/>
-    <published>2026-08-08T01:30:00.000Z</published>
-    <updated>2026-08-08T01:30:00.000Z</updated>
-    <summary type="html">我想验证普通 S 模式内核不能访问 trusted RAM。第一次描述这个测试时，我很快发现“访问失败了”并不能证明 PMP 生效。缺页、PTE 权限错误、地址未映射和 PMP 拒绝都会触发异常。若探针只等一个 trap，它最多证明某一层拒绝了访问。 为了让结论收敛到 PMP，我故意给探针安装了一条合法的 Sv39 映射。 映射探针 VA → 完成 Sv39 翻译 → 触发 R/W/X 访问 → 核对 scause/stval 先排除页表 合法 PTE 让访问穿过分页，随后由 PMP 成为拒绝点。 VA 0x40000000，独立探针入口。 PTE...</summary>
-  </entry>
-  <entry>
-    <title>父子超时预算错配：一次 113 覆盖 204 的排障记录</title>
-    <id>https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/</id>
-    <link href="https://quchaosheng.github.io/2026/08/07/parent-child-timeout-budget-error-code/"/>
-    <published>2026-08-07T01:30:00.000Z</published>
-    <updated>2026-08-07T01:30:00.000Z</updated>
-    <summary type="html">我在一轮取消链路回归里遇到过一个很像调度抖动的问题。同一个故障注入场景，有时返回父层的 SAFE_STOP/113 ，有时返回设备层的 SAFE_STOP/204 。设备层明明已经进入 STOP 流程，最终错误码却不稳定。 当时父任务的取消确认预算和子任务的 STOP ACK 等待预算都配置为 500ms 。两个计时器几乎同时起跑，谁先到期，谁就更可能决定最终 Action result。父层先结束时，它只能报告“取消未确认”，也就是 113 。稍后设备层形成的 STOP 超时 204 已经没有机会成为最终结果。 复现 113/204 差异 → 对...</summary>
-  </entry>
-  <entry>
-    <title>触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</title>
-    <id>https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/</id>
-    <link href="https://quchaosheng.github.io/2026/08/06/ai-robot-tactile-force-ros2-safety/"/>
-    <published>2026-08-06T01:30:00.000Z</published>
-    <updated>2026-08-06T01:30:00.000Z</updated>
-    <summary type="html">机械臂夹住一个物体后，力传感器的曲线偶尔会突然归零，下一周期又跳回去。另一个常见现象是：传感器显示力已经超过阈值，夹爪却没有停。排查时不要先把锅甩给滤波器。消息是否带了正确时间，读数是否排队，阈值触发是否走了独立的安全通道，这些问题更常见。 触觉和力信号有两个用途。一个是给策略或模型提供“接触发生了”的观测，允许稍微延迟；另一个是保护人和设备，必须在可预期的时间内触发。把两者共用一个 ROS 2 话题和同一套队列，后面很难证明急停真的可靠。 确认传感器时间戳和单位 → 记录原始数据与消息年龄 → 做零点和滤波基线 → 分别设计控制阈值与急停通道 →...</summary>
-  </entry>
-  <entry>
-    <title>Rolling Shutter、曝光与运动模糊：为什么移动机器人会错一拍</title>
-    <id>https://quchaosheng.github.io/2026/08/05/ai-robot-rolling-shutter-motion-blur/</id>
-    <link href="https://quchaosheng.github.io/2026/08/05/ai-robot-rolling-shutter-motion-blur/"/>
-    <published>2026-08-05T01:30:00.000Z</published>
-    <updated>2026-08-05T01:30:00.000Z</updated>
-    <summary type="html">相机固定在桌上时，AprilTag 和目标框都很稳。把相机装到底盘上，转一个弯，画面里的标记开始倾斜，深度点云也跟着抖。模型没有换，参数也没有改，变化来自相机本身：Rolling Shutter 逐行读图，图像顶部和底部并不属于同一时刻；曝光时间太长时，单行内部又会积累一段运动轨迹。 我会先把这两个误差分开。行读出造成时间错位，曝光造成运动模糊。它们都能让位姿抖动，但修法不一样。 确认快门和时间戳含义 → 记录曝光、分辨率和帧率 → 固定相机做静态基线 → 加入已知速度的运动 → 把误差接入拒绝条件 时空图 一帧 Rolling Shutter 图...</summary>
-  </entry>
-  <entry>
-    <title>视觉伺服的端到端延迟预算：目标为什么总是慢半拍</title>
-    <id>https://quchaosheng.github.io/2026/08/04/ai-robot-visual-servo-latency-budget/</id>
-    <link href="https://quchaosheng.github.io/2026/08/04/ai-robot-visual-servo-latency-budget/"/>
-    <published>2026-08-04T01:30:00.000Z</published>
-    <updated>2026-08-04T01:30:00.000Z</updated>
-    <summary type="html">机械臂对着一个静止目标来回摆，日志里相机明明有 30 Hz，推理也写着 20 ms。这样的系统很容易被误判成“模型不够准”。我会先问另一个问题：控制器用到的那张图，究竟是几毫秒以前拍的？ 视觉伺服用的是一条链路，不是一个单独的推理时间。相机曝光、读出和传输，驱动排队，图像转换，推理，坐标变换，规划以及执行器命令，每一段都可能把结果推迟。只盯着网络或模型的平均耗时，通常看不到真正让末端抖起来的长尾。 给图像和命令打时间戳 → 拆开采集到执行的各段耗时 → 测量 P50 与 P99 → 把结果年龄接入控制截止期 → 超时则降速或拒绝 延迟预算图 闭环判...</summary>
-  </entry>
-  <entry>
-    <title>NVIDIA GR00T：机器人基础模型在系统里应该放在哪一层</title>
-    <id>https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/nvidia-groot-robot-foundation-model/"/>
-    <published>2026-07-28T06:00:00.000Z</published>
-    <updated>2026-07-28T06:00:00.000Z</updated>
-    <summary type="html">“把红杯子放到托盘里”这句话，GR00T 之类的 VLA 模型可能能给出一串看似合理的动作。目标被遮住、相机画面变旧或规划器找不到可达姿态时，模型仍可能返回格式正确的结果。它接收图像、语言和状态并生成任务或动作候选，但候选必须经过运行时校验，不能直接越过控制器和安全 I&amp;#x2F;O。 接收视觉与语言指令 → 模型生成任务/动作候选 → 运行时校验场景与约束 → 控制器执行有限动作 → 反馈结果或安全停止 边界图 模型负责提出候选，确定性的校验、规划和控制层决定动作能否落到硬件。 多模态输入 图像、语言和机器人状态都要带版本、坐标与新鲜度 VLA ...</summary>
-  </entry>
-  <entry>
-    <title>DeepStream 多相机机器人：帧率正常，控制为什么还是迟钝</title>
-    <id>https://quchaosheng.github.io/2026/07/30/deepstream-multicamera-robot/</id>
-    <link href="https://quchaosheng.github.io/2026/07/30/deepstream-multicamera-robot/"/>
-    <published>2026-07-27T06:00:00.000Z</published>
-    <updated>2026-07-27T06:00:00.000Z</updated>
-    <summary type="html">前视相机的 FPS 看着很漂亮，底盘却总在拐弯后才开始刹车。检查日志才发现，侧视相机偶尔晚到一帧， nvstreammux 为了凑 batch 把前视画面留在队列里。DeepStream 能把解码、预处理、TensorRT 推理、跟踪和元数据串起来，但这些队列也会把机器人看到的世界变旧。 多路相机采集 → 硬件解码与预处理 → 组批进入 TensorRT → 目标跟踪与元数据 → ROS 2 节点消费结果 时延图 每个队列都可能让帧变旧，最终应以规划器消费时的感知年龄衡量。 采集时间戳 记录相机曝光时刻，不能在 ROS 2 发布时用 now() 替...</summary>
   </entry>
 </feed>

@@ -42,7 +42,7 @@
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"嵌入式 Bootloader：安全升级与失败回滚","description":"升级最危险的时刻不是下载完成，而是设备只剩一份可启动程序、此时恰好掉电。可靠的 Bootloader 要始终保留一份已知可用的镜像，并把新固件当作“待试运行”的候选项：只有它通过校验、正常启动并主动确认后，才成为新的默认镜像。 下载到非活动分区 → 校验哈希与签名 → 标记待试启动 → 应用自检并确认 → 失败则回滚旧镜像 镜像状态 把镜像内容和“这次...","datePublished":"2026-05-07T06:00:00.000Z","dateModified":"2026-05-07T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/embedded-bootloader-update/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式","keywords":"Bootloader, OTA, 回滚","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"嵌入式 Bootloader：安全升级与失败回滚","description":"升级最危险的时刻不是下载完成，而是设备只剩一份可启动程序、此时恰好掉电。可靠的 Bootloader 要始终保留一份已知可用的镜像，并把新固件当作“待试运行”的候选项：只有它通过校验、正常启动并主动确认后，才成为新的默认镜像。 下载到非活动分区 → 校验哈希与签名 → 标记待试启动 → 应用自检并确认 → 失败则回滚旧镜像 镜像状态 把镜像内容和“这次...","datePublished":"2026-05-07T06:00:00.000Z","dateModified":"2026-05-07T06:00:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/07/29/embedded-bootloader-update/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式","keywords":"OTA, 回滚, Bootloader","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -269,11 +269,11 @@
                         <span class="post-topics">
                             主题：
                             
-                                <a href="/tag/Bootloader/">#Bootloader</a>
-                            
                                 <a href="/tag/OTA/">#OTA</a>
                             
                                 <a href="/tag/%E5%9B%9E%E6%BB%9A/">#回滚</a>
+                            
+                                <a href="/tag/Bootloader/">#Bootloader</a>
                             
                         </span>
                     
@@ -324,6 +324,11 @@
                 <h2 id="related-posts-title">同主题继续阅读</h2>
                 <div class="related-post-list">
                     
+                        <a href="/2026/08/14/ai-robot-edge-model-ota-rollback/">
+                            <span>边缘模型升级与回滚：签名、兼容性和灰度发布怎样接起来</span>
+                            <time datetime="2026-08-14T01:30:00.000Z">2026-08-14</time>
+                        </a>
+                    
                         <a href="/2026/07/29/linux-kernel-boot/">
                             <span>Linux 内核启动：从固件到第一个用户进程</span>
                             <time datetime="2026-03-02T02:00:00.000Z">2026-03-02</time>
@@ -332,11 +337,6 @@
                         <a href="/2026/08/13/can-bus-intermittent-fault-debugging/">
                             <span>CAN 总线故障排查：从偶发卡顿到分层定位</span>
                             <time datetime="2026-08-13T09:36:00.000Z">2026-08-13</time>
-                        </a>
-                    
-                        <a href="/2026/07/29/manufacturing-test-interface/">
-                            <span>产测接口：让每块板子都能快速证明自己正常</span>
-                            <time datetime="2026-06-12T02:00:00.000Z">2026-06-12</time>
                         </a>
                     
                 </div>
@@ -348,11 +348,11 @@
                 <span class="tag">
                     
                     
-                        <a href="/tag/Bootloader/"># Bootloader</a>
-                    
                         <a href="/tag/OTA/"># OTA</a>
                     
                         <a href="/tag/%E5%9B%9E%E6%BB%9A/"># 回滚</a>
+                    
+                        <a href="/tag/Bootloader/"># Bootloader</a>
                     
                         
                 </span>
