@@ -752,8 +752,52 @@
     <lastmod>2026-09-05</lastmod>
   </url>
   <url>
+    <loc>https://quchaosheng.github.io/2026/09/06/ros2-launch-event-handlers-sequencing/</loc>
+    <lastmod>2026-09-06</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/09/07/systemd-ros2-service-restart-boundaries/</loc>
+    <lastmod>2026-09-07</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/09/08/ros2-parameters-declaration-lifecycle/</loc>
+    <lastmod>2026-09-08</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/09/09/urdf-robot-state-publisher-tf-tree/</loc>
+    <lastmod>2026-09-09</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/09/10/false-sharing-cache-line-racing/</loc>
+    <lastmod>2026-09-10</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/09/11/perf-record-offcpu-flamegraph/</loc>
+    <lastmod>2026-09-11</lastmod>
+  </url>
+  <url>
     <loc>https://quchaosheng.github.io/2026/09/12/ros2-control-hardware-interface-deadlines/</loc>
     <lastmod>2026-09-12</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/09/13/asan-tsan-build-separation/</loc>
+    <lastmod>2026-09-13</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/09/14/structured-logging-robot-evidence/</loc>
+    <lastmod>2026-09-14</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/</loc>
+    <lastmod>2026-09-15</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/09/16/ros2-clock-sim-time-consistency/</loc>
+    <lastmod>2026-09-16</lastmod>
+  </url>
+  <url>
+    <loc>https://quchaosheng.github.io/2026/09/17/cmake-target-link-libraries-scope/</loc>
+    <lastmod>2026-09-17</lastmod>
   </url>
   <url>
     <loc>https://quchaosheng.github.io/2026/09/18/hand-eye-calibration-ax-xb/</loc>

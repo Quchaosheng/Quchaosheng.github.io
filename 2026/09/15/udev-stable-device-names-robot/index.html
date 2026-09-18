@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="机器人上接了激光雷达、IMU、电机控制器和几个串口设备。开机后它们通常出现在 /dev/ttyACM0 、 /dev/ttyUSB0 这类名字下。这些名字由内核按枚举顺序分配，拔插一次、重启一次或者少接一个设备，顺序就可能改变。 把这类名字写进配置文件，故障现象通常是“开机后电机不动，但报错说找不到设备”，或者更糟：找到了设备，但其实是另一个。这篇文章...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="机器人上接了激光雷达、IMU、电机控制器和几个串口设备。开机后它们通常出现在 /dev/ttyACM0 、 /dev/ttyUSB0 这类名字下。这些名字由内核按枚举顺序分配，拔插一次、重启一次或者少接一个设备，顺序就可能改变。 把这类名字写进配置文件，故障现象通常是“开机后电机不动，但报错说找不到设备”，或者更糟：找到了设备，但其实是另一个。这篇文章...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="机器人上接了激光雷达、IMU、电机控制器和几个串口设备。开机后它们通常出现在 /dev/ttyACM0 、 /dev/ttyUSB0 这类名字下。这些名字由内核按枚举顺序分配，拔插一次、重启一次或者少接一个设备，顺序就可能改变。 把这类名字写进配置文件，故障现象通常是“开机后电机不动，但报错说找不到设备”，或者更糟：找到了设备，但其实是另一个。这篇文章...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置","description":"机器人上接了激光雷达、IMU、电机控制器和几个串口设备。开机后它们通常出现在 /dev/ttyACM0 、 /dev/ttyUSB0 这类名字下。这些名字由内核按枚举顺序分配，拔插一次、重启一次或者少接一个设备，顺序就可能改变。 把这类名字写进配置文件，故障现象通常是“开机后电机不动，但报错说找不到设备”，或者更糟：找到了设备，但其实是另一个。这篇文章...","datePublished":"2026-09-15T01:30:00.000Z","dateModified":"2026-09-15T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式Linux","keywords":"udev, 设备节点, 串口, 权限","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-09-15&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E5%B5%8C%E5%85%A5%E5%BC%8FLinux/">嵌入式Linux</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/udev/">#udev</a>
+                            
+                                <a href="/tag/%E8%AE%BE%E5%A4%87%E8%8A%82%E7%82%B9/">#设备节点</a>
+                            
+                                <a href="/tag/%E4%B8%B2%E5%8F%A3/">#串口</a>
+                            
+                                <a href="/tag/%E6%9D%83%E9%99%90/">#权限</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>机器人上接了激光雷达、IMU、电机控制器和几个串口设备。开机后它们通常出现在 <code>/dev/ttyACM0</code>、<code>/dev/ttyUSB0</code> 这类名字下。这些名字由内核按枚举顺序分配，拔插一次、重启一次或者少接一个设备，顺序就可能改变。</p>
+<p>把这类名字写进配置文件，故障现象通常是“开机后电机不动，但报错说找不到设备”，或者更糟：找到了设备，但其实是另一个。这篇文章讨论如何用稳定标识代替顺序编号，以及权限该怎么给。</p>
+<div class="note-flow"><span>读取设备唯一属性</span><i>→</i><span>编写匹配规则</span><i>→</i><span>创建稳定符号链接</span><i>→</i><span>设置属主与权限</span><i>→</i><span>重载并触发规则</span><i>→</i><span>在程序里使用稳定名</span></div>
+
+<figure class="note-visual"><figcaption><span>从顺序名到稳定名</span>匹配依据应当是设备自身属性，而不是它被枚举到的次序。</figcaption><div class="note-map"><span><b>顺序名</b><small>由内核按枚举顺序分配，重启和拔插后可能改变。</small></span><span><b>序列号</b><small>设备自带且唯一，是最稳定的匹配依据。</small></span><span><b>VID/PID</b><small>能识别型号，但同型号多台时无法区分。</small></span><span><b>物理路径</b><small>按插在哪个端口区分，适合固定安装的整机。</small></span><span><b>符号链接</b><small>规则创建的名称，程序只依赖它。</small></span><span><b>权限</b><small>用属组和模式授权，避免依赖 root 运行。</small></span></div></figure>
+
+<h2 id="先确认设备的稳定属性"><a href="#先确认设备的稳定属性" class="headerlink" title="先确认设备的稳定属性"></a>先确认设备的稳定属性</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">udevadm info --name=/dev/ttyACM0 --attribute-walk</span><br></pre></td></tr></table></figure>
+
+<p>重点看三类属性。<code>serial</code> 是设备序列号，同型号多台设备也能区分，通常是最佳选择。<code>idVendor</code> 与 <code>idProduct</code> 识别型号，适合同型号只有一台的情况。<code>KERNELS</code> 或 <code>DEVPATH</code> 描述物理端口位置，适合设备固定焊在整机内部、端口不会变的产品。</p>
+<p>只看 <code>idVendor</code>&#x2F;<code>idProduct</code> 就写规则是常见错误。两块同型号的 USB 转串口同时接上时，两条规则会匹配到同一个设备顺序，符号链接互相覆盖，最终哪个是哪个取决于枚举顺序。</p>
+<h2 id="规则要既匹配又命名"><a href="#规则要既匹配又命名" class="headerlink" title="规则要既匹配又命名"></a>规则要既匹配又命名</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/udev/rules.d/60-robot-devices.rules</span></span><br><span class="line">SUBSYSTEM==<span class="string">&quot;tty&quot;</span>, ATTRS&#123;idVendor&#125;==<span class="string">&quot;1a86&quot;</span>, ATTRS&#123;serial&#125;==<span class="string">&quot;ROBOT-MOTOR-0001&quot;</span>, \</span><br><span class="line">  SYMLINK+=<span class="string">&quot;robot/motor&quot;</span>, MODE=<span class="string">&quot;0660&quot;</span>, GROUP=<span class="string">&quot;robot&quot;</span></span><br><span class="line">SUBSYSTEM==<span class="string">&quot;tty&quot;</span>, ATTRS&#123;idVendor&#125;==<span class="string">&quot;1a86&quot;</span>, ATTRS&#123;serial&#125;==<span class="string">&quot;ROBOT-LIDAR-0001&quot;</span>, \</span><br><span class="line">  SYMLINK+=<span class="string">&quot;robot/lidar&quot;</span>, MODE=<span class="string">&quot;0660&quot;</span>, GROUP=<span class="string">&quot;robot&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>几个要点。<code>SUBSYSTEM</code> 加上可以避免匹配到非 tty 设备。<code>ATTRS</code> 会沿设备父链向上查找，比只匹配当前节点的 <code>ATTR</code> 更常用，因为序列号往往在 USB 设备层而不是 tty 层。<code>SYMLINK</code> 使用带目录的名字能把设备集中到一处，便于查看。</p>
+<p><code>MODE</code> 和 <code>GROUP</code> 是为了避免程序必须以 root 运行。给 0660 加专用属组，比给全局可读写更安全，也让权限范围可以审计。</p>
+<h2 id="顺序名要主动修掉"><a href="#顺序名要主动修掉" class="headerlink" title="顺序名要主动修掉"></a>顺序名要主动修掉</h2><p>创建符号链接之后，<code>/dev/ttyACM0</code> 仍然存在。如果程序里还残留着顺序名，故障依旧存在。检查方式是搜索配置和启动文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -rn <span class="string">&quot;ttyACM\|ttyUSB&quot;</span> /opt/robot/config /etc/systemd/system 2&gt;/dev/null</span><br></pre></td></tr></table></figure>
+
+<p>需要改的是所有引用点：ROS 2 节点的参数、launch 文件、unit 文件的参数。只改一处，剩下的仍然按顺序名打开。</p>
+<h2 id="重载和验证"><a href="#重载和验证" class="headerlink" title="重载和验证"></a>重载和验证</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> udevadm control --reload-rules</span><br><span class="line"><span class="built_in">sudo</span> udevadm trigger</span><br><span class="line"><span class="built_in">ls</span> -l /dev/robot/</span><br><span class="line">udevadm info --name=/dev/robot/motor --query=symlink</span><br></pre></td></tr></table></figure>
+
+<p>验证时应该做拔插和重启测试，而不只是执行命令看链接是否存在。判断规则是否真的稳定，标准是多次拔插和重启后符号链接始终指向同一个物理设备。</p>
+<p>一个实用的确认方式是记录设备序列号并和打开的文件对比：先读 <code>/dev/robot/motor</code> 的序列号，再确认程序打开的就是这个设备。如果两处不一致，规则匹配范围过宽。</p>
+<h2 id="和容器、权限的关系"><a href="#和容器、权限的关系" class="headerlink" title="和容器、权限的关系"></a>和容器、权限的关系</h2><p>在容器里运行程序时，符号链接需要在容器内可见，通常通过挂载设备或转发 udev 事件实现。只挂载 <code>/dev</code> 而不处理设备属性，容器内可能看不到稳定名字。</p>
+<p>权限方面，还要注意程序运行用户的属组是否包含规则里指定的组。修改属组后需要重新登录或重启相关服务才会生效，这一点在排查“权限明明给了却打不开”时经常被忽略。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/udev.7.html">udev 手册页：规则语法与匹配键</a></li>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man8/udevadm.8.html">udevadm 手册页</a></li>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/systemd.device.5.html">systemd 设备管理说明</a></li>
+</ul>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文讨论设备命名的稳定性和权限配置方式，不包含任何具体硬件的规则文件。文中示例中的 VID、序列号需替换为实际设备属性；符号链接是否稳定必须通过重复拔插和重启验证，单次成功不足以说明问题已经解决。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/">https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/09/07/systemd-ros2-service-restart-boundaries/">
+                            <span>用 systemd 托管 ROS 2 节点：重启策略和进程组决定了故障传播</span>
+                            <time datetime="2026-09-07T01:30:00.000Z">2026-09-07</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/uboot-boot-flow/">
+                            <span>U-Boot 启动流程：从上电到跳入 Linux</span>
+                            <time datetime="2026-05-25T06:00:00.000Z">2026-05-25</time>
+                        </a>
+                    
+                        <a href="/2026/07/29/buildroot-system-image/">
+                            <span>Buildroot：生成可复现的嵌入式 Linux 系统镜像</span>
+                            <time datetime="2026-05-22T06:00:00.000Z">2026-05-22</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/udev/"># udev</a>
+                    
+                        <a href="/tag/%E8%AE%BE%E5%A4%87%E8%8A%82%E7%82%B9/"># 设备节点</a>
+                    
+                        <a href="/tag/%E4%B8%B2%E5%8F%A3/"># 串口</a>
+                    
+                        <a href="/tag/%E6%9D%83%E9%99%90/"># 权限</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/09/16/ros2-clock-sim-time-consistency/">ROS 2 时钟与 use_sim_time：回放正常但时间戳混乱的常见原因</a>
+            
+            
+            <a class="next" rel="next" href="/2026/09/14/structured-logging-robot-evidence/">日志要能当证据用：机器人程序该记录哪些字段</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>日志要能当证据用：机器人程序该记录哪些字段 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="机器人在现场出问题后，日志通常是唯一的线索。但常见的日志只能回答“出错了”，回答不了当时在做什么、哪一步超时、以及这个错误属于哪次任务。缺少这些信息，复盘就只能停留在猜测。 这篇文章讨论的是把日志当作证据来设计：不是为了记录更多，而是为了在事后能回答几个具体问题。 定义要回答的问题 → 确定必要字段 → 统一时间基准 → 贯穿任务与请求 ID → 记录...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/09/14/structured-logging-robot-evidence/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="日志要能当证据用：机器人程序该记录哪些字段 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="机器人在现场出问题后，日志通常是唯一的线索。但常见的日志只能回答“出错了”，回答不了当时在做什么、哪一步超时、以及这个错误属于哪次任务。缺少这些信息，复盘就只能停留在猜测。 这篇文章讨论的是把日志当作证据来设计：不是为了记录更多，而是为了在事后能回答几个具体问题。 定义要回答的问题 → 确定必要字段 → 统一时间基准 → 贯穿任务与请求 ID → 记录...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/09/14/structured-logging-robot-evidence/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="日志要能当证据用：机器人程序该记录哪些字段">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="日志要能当证据用：机器人程序该记录哪些字段 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="机器人在现场出问题后，日志通常是唯一的线索。但常见的日志只能回答“出错了”，回答不了当时在做什么、哪一步超时、以及这个错误属于哪次任务。缺少这些信息，复盘就只能停留在猜测。 这篇文章讨论的是把日志当作证据来设计：不是为了记录更多，而是为了在事后能回答几个具体问题。 定义要回答的问题 → 确定必要字段 → 统一时间基准 → 贯穿任务与请求 ID → 记录...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"日志要能当证据用：机器人程序该记录哪些字段","description":"机器人在现场出问题后，日志通常是唯一的线索。但常见的日志只能回答“出错了”，回答不了当时在做什么、哪一步超时、以及这个错误属于哪次任务。缺少这些信息，复盘就只能停留在猜测。 这篇文章讨论的是把日志当作证据来设计：不是为了记录更多，而是为了在事后能回答几个具体问题。 定义要回答的问题 → 确定必要字段 → 统一时间基准 → 贯穿任务与请求 ID → 记录...","datePublished":"2026-09-14T01:30:00.000Z","dateModified":"2026-09-14T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/14/structured-logging-robot-evidence/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 项目方法","keywords":"日志, 可观测性, 事件记录, 复盘","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">日志要能当证据用：机器人程序该记录哪些字段</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-09-14&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/%E9%A1%B9%E7%9B%AE%E6%96%B9%E6%B3%95/">项目方法</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E6%97%A5%E5%BF%97/">#日志</a>
+                            
+                                <a href="/tag/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/">#可观测性</a>
+                            
+                                <a href="/tag/%E4%BA%8B%E4%BB%B6%E8%AE%B0%E5%BD%95/">#事件记录</a>
+                            
+                                <a href="/tag/%E5%A4%8D%E7%9B%98/">#复盘</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>机器人在现场出问题后，日志通常是唯一的线索。但常见的日志只能回答“出错了”，回答不了当时在做什么、哪一步超时、以及这个错误属于哪次任务。缺少这些信息，复盘就只能停留在猜测。</p>
+<p>这篇文章讨论的是把日志当作证据来设计：不是为了记录更多，而是为了在事后能回答几个具体问题。</p>
+<div class="note-flow"><span>定义要回答的问题</span><i>→</i><span>确定必要字段</span><i>→</i><span>统一时间基准</span><i>→</i><span>贯穿任务与请求 ID</span><i>→</i><span>记录状态转换而非仅错误</span><i>→</i><span>可检索与可复现</span></div>
+
+<figure class="note-visual"><figcaption><span>可用日志的要素</span>时间、身份、状态与原因缺一不可，否则只能证明“出过问题”。</figcaption><div class="note-map"><span><b>时间戳</b><small>统一时钟来源，并区分事件发生与记录写入。</small></span><span><b>任务与请求 ID</b><small>把跨进程、跨层的事件串成一次执行。</small></span><span><b>状态转换</b><small>记录从什么状态进入什么状态，而不是只记录失败。</small></span><span><b>原因码</b><small>可枚举的原因分类，便于统计与对比。</small></span><span><b>上下文</b><small>当时的配置、输入摘要和版本指纹。</small></span><span><b>可检索</b><small>结构化字段比自由文本更容易被筛选。</small></span></div></figure>
+
+<h2 id="先写出你要回答的问题"><a href="#先写出你要回答的问题" class="headerlink" title="先写出你要回答的问题"></a>先写出你要回答的问题</h2><p>设计字段之前先列出复盘时要回答的问题。常见的几个：这次任务从哪台设备、哪个请求开始；在哪一步超时；超时前最后收到的有效反馈是什么；同一时刻有没有其他错误；这个问题在这台设备上出现过几次。</p>
+<p>这些问题决定了字段，而不是反过来。如果先写日志再想用途，很容易得到大量重复的“进入函数”“离开函数”记录，却在关键判断点缺少信息。</p>
+<h2 id="身份字段比详细描述更有用"><a href="#身份字段比详细描述更有用" class="headerlink" title="身份字段比详细描述更有用"></a>身份字段比详细描述更有用</h2><p>一段日志如果只有时间和文本，跨进程的同一件事就无法关联。加入以下字段能显著提高可检索性：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ts=2026-09-14T09:30:12.481+08:00</span><br><span class="line">level=WARN</span><br><span class="line">component=device_bridge</span><br><span class="line">task_id=task-2026-09-14-0007</span><br><span class="line">request_id=cmd-0042</span><br><span class="line">from=WAITING_ACK</span><br><span class="line">to=SAFE_STOP</span><br><span class="line">reason=ack_timeout</span><br><span class="line">elapsed_ms=253</span><br></pre></td></tr></table></figure>
+
+<p>关键点是 <code>task_id</code> 与 <code>request_id</code> 贯穿所有层。上层任务、设备命令和设备侧反馈都带同一个标识时，事后可以把它们按时间排成一条链，而不需要在文本里猜哪个是相关的。</p>
+<h2 id="时间基准要统一并说明来源"><a href="#时间基准要统一并说明来源" class="headerlink" title="时间基准要统一并说明来源"></a>时间基准要统一并说明来源</h2><p>不同进程使用不同的时钟来源，会让排列出来的顺序失去意义。至少要明确：时间戳来自哪个时钟、是否与外部时间同步、以及单位。</p>
+<p>对于有超时逻辑的系统，记录单调时钟差值比记录墙上时间更可靠，因为墙上时间可能被同步步骤调整。需要跨机器比较时再记录同步后的墙上时间，并标注同步状态。</p>
+<p>只记录墙上时间而不记录单调时间，会让那些“时钟跳变导致误判超时”的问题无法被发现。</p>
+<h2 id="状态转换比错误字符串更有解释力"><a href="#状态转换比错误字符串更有解释力" class="headerlink" title="状态转换比错误字符串更有解释力"></a>状态转换比错误字符串更有解释力</h2><p>只记录“ack 超时”只能说明发生了什么，记录状态转换才能说明系统当时如何理解这件事。上面的示例中 <code>from</code>、<code>to</code> 和 <code>reason</code> 三项组合，既能做统计也能做流程重建。</p>
+<p>原因码建议使用可枚举的集合，而不是自由文本。自由文本适合补充细节，不适合聚合分析。一个稳定的原因码集合，能直接支持“这台设备最近两周最常出现哪种停止原因”这类问题。</p>
+<h2 id="高频路径上的日志要有限制"><a href="#高频路径上的日志要有限制" class="headerlink" title="高频路径上的日志要有限制"></a>高频路径上的日志要有限制</h2><p>机器人程序里有一部分日志出现在高频路径上，例如每次控制周期或每帧处理。在这些位置无差别打印会改变时序，让原本要观察的性能问题被日志本身掩盖。</p>
+<p>可行的做法是分层：正常路径只在状态变化时记录，异常路径按原因码记录并做限流，详细跟踪通过可运行时开启的开关控制。限流要在日志里显式说明“已丢弃 N 条”，否则事后无法知道记录是否完整。</p>
+<h2 id="和可复现性的关系"><a href="#和可复现性的关系" class="headerlink" title="和可复现性的关系"></a>和可复现性的关系</h2><p>日志能让问题可解释，但不一定能让问题可复现。要复现，需要记录输入和环境：当时的配置、软件版本、以及关键输入数据是否被保存。</p>
+<p>如果一次超时与某个传感器输入相关，而没有保存当时的输入，那么日志只能说明超时发生，无法重放。此时补充数据录制比增加日志更有效。两者是互补关系：日志说明发生了什么事，录制数据说明为什么会发生。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Logging.html">ROS 2 日志与 rcutils 日志接口</a></li>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man1/journalctl.1.html">systemd journal 字段与查询</a></li>
+<li><a target="_blank" rel="noopener" href="https://opentelemetry.io/docs/specs/otel/logs/data-model/">OpenTelemetry 日志数据模型（字段组织参考）</a></li>
+</ul>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文讨论日志字段设计与记录策略，不包含任何具体系统的日志样例数据。字段集合需要按要回答的问题裁剪；日志能证明系统当时如何判断，不能证明物理世界发生了什么，涉及执行器行为的结论仍需设备侧反馈或独立测量支持。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/09/14/structured-logging-robot-evidence/">https://quchaosheng.github.io/2026/09/14/structured-logging-robot-evidence/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/29/embedded-logging/">
+                            <span>嵌入式日志系统：在可观测性与实时性之间取舍</span>
+                            <time datetime="2026-04-29T06:00:00.000Z">2026-04-29</time>
+                        </a>
+                    
+                        <a href="/2026/08/14/versioned-snapshot-for-shared-data/">
+                            <span>共享数据不是“能读到”就够了：版本化快照的设计思路</span>
+                            <time datetime="2026-08-14T12:30:00.000Z">2026-08-14</time>
+                        </a>
+                    
+                        <a href="/2026/09/18/ros2-lifecycle-node-state-machine/">
+                            <span>ROS 2 生命周期节点：为什么“启动完成”不能只靠一个 bool</span>
+                            <time datetime="2026-09-18T01:30:00.000Z">2026-09-18</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E6%97%A5%E5%BF%97/"># 日志</a>
+                    
+                        <a href="/tag/%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7/"># 可观测性</a>
+                    
+                        <a href="/tag/%E4%BA%8B%E4%BB%B6%E8%AE%B0%E5%BD%95/"># 事件记录</a>
+                    
+                        <a href="/tag/%E5%A4%8D%E7%9B%98/"># 复盘</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/09/15/udev-stable-device-names-robot/">udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置</a>
+            
+            
+            <a class="next" rel="next" href="/2026/09/13/asan-tsan-build-separation/">ASan 与 TSan：内存错误和数据竞争为什么不能在同一份构建里检查</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

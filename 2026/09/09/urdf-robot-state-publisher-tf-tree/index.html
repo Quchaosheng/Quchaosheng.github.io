@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>robot_state_publisher 与 URDF：TF 树错了，先查模型而不是查标定 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="机器人定位结果看起来有系统性偏差时，直觉会先去怀疑标定。但相当一部分“标定不准”的现象，实际来自 TF 树本身错了：某个坐标系根本不存在、父子关系接反了、或者关节值没有真正驱动对应的变换。 这篇文章按“先确认树结构，再确认数值来源”的顺序展开，因为在一个结构错误的 TF 树上做标定，只会把结构问题掩盖得更深。 URDF 描述连杆与关节 → robot_...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/09/09/urdf-robot-state-publisher-tf-tree/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="robot_state_publisher 与 URDF：TF 树错了，先查模型而不是查标定 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="机器人定位结果看起来有系统性偏差时，直觉会先去怀疑标定。但相当一部分“标定不准”的现象，实际来自 TF 树本身错了：某个坐标系根本不存在、父子关系接反了、或者关节值没有真正驱动对应的变换。 这篇文章按“先确认树结构，再确认数值来源”的顺序展开，因为在一个结构错误的 TF 树上做标定，只会把结构问题掩盖得更深。 URDF 描述连杆与关节 → robot_...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/09/09/urdf-robot-state-publisher-tf-tree/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="robot_state_publisher 与 URDF：TF 树错了，先查模型而不是查标定">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="robot_state_publisher 与 URDF：TF 树错了，先查模型而不是查标定 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="机器人定位结果看起来有系统性偏差时，直觉会先去怀疑标定。但相当一部分“标定不准”的现象，实际来自 TF 树本身错了：某个坐标系根本不存在、父子关系接反了、或者关节值没有真正驱动对应的变换。 这篇文章按“先确认树结构，再确认数值来源”的顺序展开，因为在一个结构错误的 TF 树上做标定，只会把结构问题掩盖得更深。 URDF 描述连杆与关节 → robot_...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"robot_state_publisher 与 URDF：TF 树错了，先查模型而不是查标定","description":"机器人定位结果看起来有系统性偏差时，直觉会先去怀疑标定。但相当一部分“标定不准”的现象，实际来自 TF 树本身错了：某个坐标系根本不存在、父子关系接反了、或者关节值没有真正驱动对应的变换。 这篇文章按“先确认树结构，再确认数值来源”的顺序展开，因为在一个结构错误的 TF 树上做标定，只会把结构问题掩盖得更深。 URDF 描述连杆与关节 → robot_...","datePublished":"2026-09-09T01:30:00.000Z","dateModified":"2026-09-09T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/09/urdf-robot-state-publisher-tf-tree/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"坐标系, URDF, TF, robot_state_publisher","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">robot_state_publisher 与 URDF：TF 树错了，先查模型而不是查标定</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-09-09&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/AI%E6%9C%BA%E5%99%A8%E4%BA%BA/">AI机器人</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E5%9D%90%E6%A0%87%E7%B3%BB/">#坐标系</a>
+                            
+                                <a href="/tag/URDF/">#URDF</a>
+                            
+                                <a href="/tag/TF/">#TF</a>
+                            
+                                <a href="/tag/robot-state-publisher/">#robot_state_publisher</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>机器人定位结果看起来有系统性偏差时，直觉会先去怀疑标定。但相当一部分“标定不准”的现象，实际来自 TF 树本身错了：某个坐标系根本不存在、父子关系接反了、或者关节值没有真正驱动对应的变换。</p>
+<p>这篇文章按“先确认树结构，再确认数值来源”的顺序展开，因为在一个结构错误的 TF 树上做标定，只会把结构问题掩盖得更深。</p>
+<div class="note-flow"><span>URDF 描述连杆与关节</span><i>→</i><span>robot_state_publisher 读取模型</span><i>→</i><span>订阅 joint_states</span><i>→</i><span>计算各连杆位姿</span><i>→</i><span>发布 TF 变换</span><i>→</i><span>下游按 frame 查询</span></div>
+
+<figure class="note-visual"><figcaption><span>从模型到变换</span>URDF 只描述结构，真实的关节值来自 joint_states；两者缺一，TF 树都不完整。</figcaption><div class="note-map"><span><b>link</b><small>坐标系节点，本身没有运动自由度。</small></span><span><b>joint</b><small>定义父子 link 与运动类型，是变换的来源。</small></span><span><b>URDF</b><small>静态结构描述，可用 xacro 生成，不包含运行时数值。</small></span><span><b>joint_states</b><small>运行时关节值，由驱动或仿真发布。</small></span><span><b>robot_state_publisher</b><small>把结构加数值算成 TF 变换。</small></span><span><b>frame_id</b><small>下游查询时使用的名字，必须与树中完全一致。</small></span></div></figure>
+
+<h2 id="先确认树本身是否连通"><a href="#先确认树本身是否连通" class="headerlink" title="先确认树本身是否连通"></a>先确认树本身是否连通</h2><p>第一个检查不该是标定参数，而是坐标系能不能查到、链路是否完整：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ros2 run tf2_tools view_frames</span><br><span class="line">ros2 run tf2_ros tf2_echo base_link camera_link</span><br></pre></td></tr></table></figure>
+
+<p><code>view_frames</code> 会输出一张包含全部坐标系和连接关系的图。如果相机坐标系根本不在这张图上，那么后面的定位误差都无从谈起。如果它在图上但和基座不在同一条链路上，说明中间缺了一个关节或一棵子树。</p>
+<p>常见问题包括：关节的 <code>parent</code> 和 <code>child</code> 写反，导致变换方向相反；模型里有两个 <code>base_link</code> 导致树出现分叉；以及固定关节被误写成可动关节，使静态部分被当作运行时数值。</p>
+<h2 id="数值来源必须和模型对齐"><a href="#数值来源必须和模型对齐" class="headerlink" title="数值来源必须和模型对齐"></a>数值来源必须和模型对齐</h2><p>URDF 描述的是结构，<code>/joint_states</code> 提供的是数值。两者必须按关节名对齐。名字对不上的关节不会报错，只是保持默认位置，表现为某个部件在 RViz 里静止不动。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ros2 topic <span class="built_in">echo</span> /joint_states --once</span><br><span class="line">ros2 param get /robot_state_publisher robot_description | <span class="built_in">head</span> -c 200</span><br></pre></td></tr></table></figure>
+
+<p>比对时要关注三件事：关节名是否完全一致（包括命名空间前缀）、关节值单位是否为弧度、以及 <code>joint_states</code> 的时间戳是否在推进。时间戳停住的关节值会被 TF 按过期数据处理，查询时得到外推失败或旧值。</p>
+<h2 id="固定关节与静态变换"><a href="#固定关节与静态变换" class="headerlink" title="固定关节与静态变换"></a>固定关节与静态变换</h2><p>不做运动的坐标系不需要 <code>robot_state_publisher</code> 参与，可以用静态变换发布：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ros2 run tf2_ros static_transform_publisher \</span><br><span class="line">  --x 0.1 --y 0 --z 0.3 --roll 0 --pitch 0 --yaw 0 \</span><br><span class="line">  --frame-id base_link --child-frame-id lidar_link</span><br></pre></td></tr></table></figure>
+
+<p>这里容易出现重复发布：同一个变换既有 URDF 里的固定关节，又有额外的静态发布者。两个来源的数值不一致时，下游查询到的结果取决于时序，故障表现为偶发跳变。</p>
+<p>选择原则很简单：属于机器人模型的固定关节放在 URDF 里，传感器安装外参要么全部放 URDF，要么全部用静态发布，不要混用。</p>
+<h2 id="和标定的边界"><a href="#和标定的边界" class="headerlink" title="和标定的边界"></a>和标定的边界</h2><p>TF 树正确是标定有意义的前提。如果 <code>base_link</code> 到 <code>camera_link</code> 的变换本身就错了，那么手眼标定求出的结果会把这个结构错误吸收进去，表现为“标定参数看起来怪但误差不大”，一旦结构修正就需要重新标定。</p>
+<p>因此排查顺序建议是先验证树结构和数值来源，确认静态部分符合设计，再进入标定环节。这两类问题的证据不同：结构问题看树和关节名，标定问题看残差和任务误差。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Tutorials/Intermediate/URDF/URDF-Main.html">ROS 2 URDF 教程入口</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/p/robot_state_publisher/">robot_state_publisher 包文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Tutorials/Intermediate/URDF/Using-URDF-with-Robot-State-Publisher.html">用 robot_state_publisher 发布机器人状态</a></li>
+</ul>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文讨论 TF 树结构与关节值来源的排查顺序，不包含任何具体机器人的模型文件或标定结果。文中命令用于检查结构一致性；“树正确”只能说明坐标系关系符合模型描述，不能证明标定精度或传感器数据正确。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/09/09/urdf-robot-state-publisher-tf-tree/">https://quchaosheng.github.io/2026/09/09/urdf-robot-state-publisher-tf-tree/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/09/18/hand-eye-calibration-ax-xb/">
+                            <span>手眼标定：AX = XB 为什么不能只看一次误差</span>
+                            <time datetime="2026-09-18T03:00:00.000Z">2026-09-18</time>
+                        </a>
+                    
+                        <a href="/2026/05/21/ros2-tf2-frame-time-basics/">
+                            <span>ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合</span>
+                            <time datetime="2026-05-21T01:30:00.000Z">2026-05-21</time>
+                        </a>
+                    
+                        <a href="/2026/09/05/flow-matching-diffusion-robot-policy/">
+                            <span>Flow Matching 与 Diffusion Policy：机器人为什么开始生成一段动作</span>
+                            <time datetime="2026-09-05T01:30:00.000Z">2026-09-05</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E5%9D%90%E6%A0%87%E7%B3%BB/"># 坐标系</a>
+                    
+                        <a href="/tag/URDF/"># URDF</a>
+                    
+                        <a href="/tag/TF/"># TF</a>
+                    
+                        <a href="/tag/robot-state-publisher/"># robot_state_publisher</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/09/10/false-sharing-cache-line-racing/">伪共享：两个不相干的变量为什么会互相拖慢</a>
+            
+            
+            <a class="next" rel="next" href="/2026/09/08/ros2-parameters-declaration-lifecycle/">ROS 2 参数体系：为什么 declare 之后的类型和范围不能再变</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

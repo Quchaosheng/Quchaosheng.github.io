@@ -31,12 +31,100 @@
     <summary type="html">一个机器人节点启动后到底算不算“可用”，代码里常常只有一个 initialized 或 ready 布尔值。它把三件不同的事压成了同一个变量：硬件资源有没有成功打开，配置有没有通过校验，以及节点是否已经开始真正工作。当启动失败时，外部只能看到一个还没变 true 的标志，既不知道卡在哪一步，也不知道能不能重试。 ROS 2 的生命周期节点把这种隐含状态显式化。它不是一个提升实时性的机制，也不能替开发者写正确的清理逻辑；它解决的是一件更基础的事：让“节点处于什么阶段”成为可查询、可触发、可观察的公开状态。 Unconfigured → on_conf...</summary>
   </entry>
   <entry>
+    <title>CMake 的 PUBLIC、PRIVATE 与 INTERFACE：链接关系写错了会怎样</title>
+    <id>https://quchaosheng.github.io/2026/09/17/cmake-target-link-libraries-scope/</id>
+    <link href="https://quchaosheng.github.io/2026/09/17/cmake-target-link-libraries-scope/"/>
+    <published>2026-09-17T01:30:00.000Z</published>
+    <updated>2026-09-17T01:30:00.000Z</updated>
+    <summary type="html">一个库在本地构建正常，被另一个包引用后出现找不到头文件或未定义符号。排查时发现库本身没问题，问题出在它对外声明依赖关系的方式上。CMake 用 PUBLIC 、 PRIVATE 和 INTERFACE 三个关键字描述依赖传播范围，写错会出现“自己能用、别人不能用”的现象。 这篇文章讨论这三个关键字各自的含义，以及怎么用一条命令验证依赖是否正确传播。 库内部使用依赖 → 声明传播范围 → 生成使用要求 → 下游按需继承 → 导出并被 find_package 发现 → 验证下游可独立构建 三种范围 区别在于依赖是否进入目标对外的使用要求里。 PRIV...</summary>
+  </entry>
+  <entry>
+    <title>ROS 2 时钟与 use_sim_time：回放正常但时间戳混乱的常见原因</title>
+    <id>https://quchaosheng.github.io/2026/09/16/ros2-clock-sim-time-consistency/</id>
+    <link href="https://quchaosheng.github.io/2026/09/16/ros2-clock-sim-time-consistency/"/>
+    <published>2026-09-16T01:30:00.000Z</published>
+    <updated>2026-09-16T01:30:00.000Z</updated>
+    <summary type="html">使用 rosbag2 回放数据时，图像、检测结果和 TF 都出现了，但查询坐标变换时提示数据不存在，或者延迟算出来是负数。这类问题通常不是消息缺失，而是节点之间对“现在几点”的理解不一致。 ROS 2 中的时间不是单一的。系统时间、稳态时间和仿真时间可以同时存在，节点通过参数选择使用哪一个。这篇文章讨论它们各自的语义，以及为什么混用会产生看起来矛盾的结果。 确定时间来源 → 逐节点设置 use_sim_time → 回放时广播 /clock → 消息时间戳随仿真时间 → 查询使用同一时钟 → 核对时间戳与延迟 三种时间 它们都能推进，但起点、可调整...</summary>
+  </entry>
+  <entry>
+    <title>udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置</title>
+    <id>https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/</id>
+    <link href="https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/"/>
+    <published>2026-09-15T01:30:00.000Z</published>
+    <updated>2026-09-15T01:30:00.000Z</updated>
+    <summary type="html">机器人上接了激光雷达、IMU、电机控制器和几个串口设备。开机后它们通常出现在 /dev/ttyACM0 、 /dev/ttyUSB0 这类名字下。这些名字由内核按枚举顺序分配，拔插一次、重启一次或者少接一个设备，顺序就可能改变。 把这类名字写进配置文件，故障现象通常是“开机后电机不动，但报错说找不到设备”，或者更糟：找到了设备，但其实是另一个。这篇文章讨论如何用稳定标识代替顺序编号，以及权限该怎么给。 读取设备唯一属性 → 编写匹配规则 → 创建稳定符号链接 → 设置属主与权限 → 重载并触发规则 → 在程序里使用稳定名 从顺序名到稳定名 匹配依据...</summary>
+  </entry>
+  <entry>
+    <title>日志要能当证据用：机器人程序该记录哪些字段</title>
+    <id>https://quchaosheng.github.io/2026/09/14/structured-logging-robot-evidence/</id>
+    <link href="https://quchaosheng.github.io/2026/09/14/structured-logging-robot-evidence/"/>
+    <published>2026-09-14T01:30:00.000Z</published>
+    <updated>2026-09-14T01:30:00.000Z</updated>
+    <summary type="html">机器人在现场出问题后，日志通常是唯一的线索。但常见的日志只能回答“出错了”，回答不了当时在做什么、哪一步超时、以及这个错误属于哪次任务。缺少这些信息，复盘就只能停留在猜测。 这篇文章讨论的是把日志当作证据来设计：不是为了记录更多，而是为了在事后能回答几个具体问题。 定义要回答的问题 → 确定必要字段 → 统一时间基准 → 贯穿任务与请求 ID → 记录状态转换而非仅错误 → 可检索与可复现 可用日志的要素 时间、身份、状态与原因缺一不可，否则只能证明“出过问题”。 时间戳 统一时钟来源，并区分事件发生与记录写入。 任务与请求 ID 把跨进程、跨层的...</summary>
+  </entry>
+  <entry>
+    <title>ASan 与 TSan：内存错误和数据竞争为什么不能在同一份构建里检查</title>
+    <id>https://quchaosheng.github.io/2026/09/13/asan-tsan-build-separation/</id>
+    <link href="https://quchaosheng.github.io/2026/09/13/asan-tsan-build-separation/"/>
+    <published>2026-09-13T01:30:00.000Z</published>
+    <updated>2026-09-13T01:30:00.000Z</updated>
+    <summary type="html">程序在测试里偶发崩溃，或者多线程下的结果不稳定。这时候用 sanitizer 构建来复现是很自然的想法。但把 AddressSanitizer 和 ThreadSanitizer 一起打开会直接构建失败，即使勉强打开，得到的报告也常常互相干扰。 原因不是工具实现不完善，而是两者对内存的假设根本冲突。理解这一点，才能决定在哪个阶段用哪个工具。 确定要查的问题类型 → 选择对应 sanitizer → 单独构建一份二进制 → 用固定输入复现 → 读取报告并定位 → 修复后重新验证 工具与问题对应 地址、线程与未定义行为是三类不同问题，需要各自的检测手段...</summary>
+  </entry>
+  <entry>
     <title>ros2_control 硬件接口的生命周期与实时性约束：read/write 里不能做的事，以及 watchdog 该放在哪一层</title>
     <id>https://quchaosheng.github.io/2026/09/12/ros2-control-hardware-interface-deadlines/</id>
     <link href="https://quchaosheng.github.io/2026/09/12/ros2-control-hardware-interface-deadlines/"/>
     <published>2026-09-12T01:30:00.000Z</published>
     <updated>2026-09-12T01:30:00.000Z</updated>
     <summary type="html">一个 ros2_control 硬件插件最容易被写成“把 CAN 帧发出去，再把反馈填回来”。真正难的是把生命周期、控制线程和故障恢复分开。我的 vcan DiffBot demo 使用 SystemInterface ，同时保留了虚拟电机、原始 CAN 字节验证和故障注入，因此可以把接口边界讲得比一张 API 列表更具体。 这篇文章先限定范围：当前仓库验证的是软件协议、vcan 和 SocketCAN 路径，不是实际电机、ECU HIL 或生产安全认证。代码里的 deadline 和 safe-stop 设计可以被测试，但不能自动推导出真实执行器...</summary>
+  </entry>
+  <entry>
+    <title>perf 采样入门：从 perf record 到火焰图，先分清 on-CPU 和 off-CPU</title>
+    <id>https://quchaosheng.github.io/2026/09/11/perf-record-offcpu-flamegraph/</id>
+    <link href="https://quchaosheng.github.io/2026/09/11/perf-record-offcpu-flamegraph/"/>
+    <published>2026-09-11T01:30:00.000Z</published>
+    <updated>2026-09-11T01:30:00.000Z</updated>
+    <summary type="html">程序跑得慢时，最容易得到的结论是“某个函数耗时长”。但耗时有两种来源：线程真正在 CPU 上执行，或者线程在等待别的东西让出 CPU。前者用 on-CPU 采样能看到，后者需要 off-CPU 分析。把两者混在一起看，结论经常是错的。 这篇文章按“先确认时间花在 CPU 上还是等待上”的顺序展开，因为这决定了下一步该用哪类工具。 确定慢的进程 → 采样 on-CPU 火焰图 → 判断等待是否占主导 → 必要时做 off-CPU 分析 → 定位具体阻塞点 → 修改后重新采样对比 两类时间 火焰图的宽度代表采样占比，不包含线程睡眠的时间。 on-CPU...</summary>
+  </entry>
+  <entry>
+    <title>伪共享：两个不相干的变量为什么会互相拖慢</title>
+    <id>https://quchaosheng.github.io/2026/09/10/false-sharing-cache-line-racing/</id>
+    <link href="https://quchaosheng.github.io/2026/09/10/false-sharing-cache-line-racing/"/>
+    <published>2026-09-10T01:30:00.000Z</published>
+    <updated>2026-09-10T01:30:00.000Z</updated>
+    <summary type="html">一段多线程代码里，两个线程各自更新一个独立变量，变量之间没有任何逻辑关系，也不共享锁。按直觉它们应该互不影响，但性能却比单线程还差。原因是这两个变量恰好落在同一条缓存行上，硬件必须维护一致性，于是出现了“伪共享”。 它不是数据竞争，程序结果通常仍然正确。这也是它容易被忽略的原因：功能测试全部通过，只有性能指标异常。 两个变量相邻存放 → 落在同一条缓存行 → 两个核各自写入 → 缓存行在核间来回失效 → 写入延迟显著上升 共享的是行，不是变量 缓存一致性以缓存行为单位，变量逻辑上无关并不影响硬件把它们绑定。 缓存行 通常 64 字节，是核间一致性维...</summary>
+  </entry>
+  <entry>
+    <title>robot_state_publisher 与 URDF：TF 树错了，先查模型而不是查标定</title>
+    <id>https://quchaosheng.github.io/2026/09/09/urdf-robot-state-publisher-tf-tree/</id>
+    <link href="https://quchaosheng.github.io/2026/09/09/urdf-robot-state-publisher-tf-tree/"/>
+    <published>2026-09-09T01:30:00.000Z</published>
+    <updated>2026-09-09T01:30:00.000Z</updated>
+    <summary type="html">机器人定位结果看起来有系统性偏差时，直觉会先去怀疑标定。但相当一部分“标定不准”的现象，实际来自 TF 树本身错了：某个坐标系根本不存在、父子关系接反了、或者关节值没有真正驱动对应的变换。 这篇文章按“先确认树结构，再确认数值来源”的顺序展开，因为在一个结构错误的 TF 树上做标定，只会把结构问题掩盖得更深。 URDF 描述连杆与关节 → robot_state_publisher 读取模型 → 订阅 joint_states → 计算各连杆位姿 → 发布 TF 变换 → 下游按 frame 查询 从模型到变换 URDF 只描述结构，真实的关节值来...</summary>
+  </entry>
+  <entry>
+    <title>ROS 2 参数体系：为什么 declare 之后的类型和范围不能再变</title>
+    <id>https://quchaosheng.github.io/2026/09/08/ros2-parameters-declaration-lifecycle/</id>
+    <link href="https://quchaosheng.github.io/2026/09/08/ros2-parameters-declaration-lifecycle/"/>
+    <published>2026-09-08T01:30:00.000Z</published>
+    <updated>2026-09-08T01:30:00.000Z</updated>
+    <summary type="html">把配置从代码里挪到参数，通常被当作纯粹的整理工作。但参数不只是“可运行时修改的变量”，它带有类型、默认值、约束和变更通知。如果这些信息没有被声明清楚，参数系统就无法在修改发生时判断这次改动是否合法。 这篇文章按参数的生命周期展开：声明时确定什么、修改时能校验什么、以及为什么“运行时可变”不等于“随时可改”。 declare 声明名称与类型 → 设置默认值与描述 → 附加范围约束 → 参数覆盖生效 → 参数回调校验 → 接受或拒绝变更 声明是一个契约 类型、默认值和约束在声明时固定，之后所有修改都要通过校验。 类型 声明后不可更改，整数参数不能后来变...</summary>
+  </entry>
+  <entry>
+    <title>用 systemd 托管 ROS 2 节点：重启策略和进程组决定了故障传播</title>
+    <id>https://quchaosheng.github.io/2026/09/07/systemd-ros2-service-restart-boundaries/</id>
+    <link href="https://quchaosheng.github.io/2026/09/07/systemd-ros2-service-restart-boundaries/"/>
+    <published>2026-09-07T01:30:00.000Z</published>
+    <updated>2026-09-07T01:30:00.000Z</updated>
+    <summary type="html">在开发机上，机器人程序通常由人在终端里启动；到设备上，它需要开机自启、崩溃后恢复、日志可追溯。用 systemd 托管是常见选择，但“写一个 unit 文件”和“定义清楚故障边界”是两件事。 这篇文章关注三个容易被忽略的决策：重启策略描述了哪些失败、进程组决定了停止信号发给谁、以及退出码最终如何被系统解释。它们共同决定了一个节点崩溃时，系统是局部恢复还是整体失控。 unit 定义启动命令 → 限定运行用户与权限 → 定义重启条件 → 限定进程组与信号 → 限制资源与优先级 → 日志进入 journal 托管边界 unit 文件写的是期望状态；实际恢...</summary>
+  </entry>
+  <entry>
+    <title>ROS 2 launch 事件与进程顺序：为什么 sleep 3 秒的启动脚本一定会偶发失败</title>
+    <id>https://quchaosheng.github.io/2026/09/06/ros2-launch-event-handlers-sequencing/</id>
+    <link href="https://quchaosheng.github.io/2026/09/06/ros2-launch-event-handlers-sequencing/"/>
+    <published>2026-09-06T01:30:00.000Z</published>
+    <updated>2026-09-06T01:30:00.000Z</updated>
+    <summary type="html">一个包含仿真、控制器、感知和任务节点的 launch 文件，最常见的写法是启动前几个节点，等几秒，再启动后面的。这在开发者机器上通常能跑通，在 CI 或更慢的机器上会间歇失败。原因不是等待时间不够长，而是启动脚本在用一个固定时长描述一个由事件决定的前置条件。 launch 提供了事件处理机制来表达这种条件。这篇文章按“条件是什么—谁来发出它—超时怎么办”的顺序展开，因为如果条件本身没定义清楚，换成事件也只是把轮询换了个形式。 启动前置进程 → 等待目标事件 → 事件处理触发后续动作 → 同时启动超时兜底 → 超时即失败退出 顺序的两种表达 固定延时...</summary>
   </entry>
   <entry>
     <title>BehaviorTree.CPP 到底解决了 if-else 解决不了的什么问题：从两棵 8 行的树谈固定工作流的可审查性边界</title>
@@ -77,93 +165,5 @@
     <published>2026-09-02T01:30:00.000Z</published>
     <updated>2026-09-02T01:30:00.000Z</updated>
     <summary type="html">让机器人在真实仓库里撞一百次来学习避障，代价太高；让它在仿真里撞一百次，又会遇到材质、光照、接触和传感器不够真的问题。世界模型给出第三种工具：根据当前画面、文字或动作条件生成可能的后续视频。它能扩大场景覆盖，却不会因为画面逼真就自动拥有正确动力学。 NVIDIA Cosmos 论文把世界模型做成一套平台，而不是单个视频生成器。平台包含视频清洗管线、视频 tokenizer、扩散式与自回归式预训练模型，以及面向具体 physical AI 任务的后训练示例。读这篇论文时，最值得追的不是“生成得像不像电影”，而是生成数据怎样进入训练，哪些变量必须由仿真...</summary>
-  </entry>
-  <entry>
-    <title>Gemini Robotics 论文拆解：具身推理和直接控制是两条不同路线</title>
-    <id>https://quchaosheng.github.io/2026/09/01/gemini-robotics-embodied-reasoning/</id>
-    <link href="https://quchaosheng.github.io/2026/09/01/gemini-robotics-embodied-reasoning/"/>
-    <published>2026-09-01T01:30:00.000Z</published>
-    <updated>2026-09-01T01:30:00.000Z</updated>
-    <summary type="html">机器人看到桌上有杯子，不等于它已经知道怎么抓。识别类别之后，还要选抓取位置、理解遮挡、把不同相机里的同一物体对上，再决定轨迹。Gemini Robotics 论文把这件事分成两种模型：Gemini Robotics 可以直接产生机器人动作，Gemini Robotics-ER 输出与物理世界有关的推理结果。二者名字很近，工程接口却完全不同。 多视角图像与任务指令 → ER 产生目标、空间关系或候选轨迹 → 规划器验证可达性与碰撞 → VLA 或技能控制器生成动作 → 执行中重新观测并拒绝失效计划 两条接入路线 推理模型可以当感知与规划助手，VLA ...</summary>
-  </entry>
-  <entry>
-    <title>SmolVLA 与 LeRobot：小模型怎样用异步推理跟上机器人</title>
-    <id>https://quchaosheng.github.io/2026/08/31/smolvla-lerobot-edge-deployment/</id>
-    <link href="https://quchaosheng.github.io/2026/08/31/smolvla-lerobot-edge-deployment/"/>
-    <published>2026-08-31T01:30:00.000Z</published>
-    <updated>2026-08-31T01:30:00.000Z</updated>
-    <summary type="html">实验台上的机械臂通常等得起模型，真实任务不会。推理偶尔慢 80 ms，控制线程如果跟着停 80 ms，夹爪会在半空顿一下；控制线程如果继续消费旧动作，机器人又可能对着几帧前的位置运动。SmolVLA 的“小”固然吸引人，它更值得读的部分却是异步推理：感知与动作生成一条线程，动作执行另一条线程，两边通过带时间含义的 chunk 协作。 控制线程消费当前动作队列 → 剩余动作低于水位 → 提交最新观测做异步推理 → 校验并合并新 chunk → 过期或不连续则拒绝 异步运行图 模型跑得快只是起点，队列还要回答动作属于哪一帧、何时失效、怎样替换。 Smo...</summary>
-  </entry>
-  <entry>
-    <title>π0 与 π0.5 论文拆解：VLM 怎样接上连续动作和长任务</title>
-    <id>https://quchaosheng.github.io/2026/08/28/pi0-pi05-flow-action-expert/</id>
-    <link href="https://quchaosheng.github.io/2026/08/28/pi0-pi05-flow-action-expert/"/>
-    <published>2026-08-28T01:30:00.000Z</published>
-    <updated>2026-08-28T01:30:00.000Z</updated>
-    <summary type="html">“把桌面收拾干净”对语言模型是一句话，对机械臂却可能是几分钟的状态变化。杯子先移走还是先擦桌面，垃圾袋满了怎么办，中途有人放进一个新物体，这些都不是单个动作向量能回答的问题。π0 解决连续动作怎么生成，π0.5 又往上补了一层语义子任务。两篇放在一起读，才能看见长任务为什么需要快慢两种时间尺度。 图像、语言和机器人状态进入 VLM → 预测当前语义子任务 → action expert 生成连续动作 chunk → 控制器执行并重新观测 → 完成或切换子任务 双时间尺度 语义规划回答“接下来做什么”，动作专家回答“接下来几十个控制点怎么走”。 VL...</summary>
-  </entry>
-  <entry>
-    <title>OpenVLA-OFT 论文拆解：连续动作、并行解码和控制频率怎么连起来</title>
-    <id>https://quchaosheng.github.io/2026/08/27/openvla-oft-action-chunk-continuous/</id>
-    <link href="https://quchaosheng.github.io/2026/08/27/openvla-oft-action-chunk-continuous/"/>
-    <published>2026-08-27T01:30:00.000Z</published>
-    <updated>2026-08-27T01:30:00.000Z</updated>
-    <summary type="html">把 OpenVLA 微调到一台新机械臂上，最先撞到的未必是显存。原版模型用自回归方式生成动作 token，一段动作要按序吐出来；控制程序还在等后面的 token 时，相机画面已经变旧。若只盯着 LoRA 秩和 batch size，这个延迟问题不会自己消失。 OpenVLA-OFT 研究的正是这层接口。作者没有把重点放在换一个更大的视觉语言骨干，而是比较动作解码、动作表示和训练目标，最后组合出并行解码、动作分块、连续动作表示与 L1 回归。它给出的提醒很实在：VLA 微调方案同时决定策略学得怎样，以及动作能不能按时送到控制器。 读取图像、语言和本体...</summary>
-  </entry>
-  <entry>
-    <title>从实验室到现场：AI 机器人验收报告怎样区分证据</title>
-    <id>https://quchaosheng.github.io/2026/08/25/ai-robot-acceptance-evidence/</id>
-    <link href="https://quchaosheng.github.io/2026/08/25/ai-robot-acceptance-evidence/"/>
-    <published>2026-08-25T01:30:00.000Z</published>
-    <updated>2026-08-25T01:30:00.000Z</updated>
-    <summary type="html">演示视频里机器人连续抓取了五次，现场验收却没有通过。评审问的是环境温度、模型版本、失败时怎么停、结果年龄是多少，报告里只有一张成功率截图。问题不一定是系统变差，而是报告把仿真、台架和真机证据混在了一起，读者无法知道每个结论到底由什么支持。 AI 机器人验收不该只写一个总分。感知、规划、控制和安全链路需要不同证据；成功率、P99 延迟、人工接管率和安全事件也不能互相替代。报告的任务是让别人知道“在哪些条件下观察到了什么”，以及“哪些地方还没有证据”。 定义任务和失败条件 → 固定代码、模型和设备指纹 → 分别收集仿真、台架、真机证据 → 记录成功、拒...</summary>
-  </entry>
-  <entry>
-    <title>把项目经验写成可公开文章：保留方法，删除秘密</title>
-    <id>https://quchaosheng.github.io/2026/08/25/project-evidence-chain-retrospective/</id>
-    <link href="https://quchaosheng.github.io/2026/08/25/project-evidence-chain-retrospective/"/>
-    <published>2026-08-25T01:30:00.000Z</published>
-    <updated>2026-08-25T01:30:00.000Z</updated>
-    <summary type="html">从 8 月 14 日到今天，这组札记依次整理了共享数据、跨层时延、设备确认、采集架构、BSP、驱动生命周期、任务取消、确定性回放、CAN 故障验证、视觉 Guard 和 RISC-V 边界。它们来自实际工程中反复遇到的问题，但文章刻意只留下可迁移的方法。 我如何判断一段经验能不能公开 首先删除能够识别业务和现场的信息：公司与客户名称、未公开项目名、设备序列、网络拓扑、接口地址、协议字段、日志原文和数据样本。其次删除可能暴露能力边界的参数：频率、阈值、超时、资源规模、故障统计和未公开性能结果。 最后检查结论是否越过证据。仿真结果只写仿真，软件注入只写...</summary>
-  </entry>
-  <entry>
-    <title>在 QEMU 里做 RISC-V 系统验证：配置声明与访问证据要分开</title>
-    <id>https://quchaosheng.github.io/2026/08/24/qemu-riscv-boundary-validation/</id>
-    <link href="https://quchaosheng.github.io/2026/08/24/qemu-riscv-boundary-validation/"/>
-    <published>2026-08-24T12:30:00.000Z</published>
-    <updated>2026-08-24T12:30:00.000Z</updated>
-    <summary type="html">在 RISC-V 多执行域实验中，仅仅写出一份资源配置并成功启动，不足以证明隔离成立。配置声明描述“希望怎样划分”，异常探针才回答“越界访问是否真的被拒绝”。 声明资源边界 → 完成多域启动 → 正向功能验证 → 双向越界探针 → 保存异常证据 声明 资源与执行域配置 探针 正向对照和负向访问 边界 区分 hart、DMA 与硬件 启动与隔离是两个验收项 系统能进入各自运行环境，只说明启动链、内存映射和基本调度大体可用。隔离需要从两个方向主动访问对方受保护区域，并记录异常类型、地址和发起上下文。只测一个方向，可能漏掉配置不对称。 探针自身也要合法。...</summary>
-  </entry>
-  <entry>
-    <title>rosbag2 故障回放：怎样把一次机器人超时变成可重复实验</title>
-    <id>https://quchaosheng.github.io/2026/08/24/ai-robot-rosbag2-failure-replay/</id>
-    <link href="https://quchaosheng.github.io/2026/08/24/ai-robot-rosbag2-failure-replay/"/>
-    <published>2026-08-24T01:30:00.000Z</published>
-    <updated>2026-08-24T01:30:00.000Z</updated>
-    <summary type="html">机器人在现场偶尔导航超时，回到实验室却怎么也复现不了。开发者通常会加几条日志，再跑一次任务。等真正需要分析时才发现，录包里没有相机时间戳、TF、诊断状态或控制命令，留下的只有一行“action timeout”。 rosbag2 能保存一次运行中的消息，但它不会自动让实验变得确定。要复现故障，必须提前定义录哪些话题、使用哪种 QoS、回放时是否使用仿真时间，以及哪些硬件输入需要替换成回放数据。回放的目标是重建当时的输入和状态，不是把视频重新播放一遍。 定义故障假设和截止期 → 按时间与 QoS 录制闭环输入 → 检查包内容和版本指纹 → 用仿真时间...</summary>
-  </entry>
-  <entry>
-    <title>视觉结果能看见还不够：任务准入需要持续 Guard</title>
-    <id>https://quchaosheng.github.io/2026/08/23/vision-admission-guards/</id>
-    <link href="https://quchaosheng.github.io/2026/08/23/vision-admission-guards/"/>
-    <published>2026-08-23T12:30:00.000Z</published>
-    <updated>2026-08-23T12:30:00.000Z</updated>
-    <summary type="html">视觉检测输出一个 ID 和位姿，并不意味着机器人任务可以立即执行。检测质量、时间新鲜度、坐标变换和连续性任何一项不满足，单帧结果都可能把偶然噪声变成控制动作。 我会把这些条件写成显式 Guard，并在任务运行期间持续检查，而不是只在启动瞬间检查一次。 检测候选 → 质量与身份 → 新鲜度与 TF → 连续性 → 任务准入或取消 检测 身份与质量 时空 新鲜度与坐标变换 任务 持续准入与取消 Guard 应回答可审计问题 身份是否属于允许集合？检测质量是否达到当前场景要求？消息是否足够新？目标位姿能否变换到约定坐标系？相邻观测是否出现不合理跳变？这些...</summary>
-  </entry>
-  <entry>
-    <title>SocketCAN 故障注入怎么做：先说明模拟了哪一层</title>
-    <id>https://quchaosheng.github.io/2026/08/22/socketcan-fault-injection-boundaries/</id>
-    <link href="https://quchaosheng.github.io/2026/08/22/socketcan-fault-injection-boundaries/"/>
-    <published>2026-08-22T12:30:00.000Z</published>
-    <updated>2026-08-22T12:30:00.000Z</updated>
-    <summary type="html">CAN 控制链的异常处理不能只靠拔线测试，但软件故障注入也容易被过度解读。vcan、SocketCAN 错误消息和真实控制器状态属于不同层，测试报告必须说清楚注入点和能够证明的范围。 选择故障层级 → 注入可识别事件 → 观察状态机 → 验证恢复与发送上界 → 声明边界 应用层 ACK、反馈与 watchdog SocketCAN 错误消息接口 物理总线 控制器与电气状态 软件层适合验证什么 可复现注入适合覆盖 ACK 丢失、迟到、重复、反馈停滞、watchdog 超时、解码错误和应用可见的错误消息。它能验证上层是否进入预期状态、停止继续发送业务命...</summary>
-  </entry>
-  <entry>
-    <title>多模块协作怎样少靠口头约定：Schema 与确定性回放</title>
-    <id>https://quchaosheng.github.io/2026/08/21/schema-and-deterministic-replay/</id>
-    <link href="https://quchaosheng.github.io/2026/08/21/schema-and-deterministic-replay/"/>
-    <published>2026-08-21T12:30:00.000Z</published>
-    <updated>2026-08-21T12:30:00.000Z</updated>
-    <summary type="html">多人并行开发机器人系统时，最常见的摩擦不是代码写不出来，而是模块对字段、版本、启动顺序和失败语义的理解逐渐漂移。接口文档如果只靠自然语言，很难及时发现“双方都能运行，但理解不同”。 我的做法是把跨模块消息变成可检查的 schema，并把关键状态变化写成追加式事件，以固定输入进行确定性回放。 Schema 校验输入 → 模块处理 → 追加事件 → 固定 seed 回放 → 比较状态与顺序 合同 约束结构与版本 事件 保存身份与因果 回放 隔离输出并复核判定 Schema 是边界合同 Schema 应约束必填字段、枚举、范围、版本和条件关系，并为未知版...</summary>
   </entry>
 </feed>
