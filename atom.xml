@@ -4,8 +4,112 @@
   <id>https://quchaosheng.github.io/atom.xml</id>
   <link href="https://quchaosheng.github.io/"/>
   <link href="https://quchaosheng.github.io/atom.xml" rel="self"/>
-  <updated>2026-08-25T01:30:00.000Z</updated>
+  <updated>2026-09-18T03:00:00.000Z</updated>
   <author><name>Quchaosheng</name></author>
+  <entry>
+    <title>手眼标定：AX = XB 为什么不能只看一次误差</title>
+    <id>https://quchaosheng.github.io/2026/09/18/hand-eye-calibration-ax-xb/</id>
+    <link href="https://quchaosheng.github.io/2026/09/18/hand-eye-calibration-ax-xb/"/>
+    <published>2026-09-18T03:00:00.000Z</published>
+    <updated>2026-09-18T03:00:00.000Z</updated>
+    <summary type="html">机器人要抓取一个由相机看到的物体，必须先把相机坐标系里的位置变换到机械臂坐标系。这个变换就是手眼外参。它经常被当作一次性的“标定步骤”处理：跑一段程序，得到一组参数，写进配置，然后当作已知量使用。 问题在于，外参是一个带有误差和适用范围的估计值，不是一个精确常数。它的正确性依赖于采集时的构型、运动范围和标定板的可见性。如果只报告一个最终残差，就无法判断这组参数在真正的工作空间里是否可靠。 确定相机装在腕上还是固定 → 采集多组位姿与观测 → 建立 AX = XB 约束 → 变换空间求外参 → 回到任务空间验证残差 → 记录适用范围与失效条件 标定证...</summary>
+  </entry>
+  <entry>
+    <title>ROS 2 组合节点与进程内通信：什么时候合并进程真的省掉了拷贝</title>
+    <id>https://quchaosheng.github.io/2026/09/18/ros2-composable-nodes-intra-process/</id>
+    <link href="https://quchaosheng.github.io/2026/09/18/ros2-composable-nodes-intra-process/"/>
+    <published>2026-09-18T02:10:00.000Z</published>
+    <updated>2026-09-18T02:10:00.000Z</updated>
+    <summary type="html">把多个 ROS 2 节点放进同一个容器进程，常被描述成“省掉序列化和网络传输”。这句话在特定条件下成立，在另外一些条件下几乎不成立。真正决定收益的不是用了哪个命令行，而是发布者和订阅者之间是否满足了进程内通信的前提。如果前提不满足，节点仍然在同一个进程里，数据却可能走了完整的中件间路径。 这篇文章按“先确认数据落在哪里，再讨论进程边界”的顺序展开，因为进程合并本身只是一个部署选择，它不自动改变消息的所有权和生命周期。 确认同进程 → 确认双方使用进程内通信 → 确认所有权允许移交 → 测量实际拷贝与延迟 → 再做进程合并决策 合并进程的三个前提 同...</summary>
+  </entry>
+  <entry>
+    <title>ROS 2 生命周期节点：为什么“启动完成”不能只靠一个 bool</title>
+    <id>https://quchaosheng.github.io/2026/09/18/ros2-lifecycle-node-state-machine/</id>
+    <link href="https://quchaosheng.github.io/2026/09/18/ros2-lifecycle-node-state-machine/"/>
+    <published>2026-09-18T01:30:00.000Z</published>
+    <updated>2026-09-18T01:30:00.000Z</updated>
+    <summary type="html">一个机器人节点启动后到底算不算“可用”，代码里常常只有一个 initialized 或 ready 布尔值。它把三件不同的事压成了同一个变量：硬件资源有没有成功打开，配置有没有通过校验，以及节点是否已经开始真正工作。当启动失败时，外部只能看到一个还没变 true 的标志，既不知道卡在哪一步，也不知道能不能重试。 ROS 2 的生命周期节点把这种隐含状态显式化。它不是一个提升实时性的机制，也不能替开发者写正确的清理逻辑；它解决的是一件更基础的事：让“节点处于什么阶段”成为可查询、可触发、可观察的公开状态。 Unconfigured → on_conf...</summary>
+  </entry>
+  <entry>
+    <title>ros2_control 硬件接口的生命周期与实时性约束：read/write 里不能做的事，以及 watchdog 该放在哪一层</title>
+    <id>https://quchaosheng.github.io/2026/09/12/ros2-control-hardware-interface-deadlines/</id>
+    <link href="https://quchaosheng.github.io/2026/09/12/ros2-control-hardware-interface-deadlines/"/>
+    <published>2026-09-12T01:30:00.000Z</published>
+    <updated>2026-09-12T01:30:00.000Z</updated>
+    <summary type="html">一个 ros2_control 硬件插件最容易被写成“把 CAN 帧发出去，再把反馈填回来”。真正难的是把生命周期、控制线程和故障恢复分开。我的 vcan DiffBot demo 使用 SystemInterface ，同时保留了虚拟电机、原始 CAN 字节验证和故障注入，因此可以把接口边界讲得比一张 API 列表更具体。 这篇文章先限定范围：当前仓库验证的是软件协议、vcan 和 SocketCAN 路径，不是实际电机、ECU HIL 或生产安全认证。代码里的 deadline 和 safe-stop 设计可以被测试，但不能自动推导出真实执行器...</summary>
+  </entry>
+  <entry>
+    <title>BehaviorTree.CPP 到底解决了 if-else 解决不了的什么问题：从两棵 8 行的树谈固定工作流的可审查性边界</title>
+    <id>https://quchaosheng.github.io/2026/09/05/behavior-tree-cpp-auditable-workflow/</id>
+    <link href="https://quchaosheng.github.io/2026/09/05/behavior-tree-cpp-auditable-workflow/"/>
+    <published>2026-09-05T01:30:00.000Z</published>
+    <updated>2026-09-05T01:30:00.000Z</updated>
+    <summary type="html">BehaviorTree.CPP 经常被介绍成“比一堆 if-else 更适合机器人任务”。这句话太容易让人误解：如果问题只是判断一次就调用一次函数，行为树不会凭空减少代码，反而会增加 XML、节点注册、tick 循环和 Action 胶水代码。 先把当前实现的规模说清楚。 workflows.xml 整个定义大约 8 行，只有两棵树： single_task 是 RuntimeReady -&amp;gt; ExecuteTask ， ready_then_task 是 RetryReady -&amp;gt; ExecuteTask 。两棵树各约两个节点，最长...</summary>
+  </entry>
+  <entry>
+    <title>Flow Matching 与 Diffusion Policy：机器人为什么开始生成一段动作</title>
+    <id>https://quchaosheng.github.io/2026/09/05/flow-matching-diffusion-robot-policy/</id>
+    <link href="https://quchaosheng.github.io/2026/09/05/flow-matching-diffusion-robot-policy/"/>
+    <published>2026-09-05T01:30:00.000Z</published>
+    <updated>2026-09-05T01:30:00.000Z</updated>
+    <summary type="html">抓住杯柄可以从左侧接近，也可以先绕到右侧。示教数据里两种轨迹都合理，普通 L2 回归却可能取平均，给出一条正好撞上杯子的中间路线。生成式策略处理的是这种多峰动作分布：不把所有示教压成一个均值，而是从条件分布里生成一段自洽动作。 Diffusion Policy 用迭代去噪生成动作序列，π0 一类模型则用 flow matching 学习动作空间里的向量场。两者都常与 action chunk、滚动执行配合，但训练目标、采样过程和部署时的时间预算并不相同。 图像、状态和语言形成条件 → 从随机动作 chunk 开始 → 迭代去噪或积分向量场 → 校验...</summary>
+  </entry>
+  <entry>
+    <title>SIMPLER 论文拆解：仿真评测怎样预测 VLA 的真机表现</title>
+    <id>https://quchaosheng.github.io/2026/09/04/simpler-vla-sim-evaluation/</id>
+    <link href="https://quchaosheng.github.io/2026/09/04/simpler-vla-sim-evaluation/"/>
+    <published>2026-09-04T01:30:00.000Z</published>
+    <updated>2026-09-04T01:30:00.000Z</updated>
+    <summary type="html">有五个 VLA checkpoint，真机每个跑 100 次太贵，能不能先在仿真里淘汰四个？这个问题比“仿真能不能代替真机”窄得多，也更有实际价值。SIMPLER 做的就是 real-to-sim evaluation：把原本面向真实机器人的策略放进匹配过的仿真环境，检查仿真能否恢复真机中的策略排序和失效模式。 它不是用仿真训练策略再迁移到真机。方向反过来以后，建模目标也变了：不必复制现场的每一颗螺丝，要优先匹配那些会改变策略判断与控制响应的视觉和动力学因素。 固定待比较的真实机器人策略 → 匹配控制响应与视觉输入 → 在相同任务变体中跑仿真 → ...</summary>
+  </entry>
+  <entry>
+    <title>Open X-Embodiment 与 DROID：跨机器人数据最难的是动作含义一致</title>
+    <id>https://quchaosheng.github.io/2026/09/03/robot-data-open-x-droid-schema/</id>
+    <link href="https://quchaosheng.github.io/2026/09/03/robot-data-open-x-droid-schema/"/>
+    <published>2026-09-03T01:30:00.000Z</published>
+    <updated>2026-09-03T01:30:00.000Z</updated>
+    <summary type="html">两个数据集都写着 action[0] = 0.1 ，含义可能差得很远。一个表示末端沿基座坐标系移动 0.1 米，另一个表示关节速度归一化后的 10%，还有一个可能是 100 ms 内的位姿增量。把数组补到同样长度，只解决了文件形状，没有解决动作语义。 Open X-Embodiment 和 DROID 都在扩大真实机器人数据的覆盖，但路线不同。Open X-Embodiment 聚合多机构、多机器人数据并统一格式，研究跨本体迁移；DROID 用相对统一的硬件和采集流程，去许多真实场景收集操作数据。前者把“机器人不一样”摆到台面上，后者把“环境不一样...</summary>
+  </entry>
+  <entry>
+    <title>Cosmos 世界模型论文拆解：生成未来视频以后，机器人能拿它做什么</title>
+    <id>https://quchaosheng.github.io/2026/09/02/cosmos-world-model-physical-ai/</id>
+    <link href="https://quchaosheng.github.io/2026/09/02/cosmos-world-model-physical-ai/"/>
+    <published>2026-09-02T01:30:00.000Z</published>
+    <updated>2026-09-02T01:30:00.000Z</updated>
+    <summary type="html">让机器人在真实仓库里撞一百次来学习避障，代价太高；让它在仿真里撞一百次，又会遇到材质、光照、接触和传感器不够真的问题。世界模型给出第三种工具：根据当前画面、文字或动作条件生成可能的后续视频。它能扩大场景覆盖，却不会因为画面逼真就自动拥有正确动力学。 NVIDIA Cosmos 论文把世界模型做成一套平台，而不是单个视频生成器。平台包含视频清洗管线、视频 tokenizer、扩散式与自回归式预训练模型，以及面向具体 physical AI 任务的后训练示例。读这篇论文时，最值得追的不是“生成得像不像电影”，而是生成数据怎样进入训练，哪些变量必须由仿真...</summary>
+  </entry>
+  <entry>
+    <title>Gemini Robotics 论文拆解：具身推理和直接控制是两条不同路线</title>
+    <id>https://quchaosheng.github.io/2026/09/01/gemini-robotics-embodied-reasoning/</id>
+    <link href="https://quchaosheng.github.io/2026/09/01/gemini-robotics-embodied-reasoning/"/>
+    <published>2026-09-01T01:30:00.000Z</published>
+    <updated>2026-09-01T01:30:00.000Z</updated>
+    <summary type="html">机器人看到桌上有杯子，不等于它已经知道怎么抓。识别类别之后，还要选抓取位置、理解遮挡、把不同相机里的同一物体对上，再决定轨迹。Gemini Robotics 论文把这件事分成两种模型：Gemini Robotics 可以直接产生机器人动作，Gemini Robotics-ER 输出与物理世界有关的推理结果。二者名字很近，工程接口却完全不同。 多视角图像与任务指令 → ER 产生目标、空间关系或候选轨迹 → 规划器验证可达性与碰撞 → VLA 或技能控制器生成动作 → 执行中重新观测并拒绝失效计划 两条接入路线 推理模型可以当感知与规划助手，VLA ...</summary>
+  </entry>
+  <entry>
+    <title>SmolVLA 与 LeRobot：小模型怎样用异步推理跟上机器人</title>
+    <id>https://quchaosheng.github.io/2026/08/31/smolvla-lerobot-edge-deployment/</id>
+    <link href="https://quchaosheng.github.io/2026/08/31/smolvla-lerobot-edge-deployment/"/>
+    <published>2026-08-31T01:30:00.000Z</published>
+    <updated>2026-08-31T01:30:00.000Z</updated>
+    <summary type="html">实验台上的机械臂通常等得起模型，真实任务不会。推理偶尔慢 80 ms，控制线程如果跟着停 80 ms，夹爪会在半空顿一下；控制线程如果继续消费旧动作，机器人又可能对着几帧前的位置运动。SmolVLA 的“小”固然吸引人，它更值得读的部分却是异步推理：感知与动作生成一条线程，动作执行另一条线程，两边通过带时间含义的 chunk 协作。 控制线程消费当前动作队列 → 剩余动作低于水位 → 提交最新观测做异步推理 → 校验并合并新 chunk → 过期或不连续则拒绝 异步运行图 模型跑得快只是起点，队列还要回答动作属于哪一帧、何时失效、怎样替换。 Smo...</summary>
+  </entry>
+  <entry>
+    <title>π0 与 π0.5 论文拆解：VLM 怎样接上连续动作和长任务</title>
+    <id>https://quchaosheng.github.io/2026/08/28/pi0-pi05-flow-action-expert/</id>
+    <link href="https://quchaosheng.github.io/2026/08/28/pi0-pi05-flow-action-expert/"/>
+    <published>2026-08-28T01:30:00.000Z</published>
+    <updated>2026-08-28T01:30:00.000Z</updated>
+    <summary type="html">“把桌面收拾干净”对语言模型是一句话，对机械臂却可能是几分钟的状态变化。杯子先移走还是先擦桌面，垃圾袋满了怎么办，中途有人放进一个新物体，这些都不是单个动作向量能回答的问题。π0 解决连续动作怎么生成，π0.5 又往上补了一层语义子任务。两篇放在一起读，才能看见长任务为什么需要快慢两种时间尺度。 图像、语言和机器人状态进入 VLM → 预测当前语义子任务 → action expert 生成连续动作 chunk → 控制器执行并重新观测 → 完成或切换子任务 双时间尺度 语义规划回答“接下来做什么”，动作专家回答“接下来几十个控制点怎么走”。 VL...</summary>
+  </entry>
+  <entry>
+    <title>OpenVLA-OFT 论文拆解：连续动作、并行解码和控制频率怎么连起来</title>
+    <id>https://quchaosheng.github.io/2026/08/27/openvla-oft-action-chunk-continuous/</id>
+    <link href="https://quchaosheng.github.io/2026/08/27/openvla-oft-action-chunk-continuous/"/>
+    <published>2026-08-27T01:30:00.000Z</published>
+    <updated>2026-08-27T01:30:00.000Z</updated>
+    <summary type="html">把 OpenVLA 微调到一台新机械臂上，最先撞到的未必是显存。原版模型用自回归方式生成动作 token，一段动作要按序吐出来；控制程序还在等后面的 token 时，相机画面已经变旧。若只盯着 LoRA 秩和 batch size，这个延迟问题不会自己消失。 OpenVLA-OFT 研究的正是这层接口。作者没有把重点放在换一个更大的视觉语言骨干，而是比较动作解码、动作表示和训练目标，最后组合出并行解码、动作分块、连续动作表示与 L1 回归。它给出的提醒很实在：VLA 微调方案同时决定策略学得怎样，以及动作能不能按时送到控制器。 读取图像、语言和本体...</summary>
+  </entry>
   <entry>
     <title>从实验室到现场：AI 机器人验收报告怎样区分证据</title>
     <id>https://quchaosheng.github.io/2026/08/25/ai-robot-acceptance-evidence/</id>
@@ -61,109 +165,5 @@
     <published>2026-08-21T12:30:00.000Z</published>
     <updated>2026-08-21T12:30:00.000Z</updated>
     <summary type="html">多人并行开发机器人系统时，最常见的摩擦不是代码写不出来，而是模块对字段、版本、启动顺序和失败语义的理解逐渐漂移。接口文档如果只靠自然语言，很难及时发现“双方都能运行，但理解不同”。 我的做法是把跨模块消息变成可检查的 schema，并把关键状态变化写成追加式事件，以固定输入进行确定性回放。 Schema 校验输入 → 模块处理 → 追加事件 → 固定 seed 回放 → 比较状态与顺序 合同 约束结构与版本 事件 保存身份与因果 回放 隔离输出并复核判定 Schema 是边界合同 Schema 应约束必填字段、枚举、范围、版本和条件关系，并为未知版...</summary>
-  </entry>
-  <entry>
-    <title>ROS 2 长任务的 deadline 与 cancel：预算要逐层传递</title>
-    <id>https://quchaosheng.github.io/2026/08/20/ros2-deadline-cancel-budget/</id>
-    <link href="https://quchaosheng.github.io/2026/08/20/ros2-deadline-cancel-budget/"/>
-    <published>2026-08-20T12:30:00.000Z</published>
-    <updated>2026-08-20T12:30:00.000Z</updated>
-    <summary type="html">机器人任务通常不是一次函数调用，而是由规划、控制、设备通信和状态确认组成的长链路。每一层如果都有自己的超时，却不知道父任务还剩多少预算，最终就会出现上层已经放弃、下层仍在执行的“幽灵任务”。 父任务建立 deadline → 子步骤读取剩余预算 → 超时触发取消 → 停止并确认终态 父任务 维护绝对 deadline 子任务 消费剩余预算 设备层 停止并确认状态 deadline 比多个 timeout 更清楚 父层记录一个基于单调时钟的绝对 deadline。每个子 Action、设备请求和重试只使用剩余时间，不重新获得完整预算。这样可以保证嵌套...</summary>
-  </entry>
-  <entry>
-    <title>驱动卸载偶发卡死：生命周期问题要按所有权逆序处理</title>
-    <id>https://quchaosheng.github.io/2026/08/19/driver-remove-lifecycle-order/</id>
-    <link href="https://quchaosheng.github.io/2026/08/19/driver-remove-lifecycle-order/"/>
-    <published>2026-08-19T12:30:00.000Z</published>
-    <updated>2026-08-19T12:30:00.000Z</updated>
-    <summary type="html">驱动 remove 路径很容易在“正常运行”测试中被忽略。真正麻烦的是卸载时仍有中断、work、timer、DMA completion 或用户调用在路上：一边释放资源，另一边又重新入队，偶发卡死就出现了。 处理这类问题时，我会先画出谁产生事件、谁持有对象、谁可能睡眠，再按所有权逆序关闭。 拒绝新入口 → 关闭硬件事件源 → 同步在途回调 → 取消延后工作 → 释放资源 生产者 IRQ、timer 与用户入口 在途工作 同步回调与引用 所有权 逆序释放资源 先停生产者，再清消费者 如果先 cancel work，却没有屏蔽能再次安排 work 的 ...</summary>
-  </entry>
-  <entry>
-    <title>BSP Bring-up 的排障顺序：从原理图走到真实读写</title>
-    <id>https://quchaosheng.github.io/2026/08/18/bsp-bringup-evidence-order/</id>
-    <link href="https://quchaosheng.github.io/2026/08/18/bsp-bringup-evidence-order/"/>
-    <published>2026-08-18T12:30:00.000Z</published>
-    <updated>2026-08-18T12:30:00.000Z</updated>
-    <summary type="html">板级适配最耗时间的地方，往往不是某个 API 不会用，而是硬件描述、运行镜像和驱动日志之间没有建立固定检查顺序。我的经验是先把原理图事实整理成资源表，再把每个事实映射到设备树和运行证据。 原理图资源 → DTS 描述 → 运行 DTB → 驱动匹配 → 真实功能 硬件事实 供电、时钟、复位与总线 软件描述 DTB 与驱动匹配 运行证据 日志、波形与真实读写 编译成功只是起点 资源表至少包括供电、时钟、复位、引脚、总线地址和中断。DTS 能编译，不代表板子运行了这份 DTB；节点存在，也不代表 regulator、clock、reset 和 pinc...</summary>
-  </entry>
-  <entry>
-    <title>多源采集平台怎么拆：按故障边界，而不是按文件夹</title>
-    <id>https://quchaosheng.github.io/2026/08/17/modular-multisource-data-pipeline/</id>
-    <link href="https://quchaosheng.github.io/2026/08/17/modular-multisource-data-pipeline/"/>
-    <published>2026-08-17T12:30:00.000Z</published>
-    <updated>2026-08-17T12:30:00.000Z</updated>
-    <summary type="html">机器人采集系统会同时面对相机、传感器、控制状态和存储。它们的频率、数据量、时间戳和失败方式都不同。把所有逻辑放进一个进程，开始时简单，后期却很难隔离慢设备、编码抖动和磁盘压力。 我更倾向按职责和故障边界拆成四类角色：设备接入负责生命周期与原始数据，编码器负责格式转换，组装器按时间与任务语义形成一个 Episode，存储端负责有界落盘与结果清单。 设备接入 → 编码转换 → Episode 组装 → 存储与清单 接入 保留设备差异 队列 容量与背压可见 清单 记录完整性与版本 插件接口不能抹平设备差异 统一接口适合约束启动、停止、状态和错误传播，但不...</summary>
-  </entry>
-  <entry>
-    <title>ACK 不等于完成：设备命令为什么要分三阶段</title>
-    <id>https://quchaosheng.github.io/2026/08/16/ack-is-not-completion/</id>
-    <link href="https://quchaosheng.github.io/2026/08/16/ack-is-not-completion/"/>
-    <published>2026-08-16T12:30:00.000Z</published>
-    <updated>2026-08-16T12:30:00.000Z</updated>
-    <summary type="html">设备控制接口最容易产生的一类误判，是把“发送成功”“收到 ACK”和“设备达到目标状态”当成同一件事。它们属于不同边界，失败模式也不同。 请求已发送 → 收到匹配 ACK → 回读设备终态 → 业务判定完成 request_id 绑定请求生命周期 ACK 只证明协议确认 终态 由新鲜反馈确认 三个阶段各自证明什么 发送成功通常只表示数据进入本地协议栈或驱动队列。应用层 ACK 表示对端识别了某个请求，但可能尚未执行。终态反馈才回答设备是否到达目标位置、模式或清障状态。即使三者都成功，也不自动等同于物理安全认证。 因此，请求需要可匹配的标识。迟到 A...</summary>
-  </entry>
-  <entry>
-    <title>跨层时延怎么定位：先把一次超时拆成三段</title>
-    <id>https://quchaosheng.github.io/2026/08/15/cross-layer-latency-segmentation/</id>
-    <link href="https://quchaosheng.github.io/2026/08/15/cross-layer-latency-segmentation/"/>
-    <published>2026-08-15T12:30:00.000Z</published>
-    <updated>2026-08-15T12:30:00.000Z</updated>
-    <summary type="html">一次控制回调超时，表面上只有一个总耗时。直接看 CPU 利用率或某一行日志，往往会把排队、调度和执行混在一起。我的做法是先建立统一事件时间线，再把一次请求拆成三个可验证区间。 进入业务队列 → 线程变为 runnable → 线程获得 CPU → 回调执行完成 业务事件 标记请求与阶段 调度事件 观察 wakeup 和 switch 证据质量 记录时钟与丢失 三段分别回答什么 队列等待 回答执行器或任务系统有没有积压； runnable-to-running 回答线程已经可运行却为何迟迟没有获得 CPU； 回调执行 回答函数本身、锁、I&amp;#x2F;...</summary>
-  </entry>
-  <entry>
-    <title>共享数据不是“能读到”就够了：版本化快照的设计思路</title>
-    <id>https://quchaosheng.github.io/2026/08/14/versioned-snapshot-for-shared-data/</id>
-    <link href="https://quchaosheng.github.io/2026/08/14/versioned-snapshot-for-shared-data/"/>
-    <published>2026-08-14T12:30:00.000Z</published>
-    <updated>2026-08-14T12:30:00.000Z</updated>
-    <summary type="html">在一类高频状态采集项目里，我遇到的核心问题并不是“怎样把数据放进共享内存”，而是读者怎样判断自己拿到的是 布局兼容、内容完整、仍然新鲜 的一份数据。共享内存只解决地址空间之间的数据通路，不会自动提供消息边界、一致快照或生产者生命周期。 本文只讨论可复用的设计思路。具体字段、采样频率、设备标识、内存布局和业务协议均不展开。 验证布局版本 → 读取版本号 → 复制快照 → 重读版本号 → 判断是否接受 版本头 拒绝不兼容布局 快照协议 识别并发写入 活性字段 区分进程和业务状态 先把三个问题分开 第一是 兼容性 。读写双方可能来自不同版本，必须用 ma...</summary>
-  </entry>
-  <entry>
-    <title>边缘模型升级与回滚：签名、兼容性和灰度发布怎样接起来</title>
-    <id>https://quchaosheng.github.io/2026/08/14/ai-robot-edge-model-ota-rollback/</id>
-    <link href="https://quchaosheng.github.io/2026/08/14/ai-robot-edge-model-ota-rollback/"/>
-    <published>2026-08-14T01:30:00.000Z</published>
-    <updated>2026-08-14T01:30:00.000Z</updated>
-    <summary type="html">模型更新后，设备能启动，推理进程却在加载 engine 时退出。更麻烦的是，部分设备已经换成新模型，另一部分还在旧版本，现场日志看起来像两个不同的产品。模型文件未必损坏，发布单元却散了：模型、TensorRT、GPU 架构、预处理和配置各走各的版本。 机器人上的模型升级要有回滚路径。签名只能证明文件来自某个发布者，不能证明它适合这台设备；兼容性检查只能筛掉明显不匹配，不能替代小流量运行和任务指标验收。发布系统需要把身份、版本、健康检查和回滚状态连起来。 生成带清单的模型包 → 验证签名和设备兼容性 → 写入备用分区 → 小流量启动并观察健康指标 →...</summary>
-  </entry>
-  <entry>
-    <title>生产事故复盘：七轴机械臂 DDS-RPC 偶发超时的定位与修复</title>
-    <id>https://quchaosheng.github.io/2026/08/13/dds-rpc-timeout-debugging/</id>
-    <link href="https://quchaosheng.github.io/2026/08/13/dds-rpc-timeout-debugging/"/>
-    <published>2026-08-13T09:40:00.000Z</published>
-    <updated>2026-08-13T09:40:00.000Z</updated>
-    <summary type="html">证据边界 本文是一篇工程复盘稿。公开仓库未包含私有生产环境的原始抓包、设备日志和真实机械臂复现条件，因此文中的生产指标用于说明排查链路，不构成可由公开仓库独立复现的 benchmark。 复现高负载超时 → 排除网络与进程 → 对齐抓包和 DDS 日志 → 审查 QoS 深度 → 压力测试验证 现象 低负载正常，高负载偶发超时。 网络 在发送端和接收端同时抓包，并检查接口丢包计数。 Discovery 确认端点匹配，但不把“已匹配”当成交付证明。 QoS 分别核对兼容性、历史缓存、资源上限和应用取样速度。 超时 RPC 用请求 ID 和单调时钟定案...</summary>
-  </entry>
-  <entry>
-    <title>I2C 驱动高频采样丢包的定位与修复</title>
-    <id>https://quchaosheng.github.io/2026/08/13/i2c-high-frequency-sampling-loss/</id>
-    <link href="https://quchaosheng.github.io/2026/08/13/i2c-high-frequency-sampling-loss/"/>
-    <published>2026-08-13T09:39:00.000Z</published>
-    <updated>2026-08-13T09:39:00.000Z</updated>
-    <summary type="html">证据边界 公开仓库未提供对应 RK3576 板卡、示波器波形和驱动压测工程，文中的硬件日志与性能数字不能由公开仓库独立复现；本文重点记录分层定位方法和驱动设计取舍。 确认高频丢样 → 检查物理波形 → 用 ftrace 定位中断延迟 → 调整 IRQ 与 FIFO → 长时间压测 硬件层 检查上拉、频率、边沿与器件响应。 驱动层 观察中断处理、锁和队列是否阻塞。 数据路径 确认 FIFO 深度和消费速度能覆盖突发。 Threaded IRQ 把可睡眠和较重处理移出硬中断。 DMA 大批量传输时降低 CPU 搬运成本。 验证 同时统计丢样率、CPU ...</summary>
-  </entry>
-  <entry>
-    <title>ROS 2 实时性优化：从毫秒级抖动到亚毫秒调度</title>
-    <id>https://quchaosheng.github.io/2026/08/13/ros2-realtime-latency-optimization/</id>
-    <link href="https://quchaosheng.github.io/2026/08/13/ros2-realtime-latency-optimization/"/>
-    <published>2026-08-13T09:38:00.000Z</published>
-    <updated>2026-08-13T09:38:00.000Z</updated>
-    <summary type="html">证据边界 本文中的延迟、CPU 占用和控制精度数字来自工程案例稿，公开仓库没有提供相同硬件、RT 内核、LTTng trace 和完整基准脚本。读者应在自己的内核、DDS 实现与控制周期下重新测量，不能直接套用这些结果。 记录控制周期 → 追踪调度延迟 → 隔离实时 CPU → 设置实时策略 → 复测最坏延迟 Trace 用 LTTng 与 eBPF 分析回调和唤醒延迟。 调度 SCHED_FIFO 需要权限、优先级与预算设计。 绑核 实时线程与 IRQ、日志和桌面任务分离。 内存 锁页和预分配减少缺页与运行时分配。 DDS 按控制语义选择 QoS...</summary>
-  </entry>
-  <entry>
-    <title>RISC-V 多核启动：7+1 hart 异构 SMP 架构</title>
-    <id>https://quchaosheng.github.io/2026/08/13/riscv-heterogeneous-smp-boot/</id>
-    <link href="https://quchaosheng.github.io/2026/08/13/riscv-heterogeneous-smp-boot/"/>
-    <published>2026-08-13T09:37:00.000Z</published>
-    <updated>2026-08-13T09:37:00.000Z</updated>
-    <summary type="html">证据边界 公开项目 quard-star-riscv64-net 提供 7+1 hart、OpenSBI domain 和 PMP 故障探针的相关实现；本文选择“平台 M-mode 固件直接接管 hart7”的设计路线。FreeRTOS 集成与部分性能数字不在该公开仓库的完整可复现实验范围内，应按架构说明而非已公开 benchmark 阅读。 平台固件分流 hart → OpenSBI 服务 Linux domain → hart7 进入 M-mode RTOS → 按 hart 配置 PMP → doorbell 与共享内存通信 hart0 承担...</summary>
-  </entry>
-  <entry>
-    <title>CAN 总线故障排查：从偶发卡顿到分层定位</title>
-    <id>https://quchaosheng.github.io/2026/08/13/can-bus-intermittent-fault-debugging/</id>
-    <link href="https://quchaosheng.github.io/2026/08/13/can-bus-intermittent-fault-debugging/"/>
-    <published>2026-08-13T09:36:00.000Z</published>
-    <updated>2026-08-13T09:36:00.000Z</updated>
-    <summary type="html">证据边界 公开项目当前主要提供 vcan 与故障注入层面的验证，不等同于真实七轴机械臂、物理 CAN 总线或量产环境。本文中的示波器记录、故障频率和修复后数字没有随公开仓库提供原始数据，应作为排查案例而非公开可复现结论。 复现偶发卡顿 → 检查物理层 → 分析错误帧与计数器 → 检查 SocketCAN 接收路径 → 核对业务响应时序 物理层 终端电阻、线长、波形和总线速率。 协议层 ACK bit、仲裁、错误帧、error-passive 与 bus-off。 内核层 控制器 FIFO、NAPI/offload 队列、socket 缓冲和驱动统计...</summary>
   </entry>
 </feed>

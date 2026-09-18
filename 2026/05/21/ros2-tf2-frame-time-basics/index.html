@@ -42,7 +42,7 @@
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合","description":"相机识别出的目标位置看起来没问题，转换到 base_link 后却跳动，或者 TF2 直接报 extrapolation error。多数时候矩阵本身没错，查询时刻才是问题。TF2 保存的是随时间变化的坐标树，帧名和时间戳缺一个都不完整。 定义父子坐标系 → 发布静态或动态变换 → 保留传感器采样时间 → 按该时间查询 TF → 处理过期与外推失败 T...","datePublished":"2026-05-21T01:30:00.000Z","dateModified":"2026-05-21T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/05/21/ros2-tf2-frame-time-basics/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"标定, ROS 2, TF2, 坐标系, 时间戳","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 TF2 入门：坐标系、时间戳和变换查询怎么配合","description":"相机识别出的目标位置看起来没问题，转换到 base_link 后却跳动，或者 TF2 直接报 extrapolation error。多数时候矩阵本身没错，查询时刻才是问题。TF2 保存的是随时间变化的坐标树，帧名和时间戳缺一个都不完整。 定义父子坐标系 → 发布静态或动态变换 → 保留传感器采样时间 → 按该时间查询 TF → 处理过期与外推失败 T...","datePublished":"2026-05-21T01:30:00.000Z","dateModified":"2026-05-21T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/05/21/ros2-tf2-frame-time-basics/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / AI机器人","keywords":"标定, ROS 2, 坐标系, TF2, 时间戳","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -273,9 +273,9 @@
                             
                                 <a href="/tag/ROS-2/">#ROS 2</a>
                             
-                                <a href="/tag/TF2/">#TF2</a>
-                            
                                 <a href="/tag/%E5%9D%90%E6%A0%87%E7%B3%BB/">#坐标系</a>
+                            
+                                <a href="/tag/TF2/">#TF2</a>
                             
                                 
                             
@@ -383,6 +383,11 @@
                 <h2 id="related-posts-title">同主题继续阅读</h2>
                 <div class="related-post-list">
                     
+                        <a href="/2026/09/18/hand-eye-calibration-ax-xb/">
+                            <span>手眼标定：AX = XB 为什么不能只看一次误差</span>
+                            <time datetime="2026-09-18T03:00:00.000Z">2026-09-18</time>
+                        </a>
+                    
                         <a href="/2026/08/24/ai-robot-rosbag2-failure-replay/">
                             <span>rosbag2 故障回放：怎样把一次机器人超时变成可重复实验</span>
                             <time datetime="2026-08-24T01:30:00.000Z">2026-08-24</time>
@@ -391,11 +396,6 @@
                         <a href="/2026/08/06/ai-robot-tactile-force-ros2-safety/">
                             <span>触觉与力传感器接入 ROS 2：时间戳、滤波和安全阈值怎么落到控制器</span>
                             <time datetime="2026-08-06T01:30:00.000Z">2026-08-06</time>
-                        </a>
-                    
-                        <a href="/2026/08/05/ai-robot-rolling-shutter-motion-blur/">
-                            <span>Rolling Shutter、曝光与运动模糊：为什么移动机器人会错一拍</span>
-                            <time datetime="2026-08-05T01:30:00.000Z">2026-08-05</time>
                         </a>
                     
                 </div>
@@ -411,9 +411,9 @@
                     
                         <a href="/tag/ROS-2/"># ROS 2</a>
                     
-                        <a href="/tag/TF2/"># TF2</a>
-                    
                         <a href="/tag/%E5%9D%90%E6%A0%87%E7%B3%BB/"># 坐标系</a>
+                    
+                        <a href="/tag/TF2/"># TF2</a>
                     
                         <a href="/tag/%E6%97%B6%E9%97%B4%E6%88%B3/"># 时间戳</a>
                     

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>ROS 2 组合节点与进程内通信：什么时候合并进程真的省掉了拷贝 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="把多个 ROS 2 节点放进同一个容器进程，常被描述成“省掉序列化和网络传输”。这句话在特定条件下成立，在另外一些条件下几乎不成立。真正决定收益的不是用了哪个命令行，而是发布者和订阅者之间是否满足了进程内通信的前提。如果前提不满足，节点仍然在同一个进程里，数据却可能走了完整的中件间路径。 这篇文章按“先确认数据落在哪里，再讨论进程边界”的顺序展开，因为...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/09/18/ros2-composable-nodes-intra-process/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ROS 2 组合节点与进程内通信：什么时候合并进程真的省掉了拷贝 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="把多个 ROS 2 节点放进同一个容器进程，常被描述成“省掉序列化和网络传输”。这句话在特定条件下成立，在另外一些条件下几乎不成立。真正决定收益的不是用了哪个命令行，而是发布者和订阅者之间是否满足了进程内通信的前提。如果前提不满足，节点仍然在同一个进程里，数据却可能走了完整的中件间路径。 这篇文章按“先确认数据落在哪里，再讨论进程边界”的顺序展开，因为...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/09/18/ros2-composable-nodes-intra-process/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="ROS 2 组合节点与进程内通信：什么时候合并进程真的省掉了拷贝">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ROS 2 组合节点与进程内通信：什么时候合并进程真的省掉了拷贝 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="把多个 ROS 2 节点放进同一个容器进程，常被描述成“省掉序列化和网络传输”。这句话在特定条件下成立，在另外一些条件下几乎不成立。真正决定收益的不是用了哪个命令行，而是发布者和订阅者之间是否满足了进程内通信的前提。如果前提不满足，节点仍然在同一个进程里，数据却可能走了完整的中件间路径。 这篇文章按“先确认数据落在哪里，再讨论进程边界”的顺序展开，因为...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 组合节点与进程内通信：什么时候合并进程真的省掉了拷贝","description":"把多个 ROS 2 节点放进同一个容器进程，常被描述成“省掉序列化和网络传输”。这句话在特定条件下成立，在另外一些条件下几乎不成立。真正决定收益的不是用了哪个命令行，而是发布者和订阅者之间是否满足了进程内通信的前提。如果前提不满足，节点仍然在同一个进程里，数据却可能走了完整的中件间路径。 这篇文章按“先确认数据落在哪里，再讨论进程边界”的顺序展开，因为...","datePublished":"2026-09-18T02:10:00.000Z","dateModified":"2026-09-18T02:10:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/18/ros2-composable-nodes-intra-process/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / ROS 2","keywords":"零拷贝, Composition, 进程内通信, 组件容器","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">ROS 2 组合节点与进程内通信：什么时候合并进程真的省掉了拷贝</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-09-18&nbsp;&nbsp;10:10:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/ROS-2/">ROS 2</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/%E9%9B%B6%E6%8B%B7%E8%B4%9D/">#零拷贝</a>
+                            
+                                <a href="/tag/Composition/">#Composition</a>
+                            
+                                <a href="/tag/%E8%BF%9B%E7%A8%8B%E5%86%85%E9%80%9A%E4%BF%A1/">#进程内通信</a>
+                            
+                                <a href="/tag/%E7%BB%84%E4%BB%B6%E5%AE%B9%E5%99%A8/">#组件容器</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>把多个 ROS 2 节点放进同一个容器进程，常被描述成“省掉序列化和网络传输”。这句话在特定条件下成立，在另外一些条件下几乎不成立。真正决定收益的不是用了哪个命令行，而是发布者和订阅者之间是否满足了进程内通信的前提。如果前提不满足，节点仍然在同一个进程里，数据却可能走了完整的中件间路径。</p>
+<p>这篇文章按“先确认数据落在哪里，再讨论进程边界”的顺序展开，因为进程合并本身只是一个部署选择，它不自动改变消息的所有权和生命周期。</p>
+<div class="note-flow"><span>确认同进程</span><i>→</i><span>确认双方使用进程内通信</span><i>→</i><span>确认所有权允许移交</span><i>→</i><span>测量实际拷贝与延迟</span><i>→</i><span>再做进程合并决策</span></div>
+
+<figure class="note-visual"><figcaption><span>合并进程的三个前提</span>同进程、启用进程内通信、且消息可被移动而不是复制，三者缺一，收益都会打折。</figcaption><div class="note-map"><span><b>组件容器</b><small>一个进程加载多个可组合节点，是合并进程的手段而不是目的。</small></span><span><b>进程内通信</b><small>由节点选项控制，不同节点实例各自设置。</small></span><span><b>唯一所有权</b><small>只有一个订阅者且发布后不再使用该消息时，才可能发生所有权移交。</small></span><span><b>大消息</b><small>图像、点云、大数组的收益明显，小消息本就以复制为主。</small></span><span><b>QoS 与发现</b><small>同一进程内仍要满足兼容性，否则不会建立进程内连接。</small></span><span><b>测量</b><small>延迟和内存带宽要实测，不能从“同进程”推断出来。</small></span></div></figure>
+
+<h2 id="进程内通信不是一个进程属性"><a href="#进程内通信不是一个进程属性" class="headerlink" title="进程内通信不是一个进程属性"></a>进程内通信不是一个进程属性</h2><p>常见误解是：只要节点在同一个容器里，拷贝就没了。实际是每个节点在创建时通过节点选项显式启用进程内通信，同进程的发布者和订阅者才会尝试走进程内路径。一个启用了、另一个没启用，或者两个节点其实分属不同进程，数据仍会走普通的中件间传输。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> options = rclcpp::<span class="built_in">NodeOptions</span>()</span><br><span class="line">  .<span class="built_in">use_intra_process_comms</span>(<span class="literal">true</span>);</span><br><span class="line"><span class="keyword">auto</span> node = std::<span class="built_in">make_shared</span>&lt;MyNode&gt;(options);</span><br></pre></td></tr></table></figure>
+
+<p>用组合节点加载时，可以在容器组件里传入同样的选项：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ros2 component load /ComponentManager my_package \</span><br><span class="line">  my_package::MyNode -e use_intra_process_comms:=<span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<p>命令行输入 <code>true</code> 不代表配置一定生效。加载后应该回读实际参数与节点列表，确认节点确实在目标容器中：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ros2 component list</span><br><span class="line">ros2 param get /ComponentManager use_intra_process_comms</span><br><span class="line">ros2 node list</span><br></pre></td></tr></table></figure>
+
+<p>如果节点出现在 <code>ros2 node list</code> 里，但它并不属于你预期的容器进程，进程合并这件事就没有发生。</p>
+<h2 id="所有权决定是否真的省掉拷贝"><a href="#所有权决定是否真的省掉拷贝" class="headerlink" title="所有权决定是否真的省掉拷贝"></a>所有权决定是否真的省掉拷贝</h2><p>进程内通信能省掉的拷贝来自所有权移交：发布者构造一条消息，把它移动给订阅者，而不是复制一份再交出。要做到这一点，通常需要满足两个条件：只有一个订阅者，并且发布者在发布后不再依赖这条消息的原始对象。</p>
+<p>如果发布者仍要保留并使用同一份数据，或者有多个订阅者需要各自的数据，那就只能复制。此时即使在同一进程内，数据仍然会被拷贝多次；它只是避免了序列化和跨进程传输，而不是消除了复制。</p>
+<p>这也是为什么“同进程”与“零拷贝”经常被混用。前者是部署事实，后者是缓冲区所有权的结果。判断一条链路是否真的少拷贝了，有效方法是看消息里大缓冲区的地址是否在发布与订阅两侧保持一致，而不是看进程数量。</p>
+<h2 id="一个容器不是性能补丁"><a href="#一个容器不是性能补丁" class="headerlink" title="一个容器不是性能补丁"></a>一个容器不是性能补丁</h2><p>组合节点在工程上的主要收益有三个：减少进程数量与启动开销，允许共享同一份大型只读资源，以及在大消息链路上提供所有权移交的可能。它们都不等同于“控制更实时”。</p>
+<p>把实时控制循环塞进一个共享容器也要谨慎。容器内所有节点共享线程池与调度资源，一个节点的阻塞调用或大量分配会影响同进程的其他节点。反过来，如果节点本来就需要独立进程隔离、独立资源限制或故障隔离，合并进程会把这些边界拆掉。</p>
+<p>判断顺序建议是：先测出瓶颈在哪里。如果瓶颈是磁盘写入、GPU 前处理或队列积压，合并进程不会解决；如果瓶颈确实在中件间对大图像做序列化与反序列化，而且同进程前提成立，那么组合节点是值得尝试的方向。</p>
+<h2 id="用可复现的方式确认收益"><a href="#用可复现的方式确认收益" class="headerlink" title="用可复现的方式确认收益"></a>用可复现的方式确认收益</h2><p>测量要固定输入与负载，避免把一次偶然结果当成结论。可以用延迟直方图或简单的时间戳对比，关键是保持其它变量不变：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ros2 run my_package latency_probe --ros-args -p intra:=<span class="literal">false</span></span><br><span class="line">ros2 run my_package latency_probe --ros-args -p intra:=<span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<p>如果要比较进程内与跨进程，两次运行应使用同一份数据、同一个 QoS 和同一台机器，并记录 CPU 占用。否则测到的差异可能来自缓存命中、CPU 频率变化或后台任务，而不是通信路径。</p>
+<p>同时留意 QoS。进程内通信仍然需要发布订阅双方 QoS 兼容；不兼容时连接根本不会建立，此时“没有延迟下降”是因为压根没有数据流，而不是因为进程内通信无效。</p>
+<h2 id="什么时候值得合并"><a href="#什么时候值得合并" class="headerlink" title="什么时候值得合并"></a>什么时候值得合并</h2><p>值得合并的典型情况：多个节点处理同一条大消息，链路顺序稳定，其中一个节点是明确的中间处理环节，且没有独立隔离需求。</p>
+<p>不值得合并的典型情况：需要独立重启与故障隔离，需要单独限制 CPU 或内存，或者节点间消息很小、拷贝本来就不是瓶颈。此时合并进程只是把复杂度从通信搬到了共享资源管理上。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Composition.html">ROS 2 Composition 概念</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Tutorials/Intermediate/Composition.html">Composition 教程：组合节点与组件容器</a></li>
+<li><a target="_blank" rel="noopener" href="https://design.ros2.org/articles/intraprocess_communications.html">Intra-process communication 设计说明</a></li>
+</ul>
+<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文只讨论进程边界、所有权与 QoS 对数据路径的影响，不包含特定平台的实测延迟数据。是否真的省掉拷贝、省掉多少，需要在目标机器上针对具体消息类型测量；同一份配置在不同消息大小和硬件上结论可能不同。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/09/18/ros2-composable-nodes-intra-process/">https://quchaosheng.github.io/2026/09/18/ros2-composable-nodes-intra-process/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/07/30/isaac-ros-nitros-zero-copy/">
+                            <span>Isaac ROS NITROS：相机数据怎样少拷贝地送进 GPU</span>
+                            <time datetime="2026-07-20T06:00:00.000Z">2026-07-20</time>
+                        </a>
+                    
+                        <a href="/2026/09/18/ros2-lifecycle-node-state-machine/">
+                            <span>ROS 2 生命周期节点：为什么“启动完成”不能只靠一个 bool</span>
+                            <time datetime="2026-09-18T01:30:00.000Z">2026-09-18</time>
+                        </a>
+                    
+                        <a href="/2026/09/12/ros2-control-hardware-interface-deadlines/">
+                            <span>ros2_control 硬件接口的生命周期与实时性约束：read/write 里不能做的事，以及 watchdog 该放在哪一层</span>
+                            <time datetime="2026-09-12T01:30:00.000Z">2026-09-12</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/%E9%9B%B6%E6%8B%B7%E8%B4%9D/"># 零拷贝</a>
+                    
+                        <a href="/tag/Composition/"># Composition</a>
+                    
+                        <a href="/tag/%E8%BF%9B%E7%A8%8B%E5%86%85%E9%80%9A%E4%BF%A1/"># 进程内通信</a>
+                    
+                        <a href="/tag/%E7%BB%84%E4%BB%B6%E5%AE%B9%E5%99%A8/"># 组件容器</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/09/18/hand-eye-calibration-ax-xb/">手眼标定：AX = XB 为什么不能只看一次误差</a>
+            
+            
+            <a class="next" rel="next" href="/2026/09/18/ros2-lifecycle-node-state-machine/">ROS 2 生命周期节点：为什么“启动完成”不能只靠一个 bool</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

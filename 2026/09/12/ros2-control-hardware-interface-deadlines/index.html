@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>ros2_control 硬件接口的生命周期与实时性约束：read/write 里不能做的事，以及 watchdog 该放在哪一层 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="一个 ros2_control 硬件插件最容易被写成“把 CAN 帧发出去，再把反馈填回来”。真正难的是把生命周期、控制线程和故障恢复分开。我的 vcan DiffBot demo 使用 SystemInterface ，同时保留了虚拟电机、原始 CAN 字节验证和故障注入，因此可以把接口边界讲得比一张 API 列表更具体。 这篇文章先限定范围：当前仓...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/09/12/ros2-control-hardware-interface-deadlines/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ros2_control 硬件接口的生命周期与实时性约束：read/write 里不能做的事，以及 watchdog 该放在哪一层 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="一个 ros2_control 硬件插件最容易被写成“把 CAN 帧发出去，再把反馈填回来”。真正难的是把生命周期、控制线程和故障恢复分开。我的 vcan DiffBot demo 使用 SystemInterface ，同时保留了虚拟电机、原始 CAN 字节验证和故障注入，因此可以把接口边界讲得比一张 API 列表更具体。 这篇文章先限定范围：当前仓...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/09/12/ros2-control-hardware-interface-deadlines/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="ros2_control 硬件接口的生命周期与实时性约束：read/write 里不能做的事，以及 watchdog 该放在哪一层">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ros2_control 硬件接口的生命周期与实时性约束：read/write 里不能做的事，以及 watchdog 该放在哪一层 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="一个 ros2_control 硬件插件最容易被写成“把 CAN 帧发出去，再把反馈填回来”。真正难的是把生命周期、控制线程和故障恢复分开。我的 vcan DiffBot demo 使用 SystemInterface ，同时保留了虚拟电机、原始 CAN 字节验证和故障注入，因此可以把接口边界讲得比一张 API 列表更具体。 这篇文章先限定范围：当前仓...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ros2_control 硬件接口的生命周期与实时性约束：read/write 里不能做的事，以及 watchdog 该放在哪一层","description":"一个 ros2_control 硬件插件最容易被写成“把 CAN 帧发出去，再把反馈填回来”。真正难的是把生命周期、控制线程和故障恢复分开。我的 vcan DiffBot demo 使用 SystemInterface ，同时保留了虚拟电机、原始 CAN 字节验证和故障注入，因此可以把接口边界讲得比一张 API 列表更具体。 这篇文章先限定范围：当前仓...","datePublished":"2026-09-12T01:30:00.000Z","dateModified":"2026-09-12T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/12/ros2-control-hardware-interface-deadlines/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / ROS 2","keywords":"SocketCAN, ros2_control, 实时性, watchdog","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">ros2_control 硬件接口的生命周期与实时性约束：read/write 里不能做的事，以及 watchdog 该放在哪一层</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-09-12&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/ROS-2/">ROS 2</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/SocketCAN/">#SocketCAN</a>
+                            
+                                <a href="/tag/ros2-control/">#ros2_control</a>
+                            
+                                <a href="/tag/%E5%AE%9E%E6%97%B6%E6%80%A7/">#实时性</a>
+                            
+                                <a href="/tag/watchdog/">#watchdog</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>一个 ros2_control 硬件插件最容易被写成“把 CAN 帧发出去，再把反馈填回来”。真正难的是把生命周期、控制线程和故障恢复分开。我的 vcan DiffBot demo 使用 <code>SystemInterface</code>，同时保留了虚拟电机、原始 CAN 字节验证和故障注入，因此可以把接口边界讲得比一张 API 列表更具体。</p>
+<p>这篇文章先限定范围：当前仓库验证的是软件协议、vcan 和 SocketCAN 路径，不是实际电机、ECU HIL 或生产安全认证。代码里的 deadline 和 safe-stop 设计可以被测试，但不能自动推导出真实执行器的安全性能。</p>
+<div class="note-flow"><span>on_init 校验参数</span><i>→</i><span>activate 建立通信</span><i>→</i><span>read 收反馈</span><i>→</i><span>write 发命令</span><i>→</i><span>deadline 触发 safe-stop</span><i>→</i><span>deactivate 清理</span></div>
+
+<figure class="note-visual"><figcaption><span>三个 deadline 不是一个概念</span>设备侧 watchdog、主机侧 ACK deadline 和反馈 deadline 分别约束不同的失效路径。</figcaption><div class="note-map"><span><b>command watchdog</b><small>命令帧携带的设备侧周期，主机失联时由设备停机。</small></span><span><b>ack timeout</b><small>主机等待匹配业务 ACK 的上限，防止命令悬挂。</small></span><span><b>feedback timeout</b><small>主机等待有效反馈的上限，防止设备或总线失能被当成正常。</small></span><span><b>safe-stop</b><small>故障状态进入后有界发送停止帧，并锁存诊断状态。</small></span><span><b>read</b><small>收取有限数量的帧，更新状态和健康判断。</small></span><span><b>write</b><small>发送当前命令并登记序号，不能把 send 成功当成执行完成。</small></span></div></figure>
+
+<h2 id="六个生命周期回调各自负责什么"><a href="#六个生命周期回调各自负责什么" class="headerlink" title="六个生命周期回调各自负责什么"></a>六个生命周期回调各自负责什么</h2><p><code>on_init</code> 是拒绝非法配置的地方。这里应检查硬件信息、接口数量、命令接口和参数范围，而不是等到第一次 <code>write</code> 才发现配置不完整。vcan 插件要求恰好一个 velocity 命令接口，并解析节点 ID、编码器比例和三个时间参数。参数错误时返回 <code>ERROR</code>，比让控制线程带着半初始化状态运行更容易诊断。</p>
+<p><code>export_state_interfaces</code> 和 <code>export_command_interfaces</code> 只负责把 ros2_control 的资源暴露给 controller_manager。它们不应该偷偷打开 CAN socket，也不应该在导出接口时启动后台线程。<code>on_activate</code> 才是建立运行期通信、清理旧故障和准备初始状态的边界；如果设备不可用，激活失败而不是假装已经 ready。</p>
+<p><code>read</code> 和 <code>write</code> 位于控制循环中，职责必须窄。<code>read</code> 收取本周期可处理的反馈，更新编码器和速度，检查 ACK、反馈和 CAN 错误；当前实现把每周期接收数量限制在 64 帧，避免异常流量让一次控制周期无限延长。<code>write</code> 根据最新命令构造帧，登记序号和等待的 ACK，再把帧送入 SocketCAN。</p>
+<p>这两个函数不适合做文件 I&#x2F;O、无界等待或阻塞式日志。诊断发布使用 <code>RealtimePublisher::trylock()</code>，拿不到锁时跳过这一次发布而不是让控制线程等待。这里的“实时友好”只是代码结构上的约束，不代表已经测得某个固定抖动上界；要做实时结论仍然需要明确平台、负载和测量数据。</p>
+<p><code>on_deactivate</code> 负责停止继续发送、尝试安全停车并关闭运行期资源。故障态一旦锁存，恢复策略必须明确：是允许重新激活，还是要求人工清除故障。把故障变量简单清零会让上层误以为设备已经恢复，反而掩盖真正的问题。</p>
+<h2 id="两个-watchdog-和一个-ACK-deadline"><a href="#两个-watchdog-和一个-ACK-deadline" class="headerlink" title="两个 watchdog 和一个 ACK deadline"></a>两个 watchdog 和一个 ACK deadline</h2><p>第一个是 <code>command_watchdog_ms</code>。它随命令帧发送，由电机或虚拟电机使用。控制器如果崩溃、网络断开或不再发送新命令，设备侧 watchdog 到期后可以停止。这个 deadline 的责任方是设备侧，保护对象是“上位机失联时不要继续沿用旧速度”。</p>
+<p>第二个是 <code>feedback_timeout_ms</code>。它在主机侧判断某个电机是否还在返回有效反馈。反馈停止可能意味着设备失能、总线故障或节点 ID 配错，主机不能继续派发普通速度命令。它保护的是控制器对设备健康状态的判断。</p>
+<p>第三个是独立的 <code>ack_timeout_ms</code>。主机发送一个带序号的业务命令后，必须在这个时间内收到匹配 ACK；超时就进入故障路径并触发有界 safe-stop。它和 command watchdog 的时钟起点、观察对象和恢复责任方都不同，不能再把 ACK timeout 静默别名成 command watchdog。当前默认值只是配置默认值，不是对所有电机和总线都正确的经验常数。</p>
+<h2 id="send-成功不等于命令执行"><a href="#send-成功不等于命令执行" class="headerlink" title="send 成功不等于命令执行"></a>send 成功不等于命令执行</h2><p>SocketCAN 的 <code>send()</code> 成功，最多说明帧进入了内核发送路径。CAN 层的总线 ACK 也不等于应用设备已经解析并执行命令。业务层还需要检查 command ID、序号和 result code。vcan 插件把新命令置于等待匹配 ACK 的状态，只有业务 ACK 成功才会更新完成状态；安全停车帧则登记到健康状态中，避免把自己发送的停止帧误判成一条意外反馈。</p>
+<p>这个分层对测试很重要。ACK 丢失测试不是只检查一个错误字符串，而是注入丢 ACK，等待硬件进入 safe-stop，再从原始 CAN socket 解码停车帧。测试关心停车帧数量的上界，因为上界能发现重试风暴；“至少发过一帧”并不能证明恢复是有界的。</p>
+<h2 id="什么时候应该拒绝更复杂的实时设计"><a href="#什么时候应该拒绝更复杂的实时设计" class="headerlink" title="什么时候应该拒绝更复杂的实时设计"></a>什么时候应该拒绝更复杂的实时设计</h2><p>如果 <code>read</code> 里需要等待一个永远不确定的设备响应，或者 <code>write</code> 里要动态分配大量对象、等待互斥锁、同步写磁盘，接口就已经越过了控制循环的职责边界。可以把工作拆到独立线程，但必须定义有界队列、丢弃策略、时间戳和故障传播规则，不能用线程数量掩盖无限等待。</p>
+<p>同样，增加一个 watchdog 不能代替完整的状态机。设备侧 watchdog、主机侧 ACK timeout、反馈 timeout 和 safe-stop 之间要能从诊断中区分，否则故障虽然停下来了，复盘时却不知道是命令悬挂、反馈消失还是总线错误。</p>
+<p>这个 demo 最有价值的地方不是“模拟了一个电机”，而是把接口生命周期、业务 ACK 和故障传播放在了可测试的边界里。它仍然是软件与 vcan 证据；要声称真实电机行为，还需要真实控制器、物理 CAN、故障注入和独立的安全验收。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/09/12/ros2-control-hardware-interface-deadlines/">https://quchaosheng.github.io/2026/09/12/ros2-control-hardware-interface-deadlines/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/22/socketcan-fault-injection-boundaries/">
+                            <span>SocketCAN 故障注入怎么做：先说明模拟了哪一层</span>
+                            <time datetime="2026-08-22T12:30:00.000Z">2026-08-22</time>
+                        </a>
+                    
+                        <a href="/2026/08/13/can-bus-intermittent-fault-debugging/">
+                            <span>CAN 总线故障排查：从偶发卡顿到分层定位</span>
+                            <time datetime="2026-08-13T09:36:00.000Z">2026-08-13</time>
+                        </a>
+                    
+                        <a href="/2026/09/18/ros2-composable-nodes-intra-process/">
+                            <span>ROS 2 组合节点与进程内通信：什么时候合并进程真的省掉了拷贝</span>
+                            <time datetime="2026-09-18T02:10:00.000Z">2026-09-18</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/SocketCAN/"># SocketCAN</a>
+                    
+                        <a href="/tag/ros2-control/"># ros2_control</a>
+                    
+                        <a href="/tag/%E5%AE%9E%E6%97%B6%E6%80%A7/"># 实时性</a>
+                    
+                        <a href="/tag/watchdog/"># watchdog</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+                <a class="prev" rel="prev" href="/2026/09/18/ros2-lifecycle-node-state-machine/">ROS 2 生命周期节点：为什么“启动完成”不能只靠一个 bool</a>
+            
+            
+            <a class="next" rel="next" href="/2026/09/05/behavior-tree-cpp-auditable-workflow/">BehaviorTree.CPP 到底解决了 if-else 解决不了的什么问题：从两棵 8 行的树谈固定工作流的可审查性边界</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>
