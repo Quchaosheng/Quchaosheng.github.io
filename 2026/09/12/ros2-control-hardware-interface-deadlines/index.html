@@ -303,6 +303,12 @@
 <h2 id="什么时候应该拒绝更复杂的实时设计"><a href="#什么时候应该拒绝更复杂的实时设计" class="headerlink" title="什么时候应该拒绝更复杂的实时设计"></a>什么时候应该拒绝更复杂的实时设计</h2><p>如果 <code>read</code> 里需要等待一个永远不确定的设备响应，或者 <code>write</code> 里要动态分配大量对象、等待互斥锁、同步写磁盘，接口就已经越过了控制循环的职责边界。可以把工作拆到独立线程，但必须定义有界队列、丢弃策略、时间戳和故障传播规则，不能用线程数量掩盖无限等待。</p>
 <p>同样，增加一个 watchdog 不能代替完整的状态机。设备侧 watchdog、主机侧 ACK timeout、反馈 timeout 和 safe-stop 之间要能从诊断中区分，否则故障虽然停下来了，复盘时却不知道是命令悬挂、反馈消失还是总线错误。</p>
 <p>这个 demo 最有价值的地方不是“模拟了一个电机”，而是把接口生命周期、业务 ACK 和故障传播放在了可测试的边界里。它仍然是软件与 vcan 证据；要声称真实电机行为，还需要真实控制器、物理 CAN、故障注入和独立的安全验收。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://control.ros.org/jazzy/doc/ros2_control/hardware_interface/doc/writing_new_hardware_component.html">ros2_control 硬件组件编写指南</a></li>
+<li><a target="_blank" rel="noopener" href="https://control.ros.org/jazzy/doc/ros2_control/hardware_interface/doc/hardware_interface_types_userdoc.html">ros2_control 硬件接口文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.kernel.org/networking/can.html">Linux SocketCAN 文档</a></li>
+</ul>
+<p><strong>证据边界：</strong>当前仓库验证的是软件协议、vcan 和 SocketCAN 路径，不是实际电机、ECU HIL 或生产安全认证。代码里的 deadline 和 safe-stop 设计可以被测试，但不能自动推导出真实执行器的安全性能；要声称真实电机行为，还需要真实控制器、物理 CAN、故障注入和独立的安全验收。</p>
 
         </div>
 

@@ -305,6 +305,13 @@
 <p>更重要的是，两步流程的收益有明确上限：如果没有长时间运行的子 Action、取消语义、对外反馈或需要由非 C++ 人员审查的工作流，BT 只会增加抽象层。一次同步调用、一个简单条件、没有外部状态的工具函数，直接 if-else 更合适；高频控制环也不该因为“看起来像树”就交给这个任务编排层。只有当步骤会等待、取消、重试、对外报告状态，或者希望把固定控制流与输入策略隔离时，BT 才开始支付得起它的复杂度。</p>
 <h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>对当前项目，BehaviorTree.CPP 解决的不是“两步任务写不出 if-else”，而是把三类边界显式化：活动节点如何被 halt、状态如何反馈给外部、允许的策略如何与固定控制流分离。它让审查对象从散落的线程标志和回调，变成有名称的节点与契约；代价是更多代码、更多测试和当前每 goal 重读 XML 的工程债务。</p>
 <p>所以结论应该保持克制：这两棵树还不足以证明 BT 比 if-else 更快、更可靠或更实时。它们只说明，在一个准备向可取消、可观察、受 allowlist 约束的工作流扩展的系统里，BT 提供了一个值得审查的结构；至于真实硬件、实时确定性和更长流程，当前 README 没有提供本文可以代替的 benchmark、硬件或模型数据。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.behaviortree.dev/docs/intro">BehaviorTree.CPP 文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.behaviortree.dev/docs/guides/asynchronous_nodes">BehaviorTree.CPP 异步节点指南</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/BehaviorTree/BehaviorTree.CPP">BehaviorTree.CPP 源码仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Basic/About-Actions.html">ROS 2 Action 概念说明</a></li>
+</ul>
+<p><strong>证据边界：</strong>本文只讨论固定工作流的可审查性结构，不涉及真实硬件、实时确定性或更长流程。两棵约两节点的树不足以证明 BT 比 if-else 更快、更可靠；文中的代码规模和取消契约来自当前实现，性能与硬件结论需要单独的 benchmark 和现场数据。</p>
 
         </div>
 
