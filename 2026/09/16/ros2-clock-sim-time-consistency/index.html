@@ -18,14 +18,14 @@
 
 <title>ROS 2 时钟与 use_sim_time：回放正常但时间戳混乱的常见原因 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="使用 rosbag2 回放数据时，图像、检测结果和 TF 都出现了，但查询坐标变换时提示数据不存在，或者延迟算出来是负数。这类问题通常不是消息缺失，而是节点之间对“现在几点”的理解不一致。 ROS 2 中的时间不是单一的。系统时间、稳态时间和仿真时间可以同时存在，节点通过参数选择使用哪一个。这篇文章讨论它们各自的语义，以及为什么混用会产生看起来矛盾的结...">
+    <meta name="description" content="回放录包时，图像、检测结果、TF 都出来了，查询变换却提示数据不存在，算出来的延迟还是负数。第一次碰到这种情况我花了大半天才反应过来:不是数据缺了，是几个节点对“现在几点”的理解不一样。 ROS 2 里的时间不是单一的。系统时间、稳态时间、仿真时间可以同时存在，节点通过参数选一个。 确定时间来源 → 逐节点设 use_sim_time → 回放时广播...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/09/16/ros2-clock-sim-time-consistency/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="ROS 2 时钟与 use_sim_time：回放正常但时间戳混乱的常见原因 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="使用 rosbag2 回放数据时，图像、检测结果和 TF 都出现了，但查询坐标变换时提示数据不存在，或者延迟算出来是负数。这类问题通常不是消息缺失，而是节点之间对“现在几点”的理解不一致。 ROS 2 中的时间不是单一的。系统时间、稳态时间和仿真时间可以同时存在，节点通过参数选择使用哪一个。这篇文章讨论它们各自的语义，以及为什么混用会产生看起来矛盾的结...">
+    <meta property="og:description" content="回放录包时，图像、检测结果、TF 都出来了，查询变换却提示数据不存在，算出来的延迟还是负数。第一次碰到这种情况我花了大半天才反应过来:不是数据缺了，是几个节点对“现在几点”的理解不一样。 ROS 2 里的时间不是单一的。系统时间、稳态时间、仿真时间可以同时存在，节点通过参数选一个。 确定时间来源 → 逐节点设 use_sim_time → 回放时广播...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/09/16/ros2-clock-sim-time-consistency/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,13 +36,13 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ROS 2 时钟与 use_sim_time：回放正常但时间戳混乱的常见原因 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="使用 rosbag2 回放数据时，图像、检测结果和 TF 都出现了，但查询坐标变换时提示数据不存在，或者延迟算出来是负数。这类问题通常不是消息缺失，而是节点之间对“现在几点”的理解不一致。 ROS 2 中的时间不是单一的。系统时间、稳态时间和仿真时间可以同时存在，节点通过参数选择使用哪一个。这篇文章讨论它们各自的语义，以及为什么混用会产生看起来矛盾的结...">
+    <meta name="twitter:description" content="回放录包时，图像、检测结果、TF 都出来了，查询变换却提示数据不存在，算出来的延迟还是负数。第一次碰到这种情况我花了大半天才反应过来:不是数据缺了，是几个节点对“现在几点”的理解不一样。 ROS 2 里的时间不是单一的。系统时间、稳态时间、仿真时间可以同时存在，节点通过参数选一个。 确定时间来源 → 逐节点设 use_sim_time → 回放时广播...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 时钟与 use_sim_time：回放正常但时间戳混乱的常见原因","description":"使用 rosbag2 回放数据时，图像、检测结果和 TF 都出现了，但查询坐标变换时提示数据不存在，或者延迟算出来是负数。这类问题通常不是消息缺失，而是节点之间对“现在几点”的理解不一致。 ROS 2 中的时间不是单一的。系统时间、稳态时间和仿真时间可以同时存在，节点通过参数选择使用哪一个。这篇文章讨论它们各自的语义，以及为什么混用会产生看起来矛盾的结...","datePublished":"2026-09-16T01:30:00.000Z","dateModified":"2026-09-16T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/16/ros2-clock-sim-time-consistency/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / ROS 2","keywords":"时钟, use_sim_time, 仿真时间, 回放","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 时钟与 use_sim_time：回放正常但时间戳混乱的常见原因","description":"回放录包时，图像、检测结果、TF 都出来了，查询变换却提示数据不存在，算出来的延迟还是负数。第一次碰到这种情况我花了大半天才反应过来:不是数据缺了，是几个节点对“现在几点”的理解不一样。 ROS 2 里的时间不是单一的。系统时间、稳态时间、仿真时间可以同时存在，节点通过参数选一个。 确定时间来源 → 逐节点设 use_sim_time → 回放时广播...","datePublished":"2026-09-16T01:30:00.000Z","dateModified":"2026-09-16T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/16/ros2-clock-sim-time-consistency/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术， ROS 2","keywords":"时钟， use_sim_time， 仿真时间， 回放","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -259,9 +259,7 @@
                         <span class="post-category">
                     分类：
                             
-                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
-                            
-                                <a href="/category/%E6%8A%80%E6%9C%AF/ROS-2/">ROS 2</a>
+                                <a href="/category/%E6%8A%80%E6%9C%AF%EF%BC%8C-ROS-2/">技术， ROS 2</a>
                             
                         </span>
                     
@@ -269,13 +267,7 @@
                         <span class="post-topics">
                             主题：
                             
-                                <a href="/tag/%E6%97%B6%E9%92%9F/">#时钟</a>
-                            
-                                <a href="/tag/use-sim-time/">#use_sim_time</a>
-                            
-                                <a href="/tag/%E4%BB%BF%E7%9C%9F%E6%97%B6%E9%97%B4/">#仿真时间</a>
-                            
-                                <a href="/tag/%E5%9B%9E%E6%94%BE/">#回放</a>
+                                <a href="/tag/%E6%97%B6%E9%92%9F%EF%BC%8C-use-sim-time%EF%BC%8C-%E4%BB%BF%E7%9C%9F%E6%97%B6%E9%97%B4%EF%BC%8C-%E5%9B%9E%E6%94%BE/">#时钟， use_sim_time， 仿真时间， 回放</a>
                             
                         </span>
                     
@@ -284,35 +276,35 @@
         </header>
 
         <div class="post-content">
-            <p>使用 rosbag2 回放数据时，图像、检测结果和 TF 都出现了，但查询坐标变换时提示数据不存在，或者延迟算出来是负数。这类问题通常不是消息缺失，而是节点之间对“现在几点”的理解不一致。</p>
-<p>ROS 2 中的时间不是单一的。系统时间、稳态时间和仿真时间可以同时存在，节点通过参数选择使用哪一个。这篇文章讨论它们各自的语义，以及为什么混用会产生看起来矛盾的结果。</p>
-<div class="note-flow"><span>确定时间来源</span><i>→</i><span>逐节点设置 use_sim_time</span><i>→</i><span>回放时广播 /clock</span><i>→</i><span>消息时间戳随仿真时间</span><i>→</i><span>查询使用同一时钟</span><i>→</i><span>核对时间戳与延迟</span></div>
+            <p>回放录包时，图像、检测结果、TF 都出来了，查询变换却提示数据不存在，算出来的延迟还是负数。第一次碰到这种情况我花了大半天才反应过来:不是数据缺了，是几个节点对“现在几点”的理解不一样。</p>
+<p>ROS 2 里的时间不是单一的。系统时间、稳态时间、仿真时间可以同时存在，节点通过参数选一个。</p>
+<div class="note-flow"><span>确定时间来源</span><i>→</i><span>逐节点设 use_sim_time</span><i>→</i><span>回放时广播 /clock</span><i>→</i><span>消息时间戳跟随仿真时间</span><i>→</i><span>查询用同一时钟</span><i>→</i><span>核对时间戳与延迟</span></div>
 
-<figure class="note-visual"><figcaption><span>三种时间</span>它们都能推进，但起点、可调整性和适用场景不同。</figcaption><div class="note-map"><span><b>系统时间</b><small>墙上时间，可能被 NTP 调整，会发生跳变。</small></span><span><b>稳态时间</b><small>单调推进，适合测时间间隔，不表示真实时刻。</small></span><span><b>仿真时间</b><small>由 /clock 驱动，回放和仿真中使用。</small></span><span><b>use_sim_time</b><small>逐节点参数，必须一致设置才有效。</small></span><span><b>/clock</b><small>提供仿真时间的入口，回放时需要显式播放。</small></span><span><b>时间戳</b><small>消息携带的时刻，其含义取决于发布方的时钟选择。</small></span></div></figure>
+<figure class="note-visual"><figcaption><span>三种时间</span>都能推进，但起点、能不能被调整、适用场景都不一样。</figcaption><div class="note-map"><span><b>系统时间</b><small>墙上时间，可能被对时调整，会跳变。</small></span><span><b>稳态时间</b><small>单调推进，适合测间隔，不代表真实时刻。</small></span><span><b>仿真时间</b><small>由 /clock 驱动，回放和仿真用。</small></span><span><b>use_sim_time</b><small>逐节点参数，要一致设置才有效。</small></span><span><b>/clock</b><small>仿真时间的入口，回放时要显式播。</small></span><span><b>时间戳</b><small>含义取决于发布方选的是哪个时钟。</small></span></div></figure>
 
-<h2 id="三种时间不能互相替代"><a href="#三种时间不能互相替代" class="headerlink" title="三种时间不能互相替代"></a>三种时间不能互相替代</h2><p>系统时间表示真实世界时刻，会随对时调整。用它计算两个事件之间的间隔时，如果中间发生了对时跳变，差值可能异常甚至为负。</p>
-<p>稳态时间单调递增，适合测量时长，但它不代表任何真实时刻，跨机器比较没有意义。</p>
-<p>仿真时间由 <code>/clock</code> 话题驱动，只在有发布者时推进。回放或仿真场景下用它，可以让整条链路基于录包里的时间运行。</p>
-<p>一个常见误解是“设置 <code>use_sim_time</code> 之后一切都会自动对齐”。实际这个参数是逐节点的，每个参与节点都要设置，而且订阅它的节点需要收到 <code>/clock</code> 才会推进。</p>
-<h2 id="先确认每个节点当前用的是哪个时钟"><a href="#先确认每个节点当前用的是哪个时钟" class="headerlink" title="先确认每个节点当前用的是哪个时钟"></a>先确认每个节点当前用的是哪个时钟</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ros2 param get /planner use_sim_time</span><br><span class="line">ros2 param get /controller use_sim_time</span><br><span class="line">ros2 topic <span class="built_in">echo</span> --once /clock</span><br><span class="line">ros2 topic hz /clock</span><br></pre></td></tr></table></figure>
+<h2 id="三种时间不能互相替"><a href="#三种时间不能互相替" class="headerlink" title="三种时间不能互相替"></a>三种时间不能互相替</h2><p>系统时间表示真实时刻，跟着对时走。拿它算两个事件的间隔，中间要是发生了对时跳变，差值可能异常甚至为负。</p>
+<p>稳态时间单调递增，适合测时长，但它不代表任何真实时刻，跨机器比没有意义。</p>
+<p>仿真时间由 <code>/clock</code> 驱动，只有存在发布者时才推进。回放和仿真场景用它，能让整条链路基于录包里的时间跑。</p>
+<p>一个常见误解是“设了 <code>use_sim_time</code> 就自动对齐了”。实际上它是逐节点的，参与的每个节点都要设，而且订阅方得收到 <code>/clock</code> 才会推进。</p>
+<h2 id="先看每个节点现在用哪个时钟"><a href="#先看每个节点现在用哪个时钟" class="headerlink" title="先看每个节点现在用哪个时钟"></a>先看每个节点现在用哪个时钟</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ros2 param get /planner use_sim_time</span><br><span class="line">ros2 param get /controller use_sim_time</span><br><span class="line">ros2 topic <span class="built_in">echo</span> --once /clock</span><br><span class="line">ros2 topic hz /clock</span><br></pre></td></tr></table></figure>
 
-<p>第一、二条确认节点设置是否一致。第三条确认 <code>/clock</code> 确实在发布，第四条确认它在推进而不是停在一个值上。</p>
-<p>如果只设置了部分节点，混合状态会表现出典型症状：使用仿真时间的节点认为时间是回放进度，使用系统时间的节点认为时间是当前时刻，两者计算出的消息年龄差异巨大。</p>
-<h2 id="回放时的正确顺序"><a href="#回放时的正确顺序" class="headerlink" title="回放时的正确顺序"></a>回放时的正确顺序</h2><p>先启动时钟发布，再启动消费节点，最后开始回放数据。顺序反了会出现节点在启动阶段拿不到时间而报错。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 使用仿真时间启动节点</span></span><br><span class="line">ros2 launch my_robot demo.launch.py use_sim_time:=<span class="literal">true</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 回放并广播时钟</span></span><br><span class="line">ros2 bag play my_bag --clock</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 确认时间已经推进</span></span><br><span class="line">ros2 topic <span class="built_in">echo</span> --once /clock</span><br></pre></td></tr></table></figure>
+<p>前两条看设置是否一致，第三条确认 <code>/clock</code> 确实在发，第四条确认它在推进而不是卡在一个值上。</p>
+<p>只设了一部分节点时，症状很典型:用仿真时间的节点认为现在是回放进度，用系统时间的认为就是当前时刻，两边算出来的消息年龄差得离谱。</p>
+<h2 id="回放的启动顺序"><a href="#回放的启动顺序" class="headerlink" title="回放的启动顺序"></a>回放的启动顺序</h2><p>先起时钟发布，再起消费节点，最后开始回放。反过来的话，节点在启动阶段拿不到时间会报错。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 用仿真时间启动节点</span></span><br><span class="line">ros2 launch my_robot demo.launch.py use_sim_time:=<span class="literal">true</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 回放并广播时钟</span></span><br><span class="line">ros2 bag play my_bag --clock</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 确认时间已经在走</span></span><br><span class="line">ros2 topic <span class="built_in">echo</span> --once /clock</span><br></pre></td></tr></table></figure>
 
-<p><code>--clock</code> 是关键，没有它包里会缺少时钟来源，<code>use_sim_time</code> 为真的节点会停在时间零点或等待。</p>
-<h2 id="时间戳的含义要按发布方判断"><a href="#时间戳的含义要按发布方判断" class="headerlink" title="时间戳的含义要按发布方判断"></a>时间戳的含义要按发布方判断</h2><p>同一条消息里的 <code>header.stamp</code>，含义取决于发布者怎么填。它可能是传感器采样时刻、数据完成时刻或发布时刻，这三者对延迟计算的影响不同。</p>
-<p>计算端到端延迟时，需要明确两端使用的是同一时钟，并且时间戳对应同一个物理事件。如果起点是采样时刻、终点是系统时间，那么结论只在没有时钟跳变且两个时钟同源时成立。</p>
-<p>一个稳妥的做法是同时记录时间戳和接收时刻，并在日志里标注时钟来源。事后发现异常时，可以判断问题是数据本身延迟大，还是时钟口径不一致。</p>
-<h2 id="排查顺序建议"><a href="#排查顺序建议" class="headerlink" title="排查顺序建议"></a>排查顺序建议</h2><p>先确认 <code>/clock</code> 是否存在并推进；再确认所有相关节点 <code>use_sim_time</code> 一致；然后确认消息时间戳在推进；最后才计算延迟指标。</p>
-<p>跳过前两步直接看延迟数字，很容易把时钟口径问题当成性能问题，从而去优化一个并不存在的瓶颈。</p>
+<p><code>--clock</code> 是关键。没有它包里就没有时钟来源，<code>use_sim_time</code> 为真的节点会停在时间零点或者一直等。</p>
+<h2 id="时间戳的含义得按发布方判断"><a href="#时间戳的含义得按发布方判断" class="headerlink" title="时间戳的含义得按发布方判断"></a>时间戳的含义得按发布方判断</h2><p>同一条消息里的 <code>header.stamp</code>，含义取决于发布者怎么填。可能是传感器采样时刻、数据完成时刻，也可能是发布时刻，这三个对延迟计算的影响完全不同。</p>
+<p>算端到端延迟时，要明确两端用的是不是同一个时钟，以及时间戳对应的是不是同一个物理事件。起点是采样时刻、终点是系统时间的话，结论只在没有时钟跳变且两者同源时才成立。</p>
+<p>稳妥一点的做法是同时记时间戳和接收时刻，并在日志里标出时钟来源。事后发现异常时，能分清是数据本身慢，还是口径不一致。</p>
+<h2 id="排查顺序"><a href="#排查顺序" class="headerlink" title="排查顺序"></a>排查顺序</h2><p>先确认 <code>/clock</code> 存在且在推进;再确认相关节点 <code>use_sim_time</code> 一致;然后确认消息时间戳在推进;最后才算延迟指标。</p>
+<p>跳过前两步直接看延迟数字，很容易把时钟口径问题当成性能问题，然后去优化一个根本不存在的瓶颈。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
 <li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Clock.html">ROS 2 时钟概念说明</a></li>
 <li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Tutorials/Intermediate/Time/Understanding-Sim-Time.html">理解仿真时间教程</a></li>
 <li><a target="_blank" rel="noopener" href="https://design.ros2.org/articles/clock_and_time.html">ROS 2 时间设计文档</a></li>
 </ul>
-<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文讨论时钟语义与配置一致性，不包含任何具体系统的回放性能数据。文中的命令用于确认当前状态；“时间一致”是延迟结论成立的前提，但即使时间一致，延迟数值仍取决于负载与环境，需要单独测量。</p>
+<p><strong>证据边界：</strong>本文不含任何系统的回放性能数据。上面的命令用来确认当前状态。“时间一致”是延迟结论成立的前提，但即便一致，具体数值仍然取决于负载和环境，得单独测。</p>
 
         </div>
 
@@ -342,41 +334,13 @@
         
         
         
-            <section class="related-posts" aria-labelledby="related-posts-title">
-                <h2 id="related-posts-title">同主题继续阅读</h2>
-                <div class="related-post-list">
-                    
-                        <a href="/2026/09/18/ros2-composable-nodes-intra-process/">
-                            <span>ROS 2 组合节点与进程内通信：什么时候合并进程真的省掉了拷贝</span>
-                            <time datetime="2026-09-18T02:10:00.000Z">2026-09-18</time>
-                        </a>
-                    
-                        <a href="/2026/09/18/ros2-lifecycle-node-state-machine/">
-                            <span>ROS 2 生命周期节点：为什么“启动完成”不能只靠一个 bool</span>
-                            <time datetime="2026-09-18T01:30:00.000Z">2026-09-18</time>
-                        </a>
-                    
-                        <a href="/2026/09/12/ros2-control-hardware-interface-deadlines/">
-                            <span>ros2_control 硬件接口的生命周期与实时性约束：read/write 里不能做的事，以及 watchdog 该放在哪一层</span>
-                            <time datetime="2026-09-12T01:30:00.000Z">2026-09-12</time>
-                        </a>
-                    
-                </div>
-            </section>
-        
         <section class="post-tags">
             <div>
                 <span>标签：</span>
                 <span class="tag">
                     
                     
-                        <a href="/tag/%E6%97%B6%E9%92%9F/"># 时钟</a>
-                    
-                        <a href="/tag/use-sim-time/"># use_sim_time</a>
-                    
-                        <a href="/tag/%E4%BB%BF%E7%9C%9F%E6%97%B6%E9%97%B4/"># 仿真时间</a>
-                    
-                        <a href="/tag/%E5%9B%9E%E6%94%BE/"># 回放</a>
+                        <a href="/tag/%E6%97%B6%E9%92%9F%EF%BC%8C-use-sim-time%EF%BC%8C-%E4%BB%BF%E7%9C%9F%E6%97%B6%E9%97%B4%EF%BC%8C-%E5%9B%9E%E6%94%BE/"># 时钟， use_sim_time， 仿真时间， 回放</a>
                     
                         
                 </span>

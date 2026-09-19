@@ -18,14 +18,14 @@
 
 <title>用 systemd 托管 ROS 2 节点：重启策略和进程组决定了故障传播 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="在开发机上，机器人程序通常由人在终端里启动；到设备上，它需要开机自启、崩溃后恢复、日志可追溯。用 systemd 托管是常见选择，但“写一个 unit 文件”和“定义清楚故障边界”是两件事。 这篇文章关注三个容易被忽略的决策：重启策略描述了哪些失败、进程组决定了停止信号发给谁、以及退出码最终如何被系统解释。它们共同决定了一个节点崩溃时，系统是局部恢复还...">
+    <meta name="description" content="开发机上机器人程序都是人在终端里敲起来的，到了设备上就得开机自启、崩了能恢复、日志能查。用 systemd 是最常见的路子，但写个 unit 文件容易，把故障边界想清楚不容易。 我见过 Restart=always 配上一个参数错误的节点，结果服务每两秒重启一次，日志被刷满，真正的原因淹没在重启记录里。 定义启动命令 → 限定用户和权限 → 定义重启条...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/09/07/systemd-ros2-service-restart-boundaries/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="用 systemd 托管 ROS 2 节点：重启策略和进程组决定了故障传播 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="在开发机上，机器人程序通常由人在终端里启动；到设备上，它需要开机自启、崩溃后恢复、日志可追溯。用 systemd 托管是常见选择，但“写一个 unit 文件”和“定义清楚故障边界”是两件事。 这篇文章关注三个容易被忽略的决策：重启策略描述了哪些失败、进程组决定了停止信号发给谁、以及退出码最终如何被系统解释。它们共同决定了一个节点崩溃时，系统是局部恢复还...">
+    <meta property="og:description" content="开发机上机器人程序都是人在终端里敲起来的，到了设备上就得开机自启、崩了能恢复、日志能查。用 systemd 是最常见的路子，但写个 unit 文件容易，把故障边界想清楚不容易。 我见过 Restart=always 配上一个参数错误的节点，结果服务每两秒重启一次，日志被刷满，真正的原因淹没在重启记录里。 定义启动命令 → 限定用户和权限 → 定义重启条...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/09/07/systemd-ros2-service-restart-boundaries/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,13 +36,13 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="用 systemd 托管 ROS 2 节点：重启策略和进程组决定了故障传播 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="在开发机上，机器人程序通常由人在终端里启动；到设备上，它需要开机自启、崩溃后恢复、日志可追溯。用 systemd 托管是常见选择，但“写一个 unit 文件”和“定义清楚故障边界”是两件事。 这篇文章关注三个容易被忽略的决策：重启策略描述了哪些失败、进程组决定了停止信号发给谁、以及退出码最终如何被系统解释。它们共同决定了一个节点崩溃时，系统是局部恢复还...">
+    <meta name="twitter:description" content="开发机上机器人程序都是人在终端里敲起来的，到了设备上就得开机自启、崩了能恢复、日志能查。用 systemd 是最常见的路子，但写个 unit 文件容易，把故障边界想清楚不容易。 我见过 Restart=always 配上一个参数错误的节点，结果服务每两秒重启一次，日志被刷满，真正的原因淹没在重启记录里。 定义启动命令 → 限定用户和权限 → 定义重启条...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"用 systemd 托管 ROS 2 节点：重启策略和进程组决定了故障传播","description":"在开发机上，机器人程序通常由人在终端里启动；到设备上，它需要开机自启、崩溃后恢复、日志可追溯。用 systemd 托管是常见选择，但“写一个 unit 文件”和“定义清楚故障边界”是两件事。 这篇文章关注三个容易被忽略的决策：重启策略描述了哪些失败、进程组决定了停止信号发给谁、以及退出码最终如何被系统解释。它们共同决定了一个节点崩溃时，系统是局部恢复还...","datePublished":"2026-09-07T01:30:00.000Z","dateModified":"2026-09-07T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/07/systemd-ros2-service-restart-boundaries/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式Linux","keywords":"故障恢复, systemd, 服务化, 进程管理","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"用 systemd 托管 ROS 2 节点：重启策略和进程组决定了故障传播","description":"开发机上机器人程序都是人在终端里敲起来的，到了设备上就得开机自启、崩了能恢复、日志能查。用 systemd 是最常见的路子，但写个 unit 文件容易，把故障边界想清楚不容易。 我见过 Restart=always 配上一个参数错误的节点，结果服务每两秒重启一次，日志被刷满，真正的原因淹没在重启记录里。 定义启动命令 → 限定用户和权限 → 定义重启条...","datePublished":"2026-09-07T01:30:00.000Z","dateModified":"2026-09-07T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/07/systemd-ros2-service-restart-boundaries/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式Linux","keywords":"故障恢复, systemd, 服务化, 进程管理","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -284,36 +284,36 @@
         </header>
 
         <div class="post-content">
-            <p>在开发机上，机器人程序通常由人在终端里启动；到设备上，它需要开机自启、崩溃后恢复、日志可追溯。用 systemd 托管是常见选择，但“写一个 unit 文件”和“定义清楚故障边界”是两件事。</p>
-<p>这篇文章关注三个容易被忽略的决策：重启策略描述了哪些失败、进程组决定了停止信号发给谁、以及退出码最终如何被系统解释。它们共同决定了一个节点崩溃时，系统是局部恢复还是整体失控。</p>
-<div class="note-flow"><span>unit 定义启动命令</span><i>→</i><span>限定运行用户与权限</span><i>→</i><span>定义重启条件</span><i>→</i><span>限定进程组与信号</span><i>→</i><span>限制资源与优先级</span><i>→</i><span>日志进入 journal</span></div>
+            <p>开发机上机器人程序都是人在终端里敲起来的，到了设备上就得开机自启、崩了能恢复、日志能查。用 systemd 是最常见的路子，但写个 unit 文件容易，把故障边界想清楚不容易。</p>
+<p>我见过 <code>Restart=always</code> 配上一个参数错误的节点，结果服务每两秒重启一次，日志被刷满，真正的原因淹没在重启记录里。</p>
+<div class="note-flow"><span>定义启动命令</span><i>→</i><span>限定用户和权限</span><i>→</i><span>定义重启条件</span><i>→</i><span>限定进程组和信号</span><i>→</i><span>限制资源与优先级</span><i>→</i><span>日志进 journal</span></div>
 
-<figure class="note-visual"><figcaption><span>托管边界</span>unit 文件写的是期望状态；实际恢复行为由重启条件、信号和超时共同决定。</figcaption><div class="note-map"><span><b>Restart=</b><small>on-failure 与 always 对“失败”的定义不同。</small></span><span><b>KillMode</b><small>决定停止时只杀主进程，还是整个进程组。</small></span><span><b>TimeoutStopSec</b><small>超时后升级为强杀，可能留下未释放的硬件资源。</small></span><span><b>After/Wants</b><small>描述启动顺序和依赖，不等于依赖已就绪。</small></span><span><b>权限</b><small>实时能力、设备访问和文件权限都应显式声明。</small></span><span><b>journal</b><small>标准输出与退出码是事后定位问题的主要证据。</small></span></div></figure>
+<figure class="note-visual"><figcaption><span>托管边界</span>unit 写的是期望状态，实际恢复行为由重启条件、信号和超时一起决定。</figcaption><div class="note-map"><span><b>Restart=</b><small>on-failure 和 always 对“失败”的定义不同。</small></span><span><b>KillMode</b><small>停止时只杀主进程，还是整个进程组。</small></span><span><b>TimeoutStopSec</b><small>超时升级为强杀，可能留下没释放的硬件。</small></span><span><b>After/Wants</b><small>描述启动顺序，不等于依赖已就绪。</small></span><span><b>权限</b><small>实时能力、设备访问、文件权限都要显式写。</small></span><span><b>journal</b><small>标准输出和退出码是事后定位的主要证据。</small></span></div></figure>
 
-<h2 id="重启策略要匹配失败类型"><a href="#重启策略要匹配失败类型" class="headerlink" title="重启策略要匹配失败类型"></a>重启策略要匹配失败类型</h2><p><code>Restart=always</code> 听起来最稳妥，实则会掩盖配置错误。如果节点因为参数非法而每次启动都立刻退出，<code>always</code> 会把它变成一个持续重启的循环，日志被反复刷屏，真正原因反而更难发现。</p>
-<p>更常见的选择是 <code>Restart=on-failure</code>，它只在非正常退出时重启。配合 <code>StartLimitIntervalSec</code> 与 <code>StartLimitBurst</code>，可以限制短时间内重启次数，避免无限循环：</p>
+<h2 id="Restart-always-经常是错的"><a href="#Restart-always-经常是错的" class="headerlink" title="Restart&#x3D;always 经常是错的"></a>Restart&#x3D;always 经常是错的</h2><p><code>always</code> 看着最稳妥，实际上会掩盖配置错误。节点因为参数非法每次启动就退出，<code>always</code> 把它变成一个持续重启的循环，日志翻来翻去也看不到重点。</p>
+<p>更常用的是 <code>on-failure</code>，只在非正常退出时重启，再配上重启次数限制：</p>
 <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[Service]</span></span><br><span class="line"><span class="attr">ExecStart</span>=/opt/robot/bin/task_server</span><br><span class="line"><span class="attr">Restart</span>=<span class="literal">on</span>-failure</span><br><span class="line"><span class="attr">RestartSec</span>=<span class="number">2</span></span><br><span class="line"><span class="attr">StartLimitIntervalSec</span>=<span class="number">60</span></span><br><span class="line"><span class="attr">StartLimitBurst</span>=<span class="number">5</span></span><br></pre></td></tr></table></figure>
 
-<p>这几个值的含义需要和节点行为对齐。如果节点在配置错误时以 0 退出，<code>on-failure</code> 就不会重启，问题会被静默接受；如果节点在所有错误路径上都以非零退出，那么一个暂时的设备占用会触发重启。退出码应当是节点对外契约的一部分，而不是随手写 <code>return -1</code>。</p>
-<h2 id="进程组决定停止时谁会收到信号"><a href="#进程组决定停止时谁会收到信号" class="headerlink" title="进程组决定停止时谁会收到信号"></a>进程组决定停止时谁会收到信号</h2><p>ROS 2 节点经常以 launch 或脚本形式启动子进程。默认情况下，停止服务时 systemd 会终止整个控制组，这在大多数场景下是正确的。但如果启动脚本自己管理子进程，<code>KillMode</code> 的选择就会影响资源释放。</p>
+<p>这几个值要和节点的行为对上。如果节点配置错误时以 0 退出，<code>on-failure</code> 就不会重启，问题被静默接受。如果所有错误路径都返回非零，一次临时的设备占用也会触发重启。退出码应该是节点对外契约的一部分，不是随手写的 <code>return -1</code>。</p>
+<h2 id="停止时到底杀谁"><a href="#停止时到底杀谁" class="headerlink" title="停止时到底杀谁"></a>停止时到底杀谁</h2><p>ROS 2 节点经常通过 launch 或脚本拉起子进程。默认情况下 systemd 会终止整个控制组，多数场景这是对的。但启动脚本自己管子进程时，<code>KillMode</code> 的选择就影响资源释放。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl show my-robot.service -p KillMode -p TimeoutStopSec</span><br></pre></td></tr></table></figure>
 
-<p><code>TimeoutStopSec</code> 之后 systemd 会升级为强杀。对于持有 SocketCAN 句柄、串口或 CAN 设备的进程，强杀意味着没有机会执行安全停止。因此清理时间必须留够，而安全动作本身最好由设备侧看门狗独立兜底，而不是只依赖进程优雅退出。</p>
-<h2 id="依赖顺序不等于依赖就绪"><a href="#依赖顺序不等于依赖就绪" class="headerlink" title="依赖顺序不等于依赖就绪"></a>依赖顺序不等于依赖就绪</h2><p><code>After=</code> 和 <code>Wants=</code> 描述的是启动顺序和依赖关系，不表示被依赖的服务已经可以工作。这一点和 launch 的延时问题同源：顺序被表达出来了，条件没有。</p>
-<p>如果确实需要等待条件，常见做法是在 unit 里使用健康检查命令配合 <code>ExecStartPre</code>，或者让上层节点自己重试连接，而不是依赖一个固定延时。重试要有限次并且有明确失败出口，否则又会退化成无限等待。</p>
-<h2 id="权限与实时能力应显式声明"><a href="#权限与实时能力应显式声明" class="headerlink" title="权限与实时能力应显式声明"></a>权限与实时能力应显式声明</h2><p>实时任务需要的能力不应该通过“用 root 跑”来解决。systemd 提供了更窄的授权方式：</p>
+<p><code>TimeoutStopSec</code> 到点后 systemd 升级为强杀。对持有 SocketCAN 句柄、串口或 CAN 设备的进程，强杀意味着没机会执行安全停止。所以清理时间要留够，而安全动作本身最好由设备侧看门狗独立兜底，不要只靠进程优雅退出。</p>
+<h2 id="After-不等于就绪"><a href="#After-不等于就绪" class="headerlink" title="After 不等于就绪"></a>After 不等于就绪</h2><p><code>After=</code> 和 <code>Wants=</code> 描述的是启动顺序和依赖，不表示被依赖的服务已经能干活了。这跟 launch 的延时问题是同一个毛病：顺序表达了，条件没表达。</p>
+<p>确实需要等条件时，常见做法是用健康检查命令配 <code>ExecStartPre</code>，或者让上层节点自己重试连接。重试要有次数上限和明确的失败出口，否则又退化成无限等待。</p>
+<h2 id="权限别用-root-解决"><a href="#权限别用-root-解决" class="headerlink" title="权限别用 root 解决"></a>权限别用 root 解决</h2><p>实时任务需要的能力，不该靠“用 root 跑”来绕过。systemd 提供了更窄的授权方式：</p>
 <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[Service]</span></span><br><span class="line"><span class="attr">User</span>=robot</span><br><span class="line"><span class="attr">AmbientCapabilities</span>=CAP_SYS_NICE</span><br><span class="line"><span class="attr">LimitRTPRIO</span>=<span class="number">80</span></span><br><span class="line"><span class="attr">LimitMEMLOCK</span>=infinity</span><br></pre></td></tr></table></figure>
 
-<p>这些声明也需要被验证。写进 unit 不代表实际生效，容器、cgroup 版本和内核配置都可能改变结果。验证方式是运行后回读进程的真实限制，而不是假设配置已经生效。</p>
-<h2 id="日志和退出码是最终证据"><a href="#日志和退出码是最终证据" class="headerlink" title="日志和退出码是最终证据"></a>日志和退出码是最终证据</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">journalctl -u my-robot.service -n 50 --no-pager</span><br><span class="line">systemctl status my-robot.service</span><br></pre></td></tr></table></figure>
+<p>写到 unit 里不等于生效。容器、cgroup 版本和内核配置都会改变结果，得在运行后回读进程的真实限制，而不是假设配置已经起作用。</p>
+<h2 id="出了事要能查"><a href="#出了事要能查" class="headerlink" title="出了事要能查"></a>出了事要能查</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">journalctl -u my-robot.service -n 50 --no-pager</span><br><span class="line">systemctl status my-robot.service</span><br></pre></td></tr></table></figure>
 
-<p>判断一次故障时，至少要能回答：进程以什么退出码结束、是被信号终止还是主动退出、重启了几次、最后一次重启前发生了什么。如果这些信息只能靠翻应用日志，说明单元配置还没有把运行状态完整暴露出来。</p>
+<p>判断一次故障，至少得能回答：进程以什么退出码结束、是被信号杀的还是自己退的、重启了几次、最后一次重启前发生了什么。这些如果只能靠翻应用日志，说明单元配置还没把运行状态暴露出来。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
 <li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/systemd.service.5.html">systemd.service(5)：重启与退出语义</a></li>
 <li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/systemd.exec.5.html">systemd.exec(5)：权限与资源限制</a></li>
 <li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/systemd.kill.5.html">systemd.kill(5)：KillMode 与停止信号</a></li>
 </ul>
-<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文讨论 systemd 的托管语义与配置选项，不包含任何具体设备上的实测恢复时间。重启策略、超时和权限配置都需要在目标系统上验证实际行为；“服务能自启”也不等于“故障能恢复”，安全相关的停止动作应另有独立机制。</p>
+<p><strong>证据边界：</strong>本文不包含任何设备上的实测恢复时间。重启策略、超时和权限都要在目标系统上验证实际行为。“服务能自启”也不等于“故障能恢复”，安全相关的停止动作应该有独立机制。</p>
 
         </div>
 

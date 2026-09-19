@@ -18,14 +18,14 @@
 
 <title>perf 采样入门：从 perf record 到火焰图，先分清 on-CPU 和 off-CPU | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="程序跑得慢时，最容易得到的结论是“某个函数耗时长”。但耗时有两种来源：线程真正在 CPU 上执行，或者线程在等待别的东西让出 CPU。前者用 on-CPU 采样能看到，后者需要 off-CPU 分析。把两者混在一起看，结论经常是错的。 这篇文章按“先确认时间花在 CPU 上还是等待上”的顺序展开，因为这决定了下一步该用哪类工具。 确定慢的进程 → 采样...">
+    <meta name="description" content="第一次用火焰图的时候我犯过一个错：抓了 30 秒，图看起来很“瘦”，几乎没有热点，于是断定程序没问题。实际上那个程序大部分时间在等锁，根本不在 CPU 上跑。 火焰图只画 on-CPU 的部分。线程睡着的时候不会被采到，所以“图很干净”和“程序很快”是两件毫不相干的事。 确定慢的进程 → 采 on-CPU 火焰图 → 看等待是不是主导 → 必要时做 o...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/09/11/perf-record-offcpu-flamegraph/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="perf 采样入门：从 perf record 到火焰图，先分清 on-CPU 和 off-CPU | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="程序跑得慢时，最容易得到的结论是“某个函数耗时长”。但耗时有两种来源：线程真正在 CPU 上执行，或者线程在等待别的东西让出 CPU。前者用 on-CPU 采样能看到，后者需要 off-CPU 分析。把两者混在一起看，结论经常是错的。 这篇文章按“先确认时间花在 CPU 上还是等待上”的顺序展开，因为这决定了下一步该用哪类工具。 确定慢的进程 → 采样...">
+    <meta property="og:description" content="第一次用火焰图的时候我犯过一个错：抓了 30 秒，图看起来很“瘦”，几乎没有热点，于是断定程序没问题。实际上那个程序大部分时间在等锁，根本不在 CPU 上跑。 火焰图只画 on-CPU 的部分。线程睡着的时候不会被采到，所以“图很干净”和“程序很快”是两件毫不相干的事。 确定慢的进程 → 采 on-CPU 火焰图 → 看等待是不是主导 → 必要时做 o...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/09/11/perf-record-offcpu-flamegraph/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,13 +36,13 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="perf 采样入门：从 perf record 到火焰图，先分清 on-CPU 和 off-CPU | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="程序跑得慢时，最容易得到的结论是“某个函数耗时长”。但耗时有两种来源：线程真正在 CPU 上执行，或者线程在等待别的东西让出 CPU。前者用 on-CPU 采样能看到，后者需要 off-CPU 分析。把两者混在一起看，结论经常是错的。 这篇文章按“先确认时间花在 CPU 上还是等待上”的顺序展开，因为这决定了下一步该用哪类工具。 确定慢的进程 → 采样...">
+    <meta name="twitter:description" content="第一次用火焰图的时候我犯过一个错：抓了 30 秒，图看起来很“瘦”，几乎没有热点，于是断定程序没问题。实际上那个程序大部分时间在等锁，根本不在 CPU 上跑。 火焰图只画 on-CPU 的部分。线程睡着的时候不会被采到，所以“图很干净”和“程序很快”是两件毫不相干的事。 确定慢的进程 → 采 on-CPU 火焰图 → 看等待是不是主导 → 必要时做 o...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"perf 采样入门：从 perf record 到火焰图，先分清 on-CPU 和 off-CPU","description":"程序跑得慢时，最容易得到的结论是“某个函数耗时长”。但耗时有两种来源：线程真正在 CPU 上执行，或者线程在等待别的东西让出 CPU。前者用 on-CPU 采样能看到，后者需要 off-CPU 分析。把两者混在一起看，结论经常是错的。 这篇文章按“先确认时间花在 CPU 上还是等待上”的顺序展开，因为这决定了下一步该用哪类工具。 确定慢的进程 → 采样...","datePublished":"2026-09-11T01:30:00.000Z","dateModified":"2026-09-11T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/11/perf-record-offcpu-flamegraph/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 调试","keywords":"性能分析, perf, 火焰图, 采样","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"perf 采样入门：从 perf record 到火焰图，先分清 on-CPU 和 off-CPU","description":"第一次用火焰图的时候我犯过一个错：抓了 30 秒，图看起来很“瘦”，几乎没有热点，于是断定程序没问题。实际上那个程序大部分时间在等锁，根本不在 CPU 上跑。 火焰图只画 on-CPU 的部分。线程睡着的时候不会被采到，所以“图很干净”和“程序很快”是两件毫不相干的事。 确定慢的进程 → 采 on-CPU 火焰图 → 看等待是不是主导 → 必要时做 o...","datePublished":"2026-09-11T01:30:00.000Z","dateModified":"2026-09-11T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/11/perf-record-offcpu-flamegraph/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 调试","keywords":"性能分析, perf, 火焰图, 采样","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -284,34 +284,33 @@
         </header>
 
         <div class="post-content">
-            <p>程序跑得慢时，最容易得到的结论是“某个函数耗时长”。但耗时有两种来源：线程真正在 CPU 上执行，或者线程在等待别的东西让出 CPU。前者用 on-CPU 采样能看到，后者需要 off-CPU 分析。把两者混在一起看，结论经常是错的。</p>
-<p>这篇文章按“先确认时间花在 CPU 上还是等待上”的顺序展开，因为这决定了下一步该用哪类工具。</p>
-<div class="note-flow"><span>确定慢的进程</span><i>→</i><span>采样 on-CPU 火焰图</span><i>→</i><span>判断等待是否占主导</span><i>→</i><span>必要时做 off-CPU 分析</span><i>→</i><span>定位具体阻塞点</span><i>→</i><span>修改后重新采样对比</span></div>
+            <p>第一次用火焰图的时候我犯过一个错：抓了 30 秒，图看起来很“瘦”，几乎没有热点，于是断定程序没问题。实际上那个程序大部分时间在等锁，根本不在 CPU 上跑。</p>
+<p>火焰图只画 on-CPU 的部分。线程睡着的时候不会被采到，所以“图很干净”和“程序很快”是两件毫不相干的事。</p>
+<div class="note-flow"><span>确定慢的进程</span><i>→</i><span>采 on-CPU 火焰图</span><i>→</i><span>看等待是不是主导</span><i>→</i><span>必要时做 off-CPU 分析</span><i>→</i><span>定位阻塞点</span><i>→</i><span>改完重新采样对比</span></div>
 
-<figure class="note-visual"><figcaption><span>两类时间</span>火焰图的宽度代表采样占比，不包含线程睡眠的时间。</figcaption><div class="note-map"><span><b>on-CPU</b><small>线程在处理器上执行时的调用栈采样。</small></span><span><b>off-CPU</b><small>线程被阻塞等待时的栈，例如锁、IO、休眠。</small></span><span><b>采样频率</b><small>决定了时间分辨率，也决定了开销上限。</small></span><span><b>调用栈</b><small>没有栈数据时只能看到函数本身，无法归因。</small></span><span><b>火焰图</b><small>把大量采样按调用关系聚合成可读的形状。</small></span><span><b>符号</b><small>缺少调试信息时栈会退化成地址。</small></span></div></figure>
+<figure class="note-visual"><figcaption><span>两类时间</span>火焰图的宽度是采样占比，里面不含线程睡眠的时间。</figcaption><div class="note-map"><span><b>on-CPU</b><small>线程在处理器上执行时的调用栈采样。</small></span><span><b>off-CPU</b><small>被阻塞时的栈，比如锁、IO、休眠。</small></span><span><b>采样频率</b><small>决定时间分辨率，也决定开销上限。</small></span><span><b>调用栈</b><small>没有栈就只能看到函数本身，无法归因。</small></span><span><b>火焰图</b><small>把大量采样按调用关系聚合。</small></span><span><b>符号</b><small>缺调试信息时栈会退化成地址。</small></span></div></figure>
 
-<h2 id="先做一个基本采样"><a href="#先做一个基本采样" class="headerlink" title="先做一个基本采样"></a>先做一个基本采样</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">perf record -F 99 -g -p &lt;pid&gt; -- <span class="built_in">sleep</span> 30</span><br><span class="line">perf report --stdio | <span class="built_in">head</span> -40</span><br></pre></td></tr></table></figure>
+<h2 id="先做一次基本采样"><a href="#先做一次基本采样" class="headerlink" title="先做一次基本采样"></a>先做一次基本采样</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">perf record -F 99 -g -p &lt;pid&gt; -- <span class="built_in">sleep</span> 30</span><br><span class="line">perf report --stdio | <span class="built_in">head</span> -40</span><br></pre></td></tr></table></figure>
 
-<p><code>-F 99</code> 是采样频率，<code>-g</code> 表示记录调用栈，<code>-p</code> 指定进程。频率越高细节越多，开销也越大。先做一个可接受开销的采样，看是否存在明显热点。</p>
-<p>如果输出里大量出现地址而不是函数名，说明符号信息不足。常见原因是二进制被剥离、使用了优化构建且没有调试信息，或者采样的是 JIT 代码。补上符号是继续分析的前提，否则后面所有结论都不可靠。</p>
-<h2 id="生成火焰图"><a href="#生成火焰图" class="headerlink" title="生成火焰图"></a>生成火焰图</h2><p>火焰图把采样按调用关系聚合，宽条代表占比高的路径：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">perf script &gt; out.perf</span><br><span class="line">./FlameGraph/stackcollapse-perf.pl out.perf &gt; out.folded</span><br><span class="line">./FlameGraph/flamegraph.pl out.folded &gt; flame.svg</span><br></pre></td></tr></table></figure>
+<p><code>-F 99</code> 是频率，<code>-g</code> 记调用栈，<code>-p</code> 指定进程。频率越高细节越多，开销也越大，先挑一个能接受的值。</p>
+<p>输出里如果大量出现地址而不是函数名，说明符号缺失。常见原因是二进制被 strip 过、用了优化构建但没带调试信息，或者采的是 JIT 代码。先把符号补上，不然后面所有结论都不靠谱。</p>
+<h2 id="生成火焰图"><a href="#生成火焰图" class="headerlink" title="生成火焰图"></a>生成火焰图</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">perf script &gt; out.perf</span><br><span class="line">./FlameGraph/stackcollapse-perf.pl out.perf &gt; out.folded</span><br><span class="line">./FlameGraph/flamegraph.pl out.folded &gt; flame.svg</span><br></pre></td></tr></table></figure>
 
-<p>读图时有两点容易误判。第一，宽度是整个栈出现的比例，不是单个函数的独占时间，需要沿调用链看有多少是被上层带进来的。第二，火焰图只覆盖被采样的时间，如果线程大部分时间在睡眠，图上看起来会很“瘦”，但这不代表程序不慢。</p>
-<h2 id="判断是否需要-off-CPU-分析"><a href="#判断是否需要-off-CPU-分析" class="headerlink" title="判断是否需要 off-CPU 分析"></a>判断是否需要 off-CPU 分析</h2><p>一个实用信号是：程序实际耗时远大于火焰图覆盖的时间，而且线程处于可中断睡眠或等待状态。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 观察线程状态分布</span></span><br><span class="line">pidstat -p &lt;pid&gt; 1 5</span><br><span class="line"><span class="built_in">cat</span> /proc/&lt;pid&gt;/status | grep -E <span class="string">&quot;State|voluntary&quot;</span></span><br></pre></td></tr></table></figure>
+<p>读图有两个坑。宽度是整个栈出现的比例，不是单个函数的独占时间，得沿着调用链看有多少是被上层带进来的。另外它只覆盖被采到的时间，线程大多在睡眠时图会很瘦，但这不代表程序不慢。</p>
+<h2 id="什么时候该换-off-CPU"><a href="#什么时候该换-off-CPU" class="headerlink" title="什么时候该换 off-CPU"></a>什么时候该换 off-CPU</h2><p>一个实用信号：实际耗时远大于火焰图覆盖的时间，而且线程在可中断睡眠里。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pidstat -p &lt;pid&gt; 1 5</span><br><span class="line"><span class="built_in">cat</span> /proc/&lt;pid&gt;/status | grep -E <span class="string">&quot;State|voluntary&quot;</span></span><br></pre></td></tr></table></figure>
 
-<p>如果线程大量时间处于 <code>S</code> 或 <code>D</code> 状态，热点函数可能不是原因，等待才是。这时需要观察阻塞点，例如通过内核追踪点统计调度延迟与唤醒来源，而不是继续加大采样频率。</p>
-<p>off-CPU 分析的数据来源和 on-CPU 不同，往往需要内核追踪设施配合，并且采样对象是“等待事件”而不是“执行时刻”。把它和 on-CPU 火焰图放在同一张图里比较，会得到误导性结论。</p>
-<h2 id="采样只是证据的一半"><a href="#采样只是证据的一半" class="headerlink" title="采样只是证据的一半"></a>采样只是证据的一半</h2><p>采样给出的是统计分布，不直接给出因果。两个函数在图上并排出现，只说明它们被采到的次数多，不说明前者导致了后者变慢。</p>
-<p>要把结论变成可验证的假设，通常需要进一步实验：把可疑参数固定下来，只改变一个变量，重新采样对比。两次采样之间应该记录负载、线程数、输入和构建版本，否则差异可能来自环境变化。</p>
+<p>线程大量时间处于 <code>S</code> 或 <code>D</code>，那热点函数多半不是原因，等待才是。这时候该去看阻塞点，比如用内核追踪点统计调度延迟和唤醒来源，而不是继续加采样频率。</p>
+<p>off-CPU 的数据来源和 on-CPU 不一样，通常要内核追踪设施配合，采的是“等待事件”而不是“执行时刻”。把它和 on-CPU 火焰图画在同一张图里比较，得到的结论基本是误导的。</p>
+<h2 id="采样只是证据的一半"><a href="#采样只是证据的一半" class="headerlink" title="采样只是证据的一半"></a>采样只是证据的一半</h2><p>采样给的是统计分布，不是因果。两个函数在图上并排出现，只说明它们被采到的次数多，不说明后者是被前者拖慢的。</p>
+<p>要把结论变成可验证的假设，通常还得做实验：固定可疑参数，只改一个变量，重新采样对比。两次采样之间记录负载、线程数、输入和构建版本，不然差异可能来自环境变化。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
 <li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man1/perf.1.html">perf 手册页</a></li>
 <li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man1/perf-record.1.html">perf record 手册页</a></li>
 <li><a target="_blank" rel="noopener" href="https://github.com/brendangregg/FlameGraph">FlameGraph 工具集</a></li>
 <li><a target="_blank" rel="noopener" href="https://docs.kernel.org/admin-guide/perf-security.html">perf 安全与权限说明</a></li>
 </ul>
-<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文讨论采样流程与解读方式，不包含任何具体程序的性能数字。火焰图的形状和热点取决于输入负载、构建选项和运行环境；没有符号或没有对照实验时，采样结果不足以支撑“某函数是瓶颈”的结论。</p>
+<p><strong>证据边界：</strong>本文不含任何具体程序的性能数字。火焰图的形状和热点取决于输入负载、构建选项和运行环境；没有符号或者没有对照实验时，采样结果撑不起“某函数是瓶颈”这种结论。</p>
 
         </div>
 

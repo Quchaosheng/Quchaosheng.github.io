@@ -18,14 +18,14 @@
 
 <title>ROS 2 参数体系：为什么 declare 之后的类型和范围不能再变 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="把配置从代码里挪到参数，通常被当作纯粹的整理工作。但参数不只是“可运行时修改的变量”，它带有类型、默认值、约束和变更通知。如果这些信息没有被声明清楚，参数系统就无法在修改发生时判断这次改动是否合法。 这篇文章按参数的生命周期展开：声明时确定什么、修改时能校验什么、以及为什么“运行时可变”不等于“随时可改”。 declare 声明名称与类型 → 设置默认...">
+    <meta name="description" content="一开始我也觉得参数就是把配置从代码挪到 YAML，纯整理工作。后来在一个节点上把 buffer_size 做成可运行时修改，改完没崩，但分配好的缓冲区大小没跟着变，行为变得很奇怪。 那时候才明白，参数不只是“可运行时修改的变量”，它带类型、默认值、约束和变更通知。这些没声明清楚，参数系统就没法判断这次改动是否合法。 declare 定名称与类型 → 设...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/09/08/ros2-parameters-declaration-lifecycle/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="ROS 2 参数体系：为什么 declare 之后的类型和范围不能再变 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="把配置从代码里挪到参数，通常被当作纯粹的整理工作。但参数不只是“可运行时修改的变量”，它带有类型、默认值、约束和变更通知。如果这些信息没有被声明清楚，参数系统就无法在修改发生时判断这次改动是否合法。 这篇文章按参数的生命周期展开：声明时确定什么、修改时能校验什么、以及为什么“运行时可变”不等于“随时可改”。 declare 声明名称与类型 → 设置默认...">
+    <meta property="og:description" content="一开始我也觉得参数就是把配置从代码挪到 YAML，纯整理工作。后来在一个节点上把 buffer_size 做成可运行时修改，改完没崩，但分配好的缓冲区大小没跟着变，行为变得很奇怪。 那时候才明白，参数不只是“可运行时修改的变量”，它带类型、默认值、约束和变更通知。这些没声明清楚，参数系统就没法判断这次改动是否合法。 declare 定名称与类型 → 设...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/09/08/ros2-parameters-declaration-lifecycle/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,13 +36,13 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ROS 2 参数体系：为什么 declare 之后的类型和范围不能再变 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="把配置从代码里挪到参数，通常被当作纯粹的整理工作。但参数不只是“可运行时修改的变量”，它带有类型、默认值、约束和变更通知。如果这些信息没有被声明清楚，参数系统就无法在修改发生时判断这次改动是否合法。 这篇文章按参数的生命周期展开：声明时确定什么、修改时能校验什么、以及为什么“运行时可变”不等于“随时可改”。 declare 声明名称与类型 → 设置默认...">
+    <meta name="twitter:description" content="一开始我也觉得参数就是把配置从代码挪到 YAML，纯整理工作。后来在一个节点上把 buffer_size 做成可运行时修改，改完没崩，但分配好的缓冲区大小没跟着变，行为变得很奇怪。 那时候才明白，参数不只是“可运行时修改的变量”，它带类型、默认值、约束和变更通知。这些没声明清楚，参数系统就没法判断这次改动是否合法。 declare 定名称与类型 → 设...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 参数体系：为什么 declare 之后的类型和范围不能再变","description":"把配置从代码里挪到参数，通常被当作纯粹的整理工作。但参数不只是“可运行时修改的变量”，它带有类型、默认值、约束和变更通知。如果这些信息没有被声明清楚，参数系统就无法在修改发生时判断这次改动是否合法。 这篇文章按参数的生命周期展开：声明时确定什么、修改时能校验什么、以及为什么“运行时可变”不等于“随时可改”。 declare 声明名称与类型 → 设置默认...","datePublished":"2026-09-08T01:30:00.000Z","dateModified":"2026-09-08T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/08/ros2-parameters-declaration-lifecycle/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / ROS 2","keywords":"参数, 节点配置, 类型约束, 参数回调","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ROS 2 参数体系：为什么 declare 之后的类型和范围不能再变","description":"一开始我也觉得参数就是把配置从代码挪到 YAML，纯整理工作。后来在一个节点上把 buffer_size 做成可运行时修改，改完没崩，但分配好的缓冲区大小没跟着变，行为变得很奇怪。 那时候才明白，参数不只是“可运行时修改的变量”，它带类型、默认值、约束和变更通知。这些没声明清楚，参数系统就没法判断这次改动是否合法。 declare 定名称与类型 → 设...","datePublished":"2026-09-08T01:30:00.000Z","dateModified":"2026-09-08T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/08/ros2-parameters-declaration-lifecycle/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / ROS 2","keywords":"参数, 节点配置, 类型约束, 参数回调","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -284,35 +284,35 @@
         </header>
 
         <div class="post-content">
-            <p>把配置从代码里挪到参数，通常被当作纯粹的整理工作。但参数不只是“可运行时修改的变量”，它带有类型、默认值、约束和变更通知。如果这些信息没有被声明清楚，参数系统就无法在修改发生时判断这次改动是否合法。</p>
-<p>这篇文章按参数的生命周期展开：声明时确定什么、修改时能校验什么、以及为什么“运行时可变”不等于“随时可改”。</p>
-<div class="note-flow"><span>declare 声明名称与类型</span><i>→</i><span>设置默认值与描述</span><i>→</i><span>附加范围约束</span><i>→</i><span>参数覆盖生效</span><i>→</i><span>参数回调校验</span><i>→</i><span>接受或拒绝变更</span></div>
+            <p>一开始我也觉得参数就是把配置从代码挪到 YAML，纯整理工作。后来在一个节点上把 <code>buffer_size</code> 做成可运行时修改，改完没崩，但分配好的缓冲区大小没跟着变，行为变得很奇怪。</p>
+<p>那时候才明白，参数不只是“可运行时修改的变量”，它带类型、默认值、约束和变更通知。这些没声明清楚，参数系统就没法判断这次改动是否合法。</p>
+<div class="note-flow"><span>declare 定名称与类型</span><i>→</i><span>设默认值和描述</span><i>→</i><span>加范围约束</span><i>→</i><span>参数覆盖生效</span><i>→</i><span>参数回调校验</span><i>→</i><span>接受或拒绝变更</span></div>
 
-<figure class="note-visual"><figcaption><span>声明是一个契约</span>类型、默认值和约束在声明时固定，之后所有修改都要通过校验。</figcaption><div class="note-map"><span><b>类型</b><small>声明后不可更改，整数参数不能后来变成字符串。</small></span><span><b>默认值</b><small>没有覆盖时的取值，必须本身合法。</small></span><span><b>约束</b><small>整数范围与浮点范围可在声明时附加。</small></span><span><b>描述</b><small>让参数自解释，参数列表本身就是文档。</small></span><span><b>参数回调</b><small>在变更被接受前校验跨参数一致性。</small></span><span><b>初始参数文件</b><small>启动时的覆盖来源，优先级需要明确记录。</small></span></div></figure>
+<figure class="note-visual"><figcaption><span>声明是一份契约</span>类型、默认值和约束在声明时固定，之后每次修改都要过校验。</figcaption><div class="note-map"><span><b>类型</b><small>声明后不能改，整数参数不能后来变字符串。</small></span><span><b>默认值</b><small>没覆盖时的取值，本身必须合法。</small></span><span><b>约束</b><small>整数和浮点范围可以在声明时附加。</small></span><span><b>描述</b><small>让参数自解释，列表本身就是文档。</small></span><span><b>参数回调</b><small>在变更被接受前校验跨参数一致性。</small></span><span><b>参数文件</b><small>启动时的覆盖来源，优先级要记清楚。</small></span></div></figure>
 
-<h2 id="声明时确定的是类型，不是值"><a href="#声明时确定的是类型，不是值" class="headerlink" title="声明时确定的是类型，不是值"></a>声明时确定的是类型，不是值</h2><p>参数的名称和类型在声明时固定，值可以被覆盖。这意味着不是所有参数都适合做成可运行时修改：如果一个参数被用来决定内存布局、队列容量或数组维度，中途改变它可能要求重新分配资源，而参数回调里通常不适合做这件事。</p>
-<p>实用的判断标准是：这次修改是否需要重建内部结构。如果答案是需要，那么这个参数更适合作为启动参数，在变更时拒绝或者要求重启。</p>
-<h2 id="范围约束要写在声明里"><a href="#范围约束要写在声明里" class="headerlink" title="范围约束要写在声明里"></a>范围约束要写在声明里</h2><p>最基础的校验是范围，它可以直接在声明时表达：</p>
+<h2 id="判断标准：这次改动要不要重建内部结构"><a href="#判断标准：这次改动要不要重建内部结构" class="headerlink" title="判断标准：这次改动要不要重建内部结构"></a>判断标准：这次改动要不要重建内部结构</h2><p>参数的名称和类型在声明时固定，值可以被覆盖。所以不是所有参数都适合做成可运行时修改。如果它决定内存布局、队列容量或者数组维度，中途改它可能要求重新分配资源，而参数回调里通常不适合干这个。</p>
+<p>我自己的判断很简单：这次修改要不要重建内部结构。要的话，这个参数更适合当作启动参数，变更时直接拒绝，或者要求重启。</p>
+<h2 id="范围写在声明里"><a href="#范围写在声明里" class="headerlink" title="范围写在声明里"></a>范围写在声明里</h2><p>最基础的校验是范围，声明时就能表达：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">node-&gt;<span class="built_in">declare_parameter</span>(<span class="string">&quot;control_period_ms&quot;</span>, <span class="number">10</span>, </span><br><span class="line">    rcl_interfaces::msg::ParameterDescriptor&#123;&#125;</span><br><span class="line">        .<span class="built_in">set__description</span>(<span class="string">&quot;控制周期，单位毫秒&quot;</span>)</span><br><span class="line">        .<span class="built_in">set__integer_range</span>(&#123;rcl_interfaces::msg::<span class="built_in">IntegerRange</span>()</span><br><span class="line">            .<span class="built_in">set__from_value</span>(<span class="number">1</span>)</span><br><span class="line">            .<span class="built_in">set__to_value</span>(<span class="number">1000</span>)</span><br><span class="line">            .<span class="built_in">set__step</span>(<span class="number">1</span>)&#125;));</span><br></pre></td></tr></table></figure>
 
-<p>声明之后，越界的覆盖会被直接拒绝。这一步能挡掉很多配置错误，而且拒绝发生在修改时刻，而不是等到控制循环里出现除零或数组越界。</p>
-<p>单参数约束无法表达的是交叉关系。比如“最小速度必须小于最大速度”，或者“超时时间必须小于父任务预算”。这类条件需要参数回调。</p>
-<h2 id="参数回调是最后一道校验"><a href="#参数回调是最后一道校验" class="headerlink" title="参数回调是最后一道校验"></a>参数回调是最后一道校验</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">node-&gt;<span class="built_in">add_on_set_parameters_callback</span>(</span><br><span class="line">    [](<span class="type">const</span> std::vector&lt;rclcpp::Parameter&gt; &amp; params) &#123;</span><br><span class="line">        rcl_interfaces::msg::SetParametersResult result;</span><br><span class="line">        result.successful = <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">const</span> <span class="keyword">auto</span> &amp; p : params) &#123;</span><br><span class="line">            <span class="keyword">if</span> (p.<span class="built_in">get_name</span>() == <span class="string">&quot;min_speed&quot;</span> &amp;&amp; p.<span class="built_in">as_double</span>() &gt;= current_max_speed) &#123;</span><br><span class="line">                result.successful = <span class="literal">false</span>;</span><br><span class="line">                result.reason = <span class="string">&quot;min_speed 必须小于 max_speed&quot;</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;);</span><br></pre></td></tr></table></figure>
+<p>声明之后，越界的覆盖会被直接拒掉。这一步能挡下大量配置错误，而且是在修改的那一刻拒绝，不用等到控制循环里出现除零或者数组越界。</p>
+<p>单参数约束表达不了的是关系。比如“最小速度必须小于最大速度”，或者“超时时间必须小于父任务预算”。这类得靠参数回调。</p>
+<h2 id="参数回调是最后一道防线"><a href="#参数回调是最后一道防线" class="headerlink" title="参数回调是最后一道防线"></a>参数回调是最后一道防线</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">node-&gt;<span class="built_in">add_on_set_parameters_callback</span>(</span><br><span class="line">    [](<span class="type">const</span> std::vector&lt;rclcpp::Parameter&gt; &amp; params) &#123;</span><br><span class="line">        rcl_interfaces::msg::SetParametersResult result;</span><br><span class="line">        result.successful = <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">const</span> <span class="keyword">auto</span> &amp; p : params) &#123;</span><br><span class="line">            <span class="keyword">if</span> (p.<span class="built_in">get_name</span>() == <span class="string">&quot;min_speed&quot;</span> &amp;&amp; p.<span class="built_in">as_double</span>() &gt;= current_max_speed) &#123;</span><br><span class="line">                result.successful = <span class="literal">false</span>;</span><br><span class="line">                result.reason = <span class="string">&quot;min_speed 必须小于 max_speed&quot;</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;);</span><br></pre></td></tr></table></figure>
 
-<p>回调返回失败时，这次修改不会生效。这比“接受修改再在下一周期发现不一致”更安全，因为拒绝是原子的，不会留下部分应用的配置。</p>
-<p>回调里不应该做重活。参数修改是低频操作，但如果在回调里加锁并等待控制线程，就可能反过来影响控制循环的时序。需要重建资源的变更，更稳妥的做法是标记为“需要重启后生效”。</p>
-<h2 id="验证参数的三个层次"><a href="#验证参数的三个层次" class="headerlink" title="验证参数的三个层次"></a>验证参数的三个层次</h2><p>一次完整的参数验证至少覆盖：默认值是否可用、覆盖是否按预期生效、非法值是否被拒绝。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 列出当前实际生效的参数与类型</span></span><br><span class="line">ros2 param list /my_node</span><br><span class="line">ros2 param get /my_node control_period_ms</span><br><span class="line"></span><br><span class="line"><span class="comment"># 尝试越界修改，应被拒绝</span></span><br><span class="line">ros2 param <span class="built_in">set</span> /my_node control_period_ms 5000</span><br><span class="line"></span><br><span class="line"><span class="comment"># 用参数文件启动，确认覆盖优先级</span></span><br><span class="line">ros2 run my_package my_node --ros-args --params-file config/robot.yaml</span><br></pre></td></tr></table></figure>
+<p>回调返回失败，这次修改就不生效。这比“先接受，下一周期再发现不一致”安全，因为拒绝是原子的，不会留下应用了一半的配置。</p>
+<p>回调里别干重活。参数修改是低频操作，但如果在回调里加锁等控制线程，就可能反过来影响控制循环的时序。需要重建资源的变更，更稳妥的是标记成“重启后生效”。</p>
+<h2 id="三层验证"><a href="#三层验证" class="headerlink" title="三层验证"></a>三层验证</h2><p>一次完整的参数验证至少覆盖：默认值能不能用、覆盖有没有按预期生效、非法值有没有被拒。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 看实际生效的参数和类型</span></span><br><span class="line">ros2 param list /my_node</span><br><span class="line">ros2 param get /my_node control_period_ms</span><br><span class="line"></span><br><span class="line"><span class="comment"># 越界修改，应该被拒</span></span><br><span class="line">ros2 param <span class="built_in">set</span> /my_node control_period_ms 5000</span><br><span class="line"></span><br><span class="line"><span class="comment"># 用参数文件启动，确认覆盖优先级</span></span><br><span class="line">ros2 run my_package my_node --ros-args --params-file config/robot.yaml</span><br></pre></td></tr></table></figure>
 
-<p>第三条容易被忽略。参数文件的路径、节点名匹配规则和启动参数优先级如果没有记录，就会出现“改了文件但没生效”的情况，而实际原因是节点名和 YAML 里的键没对上，或者命令行参数覆盖了文件。</p>
-<h2 id="参数不是状态同步机制"><a href="#参数不是状态同步机制" class="headerlink" title="参数不是状态同步机制"></a>参数不是状态同步机制</h2><p>参数适合描述配置，不适合承载运行状态。用参数发布当前速度、剩余电量或任务进度，会让修改语义变得混乱：外部到底是读取状态，还是试图改变它。</p>
-<p>这类信息应该走话题或服务。参数的价值在于“可被声明、可被校验、可被记录”的配置契约，一旦被用来传递高频变化的状态，校验和语义都会失去意义。</p>
+<p>第三条最容易被跳过。参数文件的路径、节点名匹配规则和命令行优先级如果不记录，就会出现“改了文件没生效”，而真实原因是节点名和 YAML 里的键对不上，或者命令行把它覆盖了。</p>
+<h2 id="别拿参数当状态同步"><a href="#别拿参数当状态同步" class="headerlink" title="别拿参数当状态同步"></a>别拿参数当状态同步</h2><p>参数适合描述配置，不适合承载运行状态。用参数发布当前速度、剩余电量或者任务进度，会让修改语义变乱：外部到底是在读状态，还是想改它。</p>
+<p>这类信息该走话题或服务。参数的价值在于“可声明、可校验、可记录”的配置契约，一旦用来传高频状态，校验和语义都没意义了。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
 <li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Basic/About-Parameters.html">ROS 2 参数概念说明</a></li>
 <li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Tutorials/Beginner-Client-Libraries/Using-Parameters-In-A-Class-CPP.html">C++ 中使用参数与参数回调</a></li>
 <li><a target="_blank" rel="noopener" href="https://design.ros2.org/articles/ros_parameters.html">参数设计文档：类型与命名约束</a></li>
 </ul>
-<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文讨论参数声明、校验与变更语义，不包含任何具体节点的参数清单。文中给出的范围约束和回调是通用结构，实际是否适合运行时修改，取决于该参数是否会触发资源重建，需要按具体节点判断。</p>
+<p><strong>证据边界：</strong>本文不含任何具体节点的参数清单。上面的范围约束和回调是通用结构，某个参数到底适不适合运行时修改，取决于它会不会触发资源重建，得按节点判断。</p>
 
         </div>
 
@@ -356,9 +356,9 @@
                             <time datetime="2026-09-18T01:30:00.000Z">2026-09-18</time>
                         </a>
                     
-                        <a href="/2026/09/16/ros2-clock-sim-time-consistency/">
-                            <span>ROS 2 时钟与 use_sim_time：回放正常但时间戳混乱的常见原因</span>
-                            <time datetime="2026-09-16T01:30:00.000Z">2026-09-16</time>
+                        <a href="/2026/09/12/ros2-control-hardware-interface-deadlines/">
+                            <span>ros2_control 硬件接口的生命周期与实时性约束：read/write 里不能做的事，以及 watchdog 该放在哪一层</span>
+                            <time datetime="2026-09-12T01:30:00.000Z">2026-09-12</time>
                         </a>
                     
                 </div>

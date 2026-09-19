@@ -18,14 +18,14 @@
 
 <title>udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="机器人上接了激光雷达、IMU、电机控制器和几个串口设备。开机后它们通常出现在 /dev/ttyACM0 、 /dev/ttyUSB0 这类名字下。这些名字由内核按枚举顺序分配，拔插一次、重启一次或者少接一个设备，顺序就可能改变。 把这类名字写进配置文件，故障现象通常是“开机后电机不动，但报错说找不到设备”，或者更糟：找到了设备，但其实是另一个。这篇文章...">
+    <meta name="description" content="被这件事坑过一次：整机上接了雷达、IMU 和电机控制器，开发的时候一切正常。发到客户那边开机后动不了，日志说找不到设备。 原因很简单，我只接了其中两个设备，编号和整机不一样， /dev/ttyACM0 指向了别的东西。更糟的是那次它没报错，只是打开了一个错误的设备。 那之后就再也不在配置里写顺序编号了。 读设备唯一属性 → 写匹配规则 → 创建稳定符号...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="机器人上接了激光雷达、IMU、电机控制器和几个串口设备。开机后它们通常出现在 /dev/ttyACM0 、 /dev/ttyUSB0 这类名字下。这些名字由内核按枚举顺序分配，拔插一次、重启一次或者少接一个设备，顺序就可能改变。 把这类名字写进配置文件，故障现象通常是“开机后电机不动，但报错说找不到设备”，或者更糟：找到了设备，但其实是另一个。这篇文章...">
+    <meta property="og:description" content="被这件事坑过一次：整机上接了雷达、IMU 和电机控制器，开发的时候一切正常。发到客户那边开机后动不了，日志说找不到设备。 原因很简单，我只接了其中两个设备，编号和整机不一样， /dev/ttyACM0 指向了别的东西。更糟的是那次它没报错，只是打开了一个错误的设备。 那之后就再也不在配置里写顺序编号了。 读设备唯一属性 → 写匹配规则 → 创建稳定符号...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,13 +36,13 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="机器人上接了激光雷达、IMU、电机控制器和几个串口设备。开机后它们通常出现在 /dev/ttyACM0 、 /dev/ttyUSB0 这类名字下。这些名字由内核按枚举顺序分配，拔插一次、重启一次或者少接一个设备，顺序就可能改变。 把这类名字写进配置文件，故障现象通常是“开机后电机不动，但报错说找不到设备”，或者更糟：找到了设备，但其实是另一个。这篇文章...">
+    <meta name="twitter:description" content="被这件事坑过一次：整机上接了雷达、IMU 和电机控制器，开发的时候一切正常。发到客户那边开机后动不了，日志说找不到设备。 原因很简单，我只接了其中两个设备，编号和整机不一样， /dev/ttyACM0 指向了别的东西。更糟的是那次它没报错，只是打开了一个错误的设备。 那之后就再也不在配置里写顺序编号了。 读设备唯一属性 → 写匹配规则 → 创建稳定符号...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置","description":"机器人上接了激光雷达、IMU、电机控制器和几个串口设备。开机后它们通常出现在 /dev/ttyACM0 、 /dev/ttyUSB0 这类名字下。这些名字由内核按枚举顺序分配，拔插一次、重启一次或者少接一个设备，顺序就可能改变。 把这类名字写进配置文件，故障现象通常是“开机后电机不动，但报错说找不到设备”，或者更糟：找到了设备，但其实是另一个。这篇文章...","datePublished":"2026-09-15T01:30:00.000Z","dateModified":"2026-09-15T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式Linux","keywords":"udev, 设备节点, 串口, 权限","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"udev 规则与设备名：为什么 ttyACM0 不能写进机器人配置","description":"被这件事坑过一次：整机上接了雷达、IMU 和电机控制器，开发的时候一切正常。发到客户那边开机后动不了，日志说找不到设备。 原因很简单，我只接了其中两个设备，编号和整机不一样， /dev/ttyACM0 指向了别的东西。更糟的是那次它没报错，只是打开了一个错误的设备。 那之后就再也不在配置里写顺序编号了。 读设备唯一属性 → 写匹配规则 → 创建稳定符号...","datePublished":"2026-09-15T01:30:00.000Z","dateModified":"2026-09-15T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/15/udev-stable-device-names-robot/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 嵌入式Linux","keywords":"udev, 设备节点, 串口, 权限","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -284,36 +284,37 @@
         </header>
 
         <div class="post-content">
-            <p>机器人上接了激光雷达、IMU、电机控制器和几个串口设备。开机后它们通常出现在 <code>/dev/ttyACM0</code>、<code>/dev/ttyUSB0</code> 这类名字下。这些名字由内核按枚举顺序分配，拔插一次、重启一次或者少接一个设备，顺序就可能改变。</p>
-<p>把这类名字写进配置文件，故障现象通常是“开机后电机不动，但报错说找不到设备”，或者更糟：找到了设备，但其实是另一个。这篇文章讨论如何用稳定标识代替顺序编号，以及权限该怎么给。</p>
-<div class="note-flow"><span>读取设备唯一属性</span><i>→</i><span>编写匹配规则</span><i>→</i><span>创建稳定符号链接</span><i>→</i><span>设置属主与权限</span><i>→</i><span>重载并触发规则</span><i>→</i><span>在程序里使用稳定名</span></div>
+            <p>被这件事坑过一次：整机上接了雷达、IMU 和电机控制器，开发的时候一切正常。发到客户那边开机后动不了，日志说找不到设备。</p>
+<p>原因很简单，我只接了其中两个设备，编号和整机不一样，<code>/dev/ttyACM0</code> 指向了别的东西。更糟的是那次它没报错，只是打开了一个错误的设备。</p>
+<p>那之后就再也不在配置里写顺序编号了。</p>
+<div class="note-flow"><span>读设备唯一属性</span><i>→</i><span>写匹配规则</span><i>→</i><span>创建稳定符号链接</span><i>→</i><span>设属主和权限</span><i>→</i><span>重载并触发规则</span><i>→</i><span>程序只用稳定名</span></div>
 
-<figure class="note-visual"><figcaption><span>从顺序名到稳定名</span>匹配依据应当是设备自身属性，而不是它被枚举到的次序。</figcaption><div class="note-map"><span><b>顺序名</b><small>由内核按枚举顺序分配，重启和拔插后可能改变。</small></span><span><b>序列号</b><small>设备自带且唯一，是最稳定的匹配依据。</small></span><span><b>VID/PID</b><small>能识别型号，但同型号多台时无法区分。</small></span><span><b>物理路径</b><small>按插在哪个端口区分，适合固定安装的整机。</small></span><span><b>符号链接</b><small>规则创建的名称，程序只依赖它。</small></span><span><b>权限</b><small>用属组和模式授权，避免依赖 root 运行。</small></span></div></figure>
+<figure class="note-visual"><figcaption><span>从顺序名到稳定名</span>匹配依据应该是设备自身的属性，而不是它被枚举到的次序。</figcaption><div class="note-map"><span><b>顺序名</b><small>内核按枚举顺序分配，重启和拔插后会变。</small></span><span><b>序列号</b><small>设备自带且唯一，最稳定的匹配依据。</small></span><span><b>VID/PID</b><small>能认型号，但同型号多台时区分不了。</small></span><span><b>物理路径</b><small>按插在哪个口区分，适合固定安装的整机。</small></span><span><b>符号链接</b><small>规则创建的名字，程序只依赖它。</small></span><span><b>权限</b><small>用属组和模式授权，别依赖 root 运行。</small></span></div></figure>
 
-<h2 id="先确认设备的稳定属性"><a href="#先确认设备的稳定属性" class="headerlink" title="先确认设备的稳定属性"></a>先确认设备的稳定属性</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">udevadm info --name=/dev/ttyACM0 --attribute-walk</span><br></pre></td></tr></table></figure>
+<h2 id="先看设备有什么稳定属性"><a href="#先看设备有什么稳定属性" class="headerlink" title="先看设备有什么稳定属性"></a>先看设备有什么稳定属性</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">udevadm info --name=/dev/ttyACM0 --attribute-walk</span><br></pre></td></tr></table></figure>
 
-<p>重点看三类属性。<code>serial</code> 是设备序列号，同型号多台设备也能区分，通常是最佳选择。<code>idVendor</code> 与 <code>idProduct</code> 识别型号，适合同型号只有一台的情况。<code>KERNELS</code> 或 <code>DEVPATH</code> 描述物理端口位置，适合设备固定焊在整机内部、端口不会变的产品。</p>
-<p>只看 <code>idVendor</code>&#x2F;<code>idProduct</code> 就写规则是常见错误。两块同型号的 USB 转串口同时接上时，两条规则会匹配到同一个设备顺序，符号链接互相覆盖，最终哪个是哪个取决于枚举顺序。</p>
-<h2 id="规则要既匹配又命名"><a href="#规则要既匹配又命名" class="headerlink" title="规则要既匹配又命名"></a>规则要既匹配又命名</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/udev/rules.d/60-robot-devices.rules</span></span><br><span class="line">SUBSYSTEM==<span class="string">&quot;tty&quot;</span>, ATTRS&#123;idVendor&#125;==<span class="string">&quot;1a86&quot;</span>, ATTRS&#123;serial&#125;==<span class="string">&quot;ROBOT-MOTOR-0001&quot;</span>, \</span><br><span class="line">  SYMLINK+=<span class="string">&quot;robot/motor&quot;</span>, MODE=<span class="string">&quot;0660&quot;</span>, GROUP=<span class="string">&quot;robot&quot;</span></span><br><span class="line">SUBSYSTEM==<span class="string">&quot;tty&quot;</span>, ATTRS&#123;idVendor&#125;==<span class="string">&quot;1a86&quot;</span>, ATTRS&#123;serial&#125;==<span class="string">&quot;ROBOT-LIDAR-0001&quot;</span>, \</span><br><span class="line">  SYMLINK+=<span class="string">&quot;robot/lidar&quot;</span>, MODE=<span class="string">&quot;0660&quot;</span>, GROUP=<span class="string">&quot;robot&quot;</span></span><br></pre></td></tr></table></figure>
+<p>重点看三类。<code>serial</code> 是设备序列号，同型号多台也能区分，通常最好用。<code>idVendor</code> 和 <code>idProduct</code> 认型号，适合同型号只有一台的情况。<code>KERNELS</code> 或 <code>DEVPATH</code> 描述物理端口位置，适合设备焊在整机内部、口不会变的产品。</p>
+<p>只拿 <code>idVendor</code>&#x2F;<code>idProduct</code> 写规则是常见错误。两块同型号 USB 转串口同时插上，两条规则会匹到同一个设备顺序上，符号链接互相覆盖，最后哪个是哪个看枚举顺序。</p>
+<h2 id="规则怎么写"><a href="#规则怎么写" class="headerlink" title="规则怎么写"></a>规则怎么写</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/udev/rules.d/60-robot-devices.rules</span></span><br><span class="line">SUBSYSTEM==<span class="string">&quot;tty&quot;</span>, ATTRS&#123;idVendor&#125;==<span class="string">&quot;1a86&quot;</span>, ATTRS&#123;serial&#125;==<span class="string">&quot;ROBOT-MOTOR-0001&quot;</span>, \</span><br><span class="line">  SYMLINK+=<span class="string">&quot;robot/motor&quot;</span>, MODE=<span class="string">&quot;0660&quot;</span>, GROUP=<span class="string">&quot;robot&quot;</span></span><br><span class="line">SUBSYSTEM==<span class="string">&quot;tty&quot;</span>, ATTRS&#123;idVendor&#125;==<span class="string">&quot;1a86&quot;</span>, ATTRS&#123;serial&#125;==<span class="string">&quot;ROBOT-LIDAR-0001&quot;</span>, \</span><br><span class="line">  SYMLINK+=<span class="string">&quot;robot/lidar&quot;</span>, MODE=<span class="string">&quot;0660&quot;</span>, GROUP=<span class="string">&quot;robot&quot;</span></span><br></pre></td></tr></table></figure>
 
-<p>几个要点。<code>SUBSYSTEM</code> 加上可以避免匹配到非 tty 设备。<code>ATTRS</code> 会沿设备父链向上查找，比只匹配当前节点的 <code>ATTR</code> 更常用，因为序列号往往在 USB 设备层而不是 tty 层。<code>SYMLINK</code> 使用带目录的名字能把设备集中到一处，便于查看。</p>
-<p><code>MODE</code> 和 <code>GROUP</code> 是为了避免程序必须以 root 运行。给 0660 加专用属组，比给全局可读写更安全，也让权限范围可以审计。</p>
-<h2 id="顺序名要主动修掉"><a href="#顺序名要主动修掉" class="headerlink" title="顺序名要主动修掉"></a>顺序名要主动修掉</h2><p>创建符号链接之后，<code>/dev/ttyACM0</code> 仍然存在。如果程序里还残留着顺序名，故障依旧存在。检查方式是搜索配置和启动文件：</p>
+<p>几点说明。加 <code>SUBSYSTEM</code> 能避免匹到非 tty 设备。用 <code>ATTRS</code> 而不是 <code>ATTR</code>，因为它会沿父链向上找，序列号往往在 USB 设备层而不是 tty 层。<code>SYMLINK</code> 带目录名能把设备集中到一处，方便查看。</p>
+<p><code>MODE</code> 和 <code>GROUP</code> 是为了不让程序必须以 root 跑。给 0660 配专用属组，比全局可读写安全，权限范围也更好审计。</p>
+<h2 id="顺序名要主动清掉"><a href="#顺序名要主动清掉" class="headerlink" title="顺序名要主动清掉"></a>顺序名要主动清掉</h2><p>建了符号链接，<code>/dev/ttyACM0</code> 还在。程序里如果还留着顺序名，故障照旧。搜一遍：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -rn <span class="string">&quot;ttyACM\|ttyUSB&quot;</span> /opt/robot/config /etc/systemd/system 2&gt;/dev/null</span><br></pre></td></tr></table></figure>
 
-<p>需要改的是所有引用点：ROS 2 节点的参数、launch 文件、unit 文件的参数。只改一处，剩下的仍然按顺序名打开。</p>
-<h2 id="重载和验证"><a href="#重载和验证" class="headerlink" title="重载和验证"></a>重载和验证</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> udevadm control --reload-rules</span><br><span class="line"><span class="built_in">sudo</span> udevadm trigger</span><br><span class="line"><span class="built_in">ls</span> -l /dev/robot/</span><br><span class="line">udevadm info --name=/dev/robot/motor --query=symlink</span><br></pre></td></tr></table></figure>
+<p>要改的是所有引用点：ROS 2 节点参数、launch 文件、unit 文件的参数。只改一处，剩下的仍然按顺序名打开。</p>
+<h2 id="验的时候要真拔插"><a href="#验的时候要真拔插" class="headerlink" title="验的时候要真拔插"></a>验的时候要真拔插</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> udevadm control --reload-rules</span><br><span class="line"><span class="built_in">sudo</span> udevadm trigger</span><br><span class="line"><span class="built_in">ls</span> -l /dev/robot/</span><br><span class="line">udevadm info --name=/dev/robot/motor --query=symlink</span><br></pre></td></tr></table></figure>
 
-<p>验证时应该做拔插和重启测试，而不只是执行命令看链接是否存在。判断规则是否真的稳定，标准是多次拔插和重启后符号链接始终指向同一个物理设备。</p>
-<p>一个实用的确认方式是记录设备序列号并和打开的文件对比：先读 <code>/dev/robot/motor</code> 的序列号，再确认程序打开的就是这个设备。如果两处不一致，规则匹配范围过宽。</p>
-<h2 id="和容器、权限的关系"><a href="#和容器、权限的关系" class="headerlink" title="和容器、权限的关系"></a>和容器、权限的关系</h2><p>在容器里运行程序时，符号链接需要在容器内可见，通常通过挂载设备或转发 udev 事件实现。只挂载 <code>/dev</code> 而不处理设备属性，容器内可能看不到稳定名字。</p>
-<p>权限方面，还要注意程序运行用户的属组是否包含规则里指定的组。修改属组后需要重新登录或重启相关服务才会生效，这一点在排查“权限明明给了却打不开”时经常被忽略。</p>
+<p>光执行命令看链接存不存在不够。判断规则稳不稳，标准是反复拔插和重启之后，符号链接始终指向同一个物理设备。</p>
+<p>一个实用的确认方式是读一下 <code>/dev/robot/motor</code> 的序列号，跟预期对一遍。对不上说明规则匹得太宽了。</p>
+<h2 id="容器和权限"><a href="#容器和权限" class="headerlink" title="容器和权限"></a>容器和权限</h2><p>在容器里跑程序时，符号链接要能在容器内看到，一般靠挂载设备或者转发 udev 事件。只挂 <code>/dev</code> 不处理设备属性，容器里可能就没有稳定名字。</p>
+<p>权限还有个容易忽略的点：程序运行用户的属组得包含规则里指定的组。改完属组要重新登录或者重启服务才生效，排查“权限明明给了却打不开”时经常卡在这。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
 <li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/udev.7.html">udev 手册页：规则语法与匹配键</a></li>
 <li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man8/udevadm.8.html">udevadm 手册页</a></li>
 <li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/systemd.device.5.html">systemd 设备管理说明</a></li>
 </ul>
-<h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文讨论设备命名的稳定性和权限配置方式，不包含任何具体硬件的规则文件。文中示例中的 VID、序列号需替换为实际设备属性；符号链接是否稳定必须通过重复拔插和重启验证，单次成功不足以说明问题已经解决。</p>
+<p><strong>证据边界：</strong>本文不含任何具体硬件的规则文件。示例里的 VID 和序列号要换成实际设备属性。符号链接稳不稳必须靠重复拔插和重启验证，一次成功说明不了问题已经解决。</p>
 
         </div>
 
