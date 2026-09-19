@@ -60,3 +60,12 @@ XML 描述的是固定控制流：哪些节点先后执行、哪些节点带重�
 对当前项目，BehaviorTree.CPP 解决的不是“两步任务写不出 if-else”，而是把三类边界显式化：活动节点如何被 halt、状态如何反馈给外部、允许的策略如何与固定控制流分离。它让审查对象从散落的线程标志和回调，变成有名称的节点与契约；代价是更多代码、更多测试和当前每 goal 重读 XML 的工程债务。
 
 所以结论应该保持克制：这两棵树还不足以证明 BT 比 if-else 更快、更可靠或更实时。它们只说明，在一个准备向可取消、可观察、受 allowlist 约束的工作流扩展的系统里，BT 提供了一个值得审查的结构；至于真实硬件、实时确定性和更长流程，当前 README 没有提供本文可以代替的 benchmark、硬件或模型数据。
+
+## 参考资料
+
+- [BehaviorTree.CPP 文档](https://www.behaviortree.dev/docs/intro)
+- [BehaviorTree.CPP 异步节点指南](https://www.behaviortree.dev/docs/guides/asynchronous_nodes)
+- [BehaviorTree.CPP 源码仓库](https://github.com/BehaviorTree/BehaviorTree.CPP)
+- [ROS 2 Action 概念说明](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Actions.html)
+
+**证据边界：**本文只讨论固定工作流的可审查性结构，不涉及真实硬件、实时确定性或更长流程。两棵约两节点的树不足以证明 BT 比 if-else 更快、更可靠；文中的代码规模和取消契约来自当前实现，性能与硬件结论需要单独的 benchmark 和现场数据。

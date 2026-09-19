@@ -48,3 +48,11 @@ SocketCAN 的 `send()` 成功，最多说明帧进入了内核发送路径。CAN
 同样，增加一个 watchdog 不能代替完整的状态机。设备侧 watchdog、主机侧 ACK timeout、反馈 timeout 和 safe-stop 之间要能从诊断中区分，否则故障虽然停下来了，复盘时却不知道是命令悬挂、反馈消失还是总线错误。
 
 这个 demo 最有价值的地方不是“模拟了一个电机”，而是把接口生命周期、业务 ACK 和故障传播放在了可测试的边界里。它仍然是软件与 vcan 证据；要声称真实电机行为，还需要真实控制器、物理 CAN、故障注入和独立的安全验收。
+
+## 参考资料
+
+- [ros2_control 硬件组件编写指南](https://control.ros.org/jazzy/doc/ros2_control/hardware_interface/doc/writing_new_hardware_component.html)
+- [ros2_control 硬件接口文档](https://control.ros.org/jazzy/doc/ros2_control/hardware_interface/doc/hardware_interface_types_userdoc.html)
+- [Linux SocketCAN 文档](https://docs.kernel.org/networking/can.html)
+
+**证据边界：**当前仓库验证的是软件协议、vcan 和 SocketCAN 路径，不是实际电机、ECU HIL 或生产安全认证。代码里的 deadline 和 safe-stop 设计可以被测试，但不能自动推导出真实执行器的安全性能；要声称真实电机行为，还需要真实控制器、物理 CAN、故障注入和独立的安全验收。

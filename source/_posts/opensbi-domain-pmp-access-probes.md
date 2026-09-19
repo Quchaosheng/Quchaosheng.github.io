@@ -50,3 +50,12 @@ PMP 是 M 模式资源。普通 S 模式内核不能随意执行 `csrw pmpcfg0` 
 这套方法证明的是指定 QEMU 配置、OpenSBI 构建和内核探针下的访问边界。它不证明任意硬件实现都具有同样的内存保护行为，也不覆盖 DMA 绕过、缓存侧信道、启动链签名或物理攻击。PMP 访问探针是必要的运行证据，不是完整的硬件安全认证。
 
 因此，回答“PMP 是不是你实现的”时，我会把范围说完整：我实现了 domain DTS 的资源策略、启动链适配和双向访问异常探针；OpenSBI 负责根据策略完成固件侧 PMP 配置；QEMU 冒烟验收同时检查固件 region 打印和六类访问异常。这个回答既没有把上游固件功劳据为己有，也没有把一份 DTS 文件夸成已经完成的安全证明。
+
+## 参考资料
+
+- [OpenSBI domain 支持文档](https://github.com/riscv-software-src/opensbi/blob/master/docs/domain_support.md)
+- [OpenSBI 源码仓库](https://github.com/riscv-software-src/opensbi)
+- [RISC-V 特权级架构手册：PMP 与异常](https://docs.riscv.org/reference/isa/priv/machine.html)
+- [riscv-isa-manual](https://github.com/riscv/riscv-isa-manual)
+
+**证据边界：**这套方法证明的是指定 QEMU 配置、OpenSBI 构建和内核探针下的访问边界。它不证明任意硬件实现有同样的内存保护行为，也不覆盖 DMA 绕过、缓存侧信道、启动链签名或物理攻击。PMP 访问探针是必要的运行证据，不是完整的硬件安全认证。
