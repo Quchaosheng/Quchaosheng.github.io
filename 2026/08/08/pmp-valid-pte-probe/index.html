@@ -42,7 +42,7 @@
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"为什么我给 PMP 探针配了一个合法的页表映射","description":"我想验证普通 S 模式内核不能访问 trusted RAM。第一次描述这个测试时，我很快发现“访问失败了”并不能证明 PMP 生效。缺页、PTE 权限错误、地址未映射和 PMP 拒绝都会触发异常。若探针只等一个 trap，它最多证明某一层拒绝了访问。 为了让结论收敛到 PMP，我故意给探针安装了一条合法的 Sv39 映射。 映射探针 VA → 完成 S...","datePublished":"2026-08-08T01:30:00.000Z","dateModified":"2026-08-08T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/08/pmp-valid-pte-probe/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / RISC-V","keywords":"RISC-V, OpenSBI, PMP, Sv39, QEMU","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"为什么我给 PMP 探针配了一个合法的页表映射","description":"我想验证普通 S 模式内核不能访问 trusted RAM。第一次描述这个测试时，我很快发现“访问失败了”并不能证明 PMP 生效。缺页、PTE 权限错误、地址未映射和 PMP 拒绝都会触发异常。若探针只等一个 trap，它最多证明某一层拒绝了访问。 为了让结论收敛到 PMP，我故意给探针安装了一条合法的 Sv39 映射。 映射探针 VA → 完成 S...","datePublished":"2026-08-08T01:30:00.000Z","dateModified":"2026-08-08T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/08/pmp-valid-pte-probe/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / RISC-V","keywords":"RISC-V, OpenSBI, PMP, QEMU, Sv39","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -275,7 +275,7 @@
                             
                                 <a href="/tag/PMP/">#PMP</a>
                             
-                                <a href="/tag/Sv39/">#Sv39</a>
+                                <a href="/tag/QEMU/">#QEMU</a>
                             
                                 
                             
@@ -346,6 +346,11 @@
                 <h2 id="related-posts-title">同主题继续阅读</h2>
                 <div class="related-post-list">
                     
+                        <a href="/2026/09/19/opensbi-domain-pmp-access-probes/">
+                            <span>OpenSBI domain 与 PMP：用 DTS 声明隔离，用异常探针证明隔离</span>
+                            <time datetime="2026-09-19T01:30:00.000Z">2026-09-19</time>
+                        </a>
+                    
                         <a href="/2026/08/13/riscv-heterogeneous-smp-boot/">
                             <span>RISC-V 多核启动：7+1 hart 异构 SMP 架构</span>
                             <time datetime="2026-08-13T09:37:00.000Z">2026-08-13</time>
@@ -354,11 +359,6 @@
                         <a href="/2026/08/24/qemu-riscv-boundary-validation/">
                             <span>在 QEMU 里做 RISC-V 系统验证：配置声明与访问证据要分开</span>
                             <time datetime="2026-08-24T12:30:00.000Z">2026-08-24</time>
-                        </a>
-                    
-                        <a href="/2026/07/29/riscv-nommu-linux/">
-                            <span>RISC-V Non-MMU Linux：没有虚拟内存怎样运行应用</span>
-                            <time datetime="2026-03-23T06:00:00.000Z">2026-03-23</time>
                         </a>
                     
                 </div>
@@ -376,9 +376,9 @@
                     
                         <a href="/tag/PMP/"># PMP</a>
                     
-                        <a href="/tag/Sv39/"># Sv39</a>
-                    
                         <a href="/tag/QEMU/"># QEMU</a>
+                    
+                        <a href="/tag/Sv39/"># Sv39</a>
                     
                         
                 </span>

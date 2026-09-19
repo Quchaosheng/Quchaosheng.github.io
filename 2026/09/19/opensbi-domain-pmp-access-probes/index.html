@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Quchaosheng">
+
+
+    <meta name="subtitle" content="Linux Kernel · ROS 2 · Embedded Systems">
+
+
+    <meta name="keywords" content="Linux Kernel,ROS 2,Embedded Systems">
+
+
+<title>OpenSBI domain 与 PMP：用 DTS 声明隔离，用异常探针证明隔离 | Quchaosheng&#39;s Notes</title>
+
+    <meta name="description" content="“你实现了 PMP 隔离吗？”这是一个很容易答错的问题。若回答“我在 S 模式内核里写了 pmpaddr ”，面试官马上会追问特权级；若只回答“DTS 里配置了权限”，又像是把配置文件当成了运行证据。更准确的说法是：我编写 OpenSBI domain 的 DTS 策略和访问探针，由运行在 M 模式的 OpenSBI 根据配置完成 PMP 资源编程，再...">
+
+<link rel="canonical" href="https://quchaosheng.github.io/2026/09/19/opensbi-domain-pmp-access-probes/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OpenSBI domain 与 PMP：用 DTS 声明隔离，用异常探针证明隔离 | Quchaosheng&#39;s Notes">
+
+    <meta property="og:description" content="“你实现了 PMP 隔离吗？”这是一个很容易答错的问题。若回答“我在 S 模式内核里写了 pmpaddr ”，面试官马上会追问特权级；若只回答“DTS 里配置了权限”，又像是把配置文件当成了运行证据。更准确的说法是：我编写 OpenSBI domain 的 DTS 策略和访问探针，由运行在 M 模式的 OpenSBI 根据配置完成 PMP 资源编程，再...">
+
+<meta property="og:url" content="https://quchaosheng.github.io/2026/09/19/opensbi-domain-pmp-access-probes/">
+<meta property="og:site_name" content="Quchaosheng&#39;s Notes">
+
+    <meta property="og:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+    <meta property="og:image:alt" content="OpenSBI domain 与 PMP：用 DTS 声明隔离，用异常探针证明隔离">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OpenSBI domain 与 PMP：用 DTS 声明隔离，用异常探针证明隔离 | Quchaosheng&#39;s Notes">
+
+    <meta name="twitter:description" content="“你实现了 PMP 隔离吗？”这是一个很容易答错的问题。若回答“我在 S 模式内核里写了 pmpaddr ”，面试官马上会追问特权级；若只回答“DTS 里配置了权限”，又像是把配置文件当成了运行证据。更准确的说法是：我编写 OpenSBI domain 的 DTS 策略和访问探针，由运行在 M 模式的 OpenSBI 根据配置完成 PMP 资源编程，再...">
+
+
+    <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
+
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"OpenSBI domain 与 PMP：用 DTS 声明隔离，用异常探针证明隔离","description":"“你实现了 PMP 隔离吗？”这是一个很容易答错的问题。若回答“我在 S 模式内核里写了 pmpaddr ”，面试官马上会追问特权级；若只回答“DTS 里配置了权限”，又像是把配置文件当成了运行证据。更准确的说法是：我编写 OpenSBI domain 的 DTS 策略和访问探针，由运行在 M 模式的 OpenSBI 根据配置完成 PMP 资源编程，再...","datePublished":"2026-09-19T01:30:00.000Z","dateModified":"2026-09-19T01:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/09/19/opensbi-domain-pmp-access-probes/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / RISC-V","keywords":"DTS, RISC-V, OpenSBI, PMP, QEMU","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+
+
+
+
+    <link rel="icon" href="/bitbug_favicon.ico">
+
+<link rel="alternate" type="application/atom+xml" title="Quchaosheng&#39;s Notes Atom Feed" href="/atom.xml">
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+    <script src="/js/search.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const pagebody = document.getElementsByTagName('body')[0]
+
+            function setTheme(status) {
+                if (status === 'dark') pagebody.classList.add('dark-theme');
+                else pagebody.classList.remove('dark-theme');
+            }
+
+            const savedTheme = window.localStorage.getItem('theme');
+            const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setTheme(savedTheme || systemTheme);
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Quchaosheng&#39;s Notes</a></div>
+            <div class="menu navbar-right">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+                
+                <input id="switch_default" type="checkbox" class="switch_default" aria-label="切换深色模式">
+                <label for="switch_default" class="toggleBtn" title="切换深色模式" aria-label="切换深色模式"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Quchaosheng&#39;s Notes</a><a id="mobile-toggle-theme" href="#theme" role="button" aria-label="切换深色模式">·&nbsp;Light</a>
+                </div>
+                <button type="button" class="menu-toggle" aria-controls="mobile-menu" aria-expanded="false" aria-label="展开导航菜单" onclick="mobileBtn(this)">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 17.27q-.213 0-.356-.145T4 16.768t.144-.356t.356-.143h15q.213 0 .356.144q.144.144.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.144T4 11.999t.144-.356t.356-.143h15q.213 0 .356.144t.144.357t-.144.356t-.356.143zm0-4.77q-.213 0-.356-.143Q4 7.443 4 7.23t.144-.356t.356-.143h15q.213 0 .356.144T20 7.23t-.144.356t-.356.144z"/></svg>
+                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE --><path fill="currentColor" d="m12 12.708l-5.246 5.246q-.14.14-.344.15t-.364-.15t-.16-.354t.16-.354L11.292 12L6.046 6.754q-.14-.14-.15-.344t.15-.364t.354-.16t.354.16L12 11.292l5.246-5.246q.14-.14.345-.15q.203-.01.363.15t.16.354t-.16.354L12.708 12l5.246 5.246q.14.14.15.345q.01.203-.15.363t-.354.16t-.354-.16z"/></svg>
+                </button>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                <a class="menu-item" href="/projects">项目</a>
+                
+                <a class="menu-item" href="/modules">模块</a>
+                
+                <a class="menu-item" href="/paths">路线</a>
+                
+                <a class="menu-item" href="/category">分类</a>
+                
+                <a class="menu-item" href="/archives">文章</a>
+                
+                <a class="menu-item" href="/search">搜索</a>
+                
+                <a class="menu-item" href="/about">关于</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f(button) {
+        var toggleMenu = button || document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        var nextOpenState = !toggleMenu.classList.contains("active");
+        toggleMenu.classList.toggle("active", nextOpenState);
+        mobileMenu.classList.toggle("active", nextOpenState);
+        toggleMenu.setAttribute("aria-expanded", String(nextOpenState));
+        toggleMenu.setAttribute("aria-label", nextOpenState ? "收起导航菜单" : "展开导航菜单");
+    }
+</script>
+
+            <div class="main">
+                <main class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">展开全部</a>
+        <a onclick="go_top()">回到顶部</a>
+        <a onclick="go_bottom()">跳到文末</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? '展开全部' : '收起目录';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">OpenSBI domain 与 PMP：用 DTS 声明隔离，用异常探针证明隔离</h1>
+            
+                <div class="post-meta">
+                    
+                        作者：<a itemprop="author" rel="author" href="/">Quchaosheng</a>
+                    
+
+                    
+                        <span class="post-time">
+                        整理日期：<a href="#">2026-09-19&nbsp;&nbsp;09:30:00</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    分类：
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/">技术</a>
+                            
+                                <a href="/category/%E6%8A%80%E6%9C%AF/RISC-V/">RISC-V</a>
+                            
+                        </span>
+                    
+                    
+                        <span class="post-topics">
+                            主题：
+                            
+                                <a href="/tag/DTS/">#DTS</a>
+                            
+                                <a href="/tag/RISC-V/">#RISC-V</a>
+                            
+                                <a href="/tag/OpenSBI/">#OpenSBI</a>
+                            
+                                <a href="/tag/PMP/">#PMP</a>
+                            
+                                
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>“你实现了 PMP 隔离吗？”这是一个很容易答错的问题。若回答“我在 S 模式内核里写了 <code>pmpaddr</code>”，面试官马上会追问特权级；若只回答“DTS 里配置了权限”，又像是把配置文件当成了运行证据。更准确的说法是：我编写 OpenSBI domain 的 DTS 策略和访问探针，由运行在 M 模式的 OpenSBI 根据配置完成 PMP 资源编程，再用 QEMU 启动日志和 S 模式异常结果交叉验证隔离是否实际生效。</p>
+<p>这篇文章只讨论仓库里已经能解释的 QEMU&#x2F;固件链路，不把它扩展成物理硬件安全证明，也不声称第一方代码直接实现了所有 PMP 寄存器写入。</p>
+<div class="note-flow"><span>DTS 声明 domain</span><i>→</i><span>OpenSBI 解析资源</span><i>→</i><span>M 模式编程 PMP</span><i>→</i><span>S 模式运行探针</span><i>→</i><span>校验 scause/stval</span><i>→</i><span>对账固件日志</span></div>
+
+<figure class="note-visual"><figcaption><span>隔离证据不是一行配置</span>声明、执行和验证必须在不同层次留下彼此可对照的证据。</figcaption><div class="note-map"><span><b>DTS</b><small>描述 domain、内存区域、设备和 hart 归属。</small></span><span><b>OpenSBI</b><small>在 M 模式读取 domain 配置并建立固件侧资源。</small></span><span><b>PMP</b><small>把区域权限落实为 load/store/execute 访问边界。</small></span><span><b>探针</b><small>从 S 模式访问目标地址，等待预期异常。</small></span><span><b>scause</b><small>确认异常类型属于访问拒绝，而不是其他故障。</small></span><span><b>stval</b><small>确认异常确实来自这次指定地址的探测。</small></span></div></figure>
+
+<h2 id="先说清楚谁写-PMP-寄存器"><a href="#先说清楚谁写-PMP-寄存器" class="headerlink" title="先说清楚谁写 PMP 寄存器"></a>先说清楚谁写 PMP 寄存器</h2><p>PMP 是 M 模式资源。普通 S 模式内核不能随意执行 <code>csrw pmpcfg0</code> 或 <code>csrw pmpaddr*</code> 来改变自己的访问边界；这正是特权级设计要保护的东西。因此“我没有在自己的 C 文件里搜索到 pmpaddr”并不等于“没有实现隔离”，但也不能反过来说“我写了一个寄存器驱动”。</p>
+<p>在这条链路里，应用侧负责声明策略：哪些内存区域属于哪个 domain、哪些 hart 进入哪个 domain、某个设备是否可见。OpenSBI 的 domain&#x2F;FDT 代码读取这些声明，并在更高特权级完成实际资源配置。可以把它概括成一句话：我写的是策略和验证，固件写的是寄存器。这是模块边界，而不是对能力的回避。</p>
+<p>判断这种工作是否扎实，关键不在于源码里有没有一条 <code>csrw</code>，而在于能否解释 region 的粒度和对齐约束、权限位如何映射到 load&#x2F;store&#x2F;execute，以及声明之后如何证明固件真的按意图解释了它。</p>
+<h2 id="双-domain-配置需要同时对齐三件事"><a href="#双-domain-配置需要同时对齐三件事" class="headerlink" title="双 domain 配置需要同时对齐三件事"></a>双 domain 配置需要同时对齐三件事</h2><p>第一是地址和链接脚本。以 trusted memory 为例，DTS 中的 base、order 必须和 trusted 侧链接脚本的 <code>ORIGIN</code>、长度一致。若区域基址没有满足 PMP 粒度要求，或者链接脚本把代码放到了声明之外，结果可能是启动即 fault，而不是一个清晰的“访问被拒绝”。所以内存布局不是单独的 DTS 任务，必须和链接脚本一起审查。</p>
+<p>第二是权限语义。普通 domain 对 trusted 区域应当是不可达，trusted domain 才拥有需要的读写执行权限。UART2 这类 MMIO 资源和普通内存区域也不是同一类描述：设备绑定、访问范围和 domain 归属需要一起看。只检查一个权限数字，而不检查区域地址和设备映射，无法证明隔离边界完整。</p>
+<p>第三是 hart 归属和引导目标。<code>possible-harts</code> 决定哪些 hart 属于 domain，<code>boot-hart</code>、<code>next-addr</code> 和 <code>next-mode</code> 决定固件将某个 hart 带到哪里。可信 hart 进入 FreeRTOS S 模式时，还涉及上游 M 模式 port 与当前启动约定之间的适配。域的权限、hart 的归属和下一跳地址必须互相一致，否则可能出现“区域权限正确，但错误的 hart 进入了错误的系统”的问题。</p>
+<h2 id="为什么声明之后还要做异常探针"><a href="#为什么声明之后还要做异常探针" class="headerlink" title="为什么声明之后还要做异常探针"></a>为什么声明之后还要做异常探针</h2><p>最容易被误判的是“访问产生了异常，所以 PMP 一定生效”。不一定。访问可能因为页表缺失、地址未映射、设备错误或其他原因失败。为了把原因收窄，探针目标需要先具备合法的页表映射，再故意指向对方 domain 的受保护区域。这样访问失败时，才更有理由把结果归因于 PMP 权限，而不是缺页。</p>
+<p>探针至少要同时检查 <code>scause</code> 和 <code>stval</code>。<code>scause</code> 用来确认是预期的 load、store 或 instruction access fault；<code>stval</code> 用来确认 fault 地址就是这次探测的目标。如果只检查 <code>scause</code>，任意一个访问异常都可能被误报为“隔离通过”。如果访问没有产生预期异常，测试必须主动失败或 panic，不能继续运行到一个绿色终态，否则隔离失效会被静默吞掉。</p>
+<p>验证还要覆盖两个方向：普通域访问 trusted 内存和 UART2，trusted 域反向访问普通域资源。六个方向的标记全部命中，才能说明测试覆盖了 load、store、execute 的组合，而不是只验证了一个最容易通过的读操作。探针不替代固件日志，但它把“运行中的访问”纳入了证据链。</p>
+<h2 id="为什么还要看-OpenSBI-自己的启动打印"><a href="#为什么还要看-OpenSBI-自己的启动打印" class="headerlink" title="为什么还要看 OpenSBI 自己的启动打印"></a>为什么还要看 OpenSBI 自己的启动打印</h2><p>探针只说明某次访问被拒绝，不能完整说明 region 是按哪一套权限配置的。验收脚本还会检查 OpenSBI 启动时打印的 domain region 和权限，把它与 DTS 声明对账。固件输出提供了配置解释后的视角，探针提供了实际访问的视角，两者一致时，证据比单看任一方更强。</p>
+<p>这也是为什么 QEMU 日志和 trusted 串口日志要分开保留。不同 domain 的标记不能混成一条无法归属的输出流；否则即使看到“六个 PASS”，也不容易回答每个 PASS 是谁发出的、对应哪个访问方向。日志本身不是隔离机制，但它是审计机制的一部分。</p>
+<h2 id="这套方法的边界"><a href="#这套方法的边界" class="headerlink" title="这套方法的边界"></a>这套方法的边界</h2><p>这套方法证明的是指定 QEMU 配置、OpenSBI 构建和内核探针下的访问边界。它不证明任意硬件实现都具有同样的内存保护行为，也不覆盖 DMA 绕过、缓存侧信道、启动链签名或物理攻击。PMP 访问探针是必要的运行证据，不是完整的硬件安全认证。</p>
+<p>因此，回答“PMP 是不是你实现的”时，我会把范围说完整：我实现了 domain DTS 的资源策略、启动链适配和双向访问异常探针；OpenSBI 负责根据策略完成固件侧 PMP 配置；QEMU 冒烟验收同时检查固件 region 打印和六类访问异常。这个回答既没有把上游固件功劳据为己有，也没有把一份 DTS 文件夸成已经完成的安全证明。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/riscv-software-src/opensbi/blob/master/docs/domain_support.md">OpenSBI domain 支持文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/riscv-software-src/opensbi">OpenSBI 源码仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.riscv.org/reference/isa/priv/machine.html">RISC-V 特权级架构手册：PMP 与异常</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/riscv/riscv-isa-manual">riscv-isa-manual</a></li>
+</ul>
+<p><strong>证据边界：</strong>这套方法证明的是指定 QEMU 配置、OpenSBI 构建和内核探针下的访问边界。它不证明任意硬件实现有同样的内存保护行为，也不覆盖 DMA 绕过、缓存侧信道、启动链签名或物理攻击。PMP 访问探针是必要的运行证据，不是完整的硬件安全认证。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>作者：</span>
+                        <span>Quchaosheng</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>永久链接：</span>
+                        <span><a href="https://quchaosheng.github.io/2026/09/19/opensbi-domain-pmp-access-probes/">https://quchaosheng.github.io/2026/09/19/opensbi-domain-pmp-access-probes/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>许可协议：</span>
+                        <span>文章采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> 许可协议</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        
+        
+            <section class="related-posts" aria-labelledby="related-posts-title">
+                <h2 id="related-posts-title">同主题继续阅读</h2>
+                <div class="related-post-list">
+                    
+                        <a href="/2026/08/08/pmp-valid-pte-probe/">
+                            <span>为什么我给 PMP 探针配了一个合法的页表映射</span>
+                            <time datetime="2026-08-08T01:30:00.000Z">2026-08-08</time>
+                        </a>
+                    
+                        <a href="/2026/08/13/riscv-heterogeneous-smp-boot/">
+                            <span>RISC-V 多核启动：7+1 hart 异构 SMP 架构</span>
+                            <time datetime="2026-08-13T09:37:00.000Z">2026-08-13</time>
+                        </a>
+                    
+                        <a href="/2026/08/24/qemu-riscv-boundary-validation/">
+                            <span>在 QEMU 里做 RISC-V 系统验证：配置声明与访问证据要分开</span>
+                            <time datetime="2026-08-24T12:30:00.000Z">2026-08-24</time>
+                        </a>
+                    
+                </div>
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>标签：</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tag/DTS/"># DTS</a>
+                    
+                        <a href="/tag/RISC-V/"># RISC-V</a>
+                    
+                        <a href="/tag/OpenSBI/"># OpenSBI</a>
+                    
+                        <a href="/tag/PMP/"># PMP</a>
+                    
+                        <a href="/tag/QEMU/"># QEMU</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">返回</a>
+                <span>· </span>
+                <a href="/">首页</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+            
+            <a class="next" rel="next" href="/2026/09/18/hand-eye-calibration-ax-xb/">手眼标定：AX = XB 为什么不能只看一次误差</a>
+            
+        </section>
+
+
+    </article>
+</main>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Quchaosheng · <a href="/updates/">更新日志</a> · <a href="/atom.xml">RSS</a> | Powered by <a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank" rel="noopener">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>

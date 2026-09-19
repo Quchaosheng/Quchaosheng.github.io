@@ -4,8 +4,16 @@
   <id>https://quchaosheng.github.io/atom.xml</id>
   <link href="https://quchaosheng.github.io/"/>
   <link href="https://quchaosheng.github.io/atom.xml" rel="self"/>
-  <updated>2026-09-18T03:00:00.000Z</updated>
+  <updated>2026-09-19T01:30:00.000Z</updated>
   <author><name>Quchaosheng</name></author>
+  <entry>
+    <title>OpenSBI domain 与 PMP：用 DTS 声明隔离，用异常探针证明隔离</title>
+    <id>https://quchaosheng.github.io/2026/09/19/opensbi-domain-pmp-access-probes/</id>
+    <link href="https://quchaosheng.github.io/2026/09/19/opensbi-domain-pmp-access-probes/"/>
+    <published>2026-09-19T01:30:00.000Z</published>
+    <updated>2026-09-19T01:30:00.000Z</updated>
+    <summary type="html">“你实现了 PMP 隔离吗？”这是一个很容易答错的问题。若回答“我在 S 模式内核里写了 pmpaddr ”，面试官马上会追问特权级；若只回答“DTS 里配置了权限”，又像是把配置文件当成了运行证据。更准确的说法是：我编写 OpenSBI domain 的 DTS 策略和访问探针，由运行在 M 模式的 OpenSBI 根据配置完成 PMP 资源编程，再用 QEMU 启动日志和 S 模式异常结果交叉验证隔离是否实际生效。 这篇文章只讨论仓库里已经能解释的 QEMU&amp;#x2F;固件链路，不把它扩展成物理硬件安全证明，也不声称第一方代码直接实现了所有 P...</summary>
+  </entry>
   <entry>
     <title>手眼标定：AX = XB 为什么不能只看一次误差</title>
     <id>https://quchaosheng.github.io/2026/09/18/hand-eye-calibration-ax-xb/</id>
@@ -157,13 +165,5 @@
     <published>2026-09-03T01:30:00.000Z</published>
     <updated>2026-09-03T01:30:00.000Z</updated>
     <summary type="html">两个数据集都写着 action[0] = 0.1 ，含义可能差得很远。一个表示末端沿基座坐标系移动 0.1 米，另一个表示关节速度归一化后的 10%，还有一个可能是 100 ms 内的位姿增量。把数组补到同样长度，只解决了文件形状，没有解决动作语义。 Open X-Embodiment 和 DROID 都在扩大真实机器人数据的覆盖，但路线不同。Open X-Embodiment 聚合多机构、多机器人数据并统一格式，研究跨本体迁移；DROID 用相对统一的硬件和采集流程，去许多真实场景收集操作数据。前者把“机器人不一样”摆到台面上，后者把“环境不一样...</summary>
-  </entry>
-  <entry>
-    <title>Cosmos 世界模型论文拆解：生成未来视频以后，机器人能拿它做什么</title>
-    <id>https://quchaosheng.github.io/2026/09/02/cosmos-world-model-physical-ai/</id>
-    <link href="https://quchaosheng.github.io/2026/09/02/cosmos-world-model-physical-ai/"/>
-    <published>2026-09-02T01:30:00.000Z</published>
-    <updated>2026-09-02T01:30:00.000Z</updated>
-    <summary type="html">让机器人在真实仓库里撞一百次来学习避障，代价太高；让它在仿真里撞一百次，又会遇到材质、光照、接触和传感器不够真的问题。世界模型给出第三种工具：根据当前画面、文字或动作条件生成可能的后续视频。它能扩大场景覆盖，却不会因为画面逼真就自动拥有正确动力学。 NVIDIA Cosmos 论文把世界模型做成一套平台，而不是单个视频生成器。平台包含视频清洗管线、视频 tokenizer、扩散式与自回归式预训练模型，以及面向具体 physical AI 任务的后训练示例。读这篇论文时，最值得追的不是“生成得像不像电影”，而是生成数据怎样进入训练，哪些变量必须由仿真...</summary>
   </entry>
 </feed>
