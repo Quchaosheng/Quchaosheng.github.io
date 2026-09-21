@@ -16,7 +16,7 @@ description: 用不可变事件、投影、快照和故障回放解释机器人�
 
 ## 证据边界
 
-公开项目 [workbench-world-model](https://github.com/Quchaosheng/workbench-world-model) 展示了事件存储、投影和故障注入方向；本文中的数据库规模、ISO 适用表述和性能数字仍需结合具体部署、测试记录与合规评估验证。
+公开项目 [workbench-mobile-home-robot](https://github.com/Quchaosheng/workbench-mobile-home-robot) 的 `EventStore`（`libs/kernel/workbench/kernel/event_store.py`）实现了追加式事件存储、投影和带完整性校验的回放与快照恢复；本文中的数据库规模、ISO 适用表述和性能数字仍需结合具体部署、测试记录与合规评估验证。
 
 <div class="note-flow"><span>命令进入系统</span><i>→</i><span>追加不可变事件</span><i>→</i><span>更新投影</span><i>→</i><span>周期生成快照</span><i>→</i><span>按事件回放故障</span></div>
 

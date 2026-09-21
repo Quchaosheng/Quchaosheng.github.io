@@ -32,7 +32,13 @@ archive_dir: archives
 category_dir: category
 code_dir: downloads/code
 i18n_dir: :lang
+# Copy these files verbatim into public/ so master keeps a repository README
+# and .gitignore across publishes (the pages workflow rsyncs with --delete).
 skip_render:
+  - README.md
+  - .gitignore
+include:
+  - .gitignore
 
 # Writing
 new_post_name: :title.md

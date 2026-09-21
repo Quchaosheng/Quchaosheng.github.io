@@ -8,7 +8,7 @@ tags: [任务执行, 验证, 事件回放, 安全]
 
 工具函数返回 <code>OK</code>，并不等于机器人已经完成了任务。它最多说明某一层接受了请求，或者一次调用没有在本地抛出错误。命令可能还在队列里，执行器可能没有动作，传感器也可能只看到了一个过期状态。把“调用成功”直接翻译成“任务完成”，会让一个接口层事实越过设备、环境和时间边界。
 
-我在整理 [workbench-desk-robot](https://github.com/Quchaosheng/workbench-desk-robot) 的任务契约时，把完成判定拆成了请求、执行和验证三个阶段。当前仓库用 11 个 schema 约束输入输出，以 12 个冻结场景和 24 个扩展场景覆盖关键状态，再用五类共 50 个 golden task 检查任务语义；26 个危险请求则专门验证系统是否会拒绝不该执行的动作。这些数字描述的是仓库中的测试资产，不是现实世界里的成功率。
+我在整理 [workbench-mobile-home-robot](https://github.com/Quchaosheng/workbench-mobile-home-robot) 的任务契约时，把完成判定拆成了请求、执行和验证三个阶段。当前仓库用 11 个 schema 约束输入输出，以 12 个冻结场景和 24 个扩展场景覆盖关键状态，再用五类共 50 个 golden task 检查任务语义；26 个危险请求则专门验证系统是否会拒绝不该执行的动作。这些数字描述的是仓库中的测试资产，不是现实世界里的成功率。
 
 <div class="note-flow"><span>接收结构化请求</span><i>→</i><span>生成带关联 ID 的动作</span><i>→</i><span>记录执行事件</span><i>→</i><span>用新鲜观测验证结果</span><i>→</i><span>输出完成、失败或证据不足</span></div>
 
@@ -76,7 +76,7 @@ insufficient_evidence 必要证据缺失、过期或来源不可信
 - [ROS 2 Actions](https://docs.ros.org/en/jazzy/Concepts/Basic/About-Actions.html)
 - [ROS 2 Quality of Service settings](https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Quality-of-Service-Settings.html)
 - [OpenTelemetry traces](https://opentelemetry.io/docs/concepts/signals/traces/)
-- [workbench-desk-robot](https://github.com/Quchaosheng/workbench-desk-robot)
+- [workbench-mobile-home-robot](https://github.com/Quchaosheng/workbench-mobile-home-robot)
 
 ## 证据边界
 

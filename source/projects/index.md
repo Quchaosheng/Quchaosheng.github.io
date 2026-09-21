@@ -6,7 +6,14 @@ layout: page
 
 ## 项目说明
 
-这里列出五个公开项目的简短 About 文案。每个项目页都会写清主线、证据环境和未验证范围；`vcan`、Gazebo 和 QEMU 只能说明软件或仿真路径跑通，不能代替真机测试。
+这里列出六个公开项目的简短 About 文案。每个项目页都会写清主线、证据环境和未验证范围；`vcan`、Gazebo 和 QEMU 只能说明软件或仿真路径跑通，不能代替真机测试。
+
+### Workbench Mobile Home Robot
+
+- **About：** 证据优先的移动家务机器人运行时；受限语义动作、追加式事件库，以及能给出 `confirmed`/`refuted`/`insufficient_evidence` 三态结论的验证器。
+- **证据：** 只读看板、离线 `scripted` fixture、SHA-256 校验的回放 artifact，以及可用 `validate_golden_set.py` 重算的 50 个 golden task 与 26 个危险请求。
+- **边界：** 未验证真实电机运动、硬件急停、DDS 安全或闭环控制；MCU、CAN、Motion、BSP 停在软件边界。
+- [看项目说明](/projects/workbench-mobile-home-robot/) · [源码与文档](https://github.com/Quchaosheng/workbench-mobile-home-robot)
 
 ### RoboTraceOpt
 
