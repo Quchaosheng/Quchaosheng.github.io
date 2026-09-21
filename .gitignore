@@ -1,0 +1,8 @@
+# Generated Hexo output is committed on purpose; ignore local build leftovers.
+.DS_Store
+Thumbs.db
+node_modules/
+public/
+.deploy_git/
+db.json
+*.log
