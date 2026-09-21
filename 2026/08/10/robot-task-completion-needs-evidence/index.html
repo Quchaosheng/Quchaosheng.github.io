@@ -18,14 +18,14 @@
 
 <title>函数返回 OK，为什么机器人任务仍然可能失败 | Quchaosheng&#39;s Notes</title>
 
-    <meta name="description" content="工具函数返回 OK ，并不等于机器人已经完成了任务。它最多说明某一层接受了请求，或者一次调用没有在本地抛出错误。命令可能还在队列里，执行器可能没有动作，传感器也可能只看到了一个过期状态。把“调用成功”直接翻译成“任务完成”，会让一个接口层事实越过设备、环境和时间边界。 我在整理 workbench-desk-robot 的任务契约时，把完成判定拆成了请...">
+    <meta name="description" content="工具函数返回 OK ，并不等于机器人已经完成了任务。它最多说明某一层接受了请求，或者一次调用没有在本地抛出错误。命令可能还在队列里，执行器可能没有动作，传感器也可能只看到了一个过期状态。把“调用成功”直接翻译成“任务完成”，会让一个接口层事实越过设备、环境和时间边界。 我在整理 workbench-mobile-home-robot 的任务契约时，把完...">
 
 <link rel="canonical" href="https://quchaosheng.github.io/2026/08/10/robot-task-completion-needs-evidence/">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:type" content="article">
 <meta property="og:title" content="函数返回 OK，为什么机器人任务仍然可能失败 | Quchaosheng&#39;s Notes">
 
-    <meta property="og:description" content="工具函数返回 OK ，并不等于机器人已经完成了任务。它最多说明某一层接受了请求，或者一次调用没有在本地抛出错误。命令可能还在队列里，执行器可能没有动作，传感器也可能只看到了一个过期状态。把“调用成功”直接翻译成“任务完成”，会让一个接口层事实越过设备、环境和时间边界。 我在整理 workbench-desk-robot 的任务契约时，把完成判定拆成了请...">
+    <meta property="og:description" content="工具函数返回 OK ，并不等于机器人已经完成了任务。它最多说明某一层接受了请求，或者一次调用没有在本地抛出错误。命令可能还在队列里，执行器可能没有动作，传感器也可能只看到了一个过期状态。把“调用成功”直接翻译成“任务完成”，会让一个接口层事实越过设备、环境和时间边界。 我在整理 workbench-mobile-home-robot 的任务契约时，把完...">
 
 <meta property="og:url" content="https://quchaosheng.github.io/2026/08/10/robot-task-completion-needs-evidence/">
 <meta property="og:site_name" content="Quchaosheng&#39;s Notes">
@@ -36,13 +36,13 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="函数返回 OK，为什么机器人任务仍然可能失败 | Quchaosheng&#39;s Notes">
 
-    <meta name="twitter:description" content="工具函数返回 OK ，并不等于机器人已经完成了任务。它最多说明某一层接受了请求，或者一次调用没有在本地抛出错误。命令可能还在队列里，执行器可能没有动作，传感器也可能只看到了一个过期状态。把“调用成功”直接翻译成“任务完成”，会让一个接口层事实越过设备、环境和时间边界。 我在整理 workbench-desk-robot 的任务契约时，把完成判定拆成了请...">
+    <meta name="twitter:description" content="工具函数返回 OK ，并不等于机器人已经完成了任务。它最多说明某一层接受了请求，或者一次调用没有在本地抛出错误。命令可能还在队列里，执行器可能没有动作，传感器也可能只看到了一个过期状态。把“调用成功”直接翻译成“任务完成”，会让一个接口层事实越过设备、环境和时间边界。 我在整理 workbench-mobile-home-robot 的任务契约时，把完...">
 
 
     <meta name="twitter:image" content="https://quchaosheng.github.io/image/projects/robotraceopt.png">
 
 
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"函数返回 OK，为什么机器人任务仍然可能失败","description":"工具函数返回 OK ，并不等于机器人已经完成了任务。它最多说明某一层接受了请求，或者一次调用没有在本地抛出错误。命令可能还在队列里，执行器可能没有动作，传感器也可能只看到了一个过期状态。把“调用成功”直接翻译成“任务完成”，会让一个接口层事实越过设备、环境和时间边界。 我在整理 workbench-desk-robot 的任务契约时，把完成判定拆成了请...","datePublished":"2026-08-10T14:30:00.000Z","dateModified":"2026-08-10T14:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/10/robot-task-completion-needs-evidence/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 机器人系统","keywords":"验证, 任务执行, 事件回放, 安全","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"函数返回 OK，为什么机器人任务仍然可能失败","description":"工具函数返回 OK ，并不等于机器人已经完成了任务。它最多说明某一层接受了请求，或者一次调用没有在本地抛出错误。命令可能还在队列里，执行器可能没有动作，传感器也可能只看到了一个过期状态。把“调用成功”直接翻译成“任务完成”，会让一个接口层事实越过设备、环境和时间边界。 我在整理 workbench-mobile-home-robot 的任务契约时，把完...","datePublished":"2026-08-10T14:30:00.000Z","dateModified":"2026-08-10T14:30:00.000Z","inLanguage":"zh-CN","mainEntityOfPage":"https://quchaosheng.github.io/2026/08/10/robot-task-completion-needs-evidence/","author":{"@type":"Person","name":"Quchaosheng"},"publisher":{"@type":"Person","name":"Quchaosheng"},"articleSection":"技术 / 机器人系统","keywords":"验证, 任务执行, 事件回放, 安全","image":["https://quchaosheng.github.io/image/projects/robotraceopt.png"]}</script>
 
 
 
@@ -285,7 +285,7 @@
 
         <div class="post-content">
             <p>工具函数返回 <code>OK</code>，并不等于机器人已经完成了任务。它最多说明某一层接受了请求，或者一次调用没有在本地抛出错误。命令可能还在队列里，执行器可能没有动作，传感器也可能只看到了一个过期状态。把“调用成功”直接翻译成“任务完成”，会让一个接口层事实越过设备、环境和时间边界。</p>
-<p>我在整理 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/workbench-desk-robot">workbench-desk-robot</a> 的任务契约时，把完成判定拆成了请求、执行和验证三个阶段。当前仓库用 11 个 schema 约束输入输出，以 12 个冻结场景和 24 个扩展场景覆盖关键状态，再用五类共 50 个 golden task 检查任务语义；26 个危险请求则专门验证系统是否会拒绝不该执行的动作。这些数字描述的是仓库中的测试资产，不是现实世界里的成功率。</p>
+<p>我在整理 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/workbench-mobile-home-robot">workbench-mobile-home-robot</a> 的任务契约时，把完成判定拆成了请求、执行和验证三个阶段。当前仓库用 11 个 schema 约束输入输出，以 12 个冻结场景和 24 个扩展场景覆盖关键状态，再用五类共 50 个 golden task 检查任务语义；26 个危险请求则专门验证系统是否会拒绝不该执行的动作。这些数字描述的是仓库中的测试资产，不是现实世界里的成功率。</p>
 <div class="note-flow"><span>接收结构化请求</span><i>→</i><span>生成带关联 ID 的动作</span><i>→</i><span>记录执行事件</span><i>→</i><span>用新鲜观测验证结果</span><i>→</i><span>输出完成、失败或证据不足</span></div>
 
 <figure class="note-visual"><figcaption><span>完成证据图</span>每一层只回答自己能够观察的问题，最终状态由可追溯事件连接起来。</figcaption><div class="note-map"><span><b>请求</b><small>参数是否完整、类型是否正确、策略是否允许执行。</small></span><span><b>受理</b><small>调度器是否接受请求并分配唯一任务 ID。</small></span><span><b>执行</b><small>命令是否送达，设备是否返回与本次请求匹配的状态。</small></span><span><b>观测</b><small>传感器结果是否足够新，是否覆盖任务的成功判据。</small></span><span><b>安全</b><small>取消、超时和危险请求是否进入可确认的停止状态。</small></span><span><b>结论</b><small>证据充分才完成；冲突则失败；缺失则标为证据不足。</small></span></div></figure>
@@ -347,7 +347,7 @@
 <li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Basic/About-Actions.html">ROS 2 Actions</a></li>
 <li><a target="_blank" rel="noopener" href="https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Quality-of-Service-Settings.html">ROS 2 Quality of Service settings</a></li>
 <li><a target="_blank" rel="noopener" href="https://opentelemetry.io/docs/concepts/signals/traces/">OpenTelemetry traces</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/workbench-desk-robot">workbench-desk-robot</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/workbench-mobile-home-robot">workbench-mobile-home-robot</a></li>
 </ul>
 <h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>本文讨论的是任务完成判定与事件证据的工程结构。文中的资产数量来自仓库当前内容，只能说明这些测试集合存在，不能证明真机成功率、停止距离或硬件安全等级。任何物理完成结论仍需绑定具体设备、软件版本、环境、时间和原始观测。</p>
 

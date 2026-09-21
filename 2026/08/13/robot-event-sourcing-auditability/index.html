@@ -286,7 +286,7 @@
         </header>
 
         <div class="post-content">
-            <h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>公开项目 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/workbench-world-model">workbench-world-model</a> 展示了事件存储、投影和故障注入方向；本文中的数据库规模、ISO 适用表述和性能数字仍需结合具体部署、测试记录与合规评估验证。</p>
+            <h2 id="证据边界"><a href="#证据边界" class="headerlink" title="证据边界"></a>证据边界</h2><p>公开项目 <a target="_blank" rel="noopener" href="https://github.com/Quchaosheng/workbench-mobile-home-robot">workbench-mobile-home-robot</a> 的 <code>EventStore</code>（<code>libs/kernel/workbench/kernel/event_store.py</code>）实现了追加式事件存储、投影和带完整性校验的回放与快照恢复；本文中的数据库规模、ISO 适用表述和性能数字仍需结合具体部署、测试记录与合规评估验证。</p>
 <div class="note-flow"><span>命令进入系统</span><i>→</i><span>追加不可变事件</span><i>→</i><span>更新投影</span><i>→</i><span>周期生成快照</span><i>→</i><span>按事件回放故障</span></div>
 
 <div class="note-map"><span><b>Event Store</b><small>按顺序追加事实，不原地覆盖历史。</small></span><span><b>Projection</b><small>把事件流转换为面向查询的当前状态。</small></span><span><b>Snapshot</b><small>缩短重放时间，但不能替代原始事件。</small></span><span><b>Version</b><small>乐观并发控制防止并行写入互相覆盖。</small></span><span><b>Replay</b><small>从相同事件恢复状态并定位因果链。</small></span><span><b>审计</b><small>记录本身提供证据，合规仍需完整评估。</small></span></div>
