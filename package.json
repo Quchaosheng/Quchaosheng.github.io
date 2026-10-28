@@ -8,7 +8,9 @@
     "deploy": "hexo deploy",
     "server": "hexo server",
     "test:post-dates": "node --test tests/test-post-date-guard.js",
-    "report:post-quality": "node scripts/post-quality-report.js"
+    "report:post-quality": "node scripts/post-quality-report.js",
+    "test:internal-links": "node --test tests/test-internal-links.js",
+    "check:links": "node scripts/check-internal-links.js public"
   },
   "hexo": {
     "version": "7.3.0"

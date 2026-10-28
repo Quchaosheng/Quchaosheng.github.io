@@ -35,10 +35,18 @@ jobs:
       - name: Test batch publishing
         run: bash tests/test-publish-batch.sh
 
+      - name: Test internal link checker
+        run: npm run test:internal-links
+
       - name: Build Hexo site
         run: |
           npm run clean
           npm run build
+
+      - name: Check internal links and anchors
+        run: npm run check:links
+        env:
+          SITE_URL: https://quchaosheng.github.io
 
   windows-tools:
     runs-on: windows-latest
