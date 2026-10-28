@@ -48,6 +48,11 @@ jobs:
           npm run clean
           npm run build
 
+      - name: Check internal links and anchors
+        run: npm run check:links
+        env:
+          SITE_URL: https://quchaosheng.github.io
+
       - name: Checkout pages branch
         uses: actions/checkout@v5
         with:
